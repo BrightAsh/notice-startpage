@@ -311,16 +311,8 @@
       line-height: 1.35;
     }
 
-    .notice-actions{
-      margin-top: 12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      flex-wrap:wrap;
-      padding-top: 12px;
-      border-top: 1px solid var(--line);
-    }
+    /* 공지 버튼 영역 삭제 요청에 따라 .notice-actions 제거 (CSS는 남겨도 무방하지만 깔끔히 제거) */
+
     .check{
       display:flex; align-items:center; gap:8px;
       color: var(--muted);
@@ -359,7 +351,7 @@
 
       <div class="top-actions">
         <a class="btn primary" href="https://www.google.com/" target="_blank" rel="noopener">Google</a>
-        <button class="btn" id="copyPageUrl" type="button">페이지 주소 복사</button>
+        <!-- (1) 페이지 주소 복사 버튼 삭제 -->
       </div>
     </header>
 
@@ -397,17 +389,7 @@
 
           <ul class="notice-list" id="noticeList"></ul>
 
-          <div class="notice-actions">
-            <label class="check">
-              <input type="checkbox" id="hideToday" />
-              오늘 하루 이 공지 숨기기
-            </label>
-
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="btn" id="ackBtn" type="button">확인 처리</button>
-              <a class="btn primary" href="https://www.google.com/" id="goBtn">업무 시작</a>
-            </div>
-          </div>
+          <!-- (3) 공지사항: 확인 처리/업무 시작 등 버튼 삭제 (hideToday 체크박스도 함께 제거) -->
         </div>
       </section>
     </main>
@@ -426,17 +408,19 @@
      */
 
     // 서비스 목록 (수정 잦음)
+    // (2) note: "단어 단어 형태 / 5개 이하"로 구체화
+    // 표기 규칙: "단어 · 단어 · 단어" (최대 5개)
     const SERVICES = [
-      { name: "ChatGPT",  url: "https://chatgpt.com/",           domain: "chatgpt.com",           note: "대화/문서" },
-      { name: "Genspark", url: "https://www.genspark.ai/",       domain: "genspark.ai",          note: "리서치" },
-      { name: "Gemini",   url: "https://gemini.google.com/",     domain: "gemini.google.com",    note: "검색/요약" },
-      { name: "Manus",    url: "https://manus.im/",              domain: "manus.im",             note: "자동화" },
-      { name: "Canva",    url: "https://www.canva.com/",         domain: "canva.com",            note: "디자인" },
-      { name: "Flowith",  url: "https://flowith.io/",            domain: "flowith.io",           note: "워크플로" },
-      { name: "Skywork",  url: "https://skywork.ai/",            domain: "skywork.ai",           note: "업무도구" },
-      { name: "CapCut",   url: "https://www.capcut.com/",        domain: "capcut.com",           note: "영상" },
-      { name: "Lilys AI", url: "https://lilys.ai/",              domain: "lilys.ai",             note: "노트/요약" },
-      { name: "ElevenLabs", url:"https://elevenlabs.io/",        domain: "elevenlabs.io",        note: "TTS" },
+      { name: "ChatGPT",     url: "https://chatgpt.com/",       domain: "chatgpt.com",        note: "문서작성 · 요약 · 아이디어 · 번역 · Q&A" },
+      { name: "Genspark",    url: "https://www.genspark.ai/",   domain: "genspark.ai",       note: "리서치 · 자료수집 · 비교분석 · 출처정리 · 보고서" },
+      { name: "Gemini",      url: "https://gemini.google.com/", domain: "gemini.google.com", note: "검색 · 초안 · 요약 · 이미지해석 · 구글연동" },
+      { name: "Manus",       url: "https://manus.im/",          domain: "manus.im",          note: "반복작업 · 자동화 · 워크플로 · 템플릿 · 실행" },
+      { name: "Canva",       url: "https://www.canva.com/",     domain: "canva.com",         note: "포스터 · PPT · 카드뉴스 · 템플릿 · 편집" },
+      { name: "Flowith",     url: "https://flowith.io/",        domain: "flowith.io",        note: "업무흐름 · 정리 · 협업 · 태스크 · 문서" },
+      { name: "Skywork",     url: "https://skywork.ai/",        domain: "skywork.ai",        note: "업무도구 · 생산성 · 작성 · 정리 · 자동화" },
+      { name: "CapCut",      url: "https://www.capcut.com/",    domain: "capcut.com",        note: "영상편집 · 자막 · 컷편집 · 템플릿 · 출력" },
+      { name: "Lilys AI",    url: "https://lilys.ai/",          domain: "lilys.ai",          note: "회의록 · 요약 · 노트 · 하이라이트 · 정리" },
+      { name: "ElevenLabs",  url: "https://elevenlabs.io/",     domain: "elevenlabs.io",     note: "TTS · 더빙 · 음성합성 · 나레이션 · 음성변환" },
     ];
 
     /**
@@ -444,7 +428,7 @@
      * - noticeId만 바꾸면(예: 날짜) '새 공지'로 인식되게 설계
      */
     const NOTICE = {
-      noticeId: "2026-01-28",                  // <- 공지 업데이트 시 이것만 바꿔도 됨 (예: 2026-01-29)
+      noticeId: "2026-01-28",
       title: "2026년 01월 28 공지",
       summaryTags: ["구독 변경", "업무 영향 있음"],
       items: [
@@ -454,7 +438,7 @@
       lastUpdated: "2026-01-28 09:00"
     };
 
-    // 공지 확인/숨김 로컬스토리지 키
+    // 공지 확인/숨김 로컬스토리지 키 (초기화 링크 유지 목적)
     const KEY_ACK = (id) => `notice:ack:${id}`;
     const KEY_HIDE_UNTIL = (id) => `notice:hideUntil:${id}`;
 
@@ -474,8 +458,6 @@
     const noticeKv = $("#noticeKv");
     const noticeList = $("#noticeList");
 
-    const hideToday = $("#hideToday");
-    const ackBtn = $("#ackBtn");
     const resetLocal = $("#resetLocal");
 
     function fmtNow(){
@@ -484,34 +466,7 @@
       return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
-    function endOfTodayTs(){
-      const now = new Date();
-      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-      return end.getTime();
-    }
-
-    function isHiddenToday(){
-      const raw = localStorage.getItem(KEY_HIDE_UNTIL(NOTICE.noticeId));
-      if(!raw) return false;
-      const until = Number(raw);
-      return Number.isFinite(until) && Date.now() < until;
-    }
-
-    function setHiddenToday(on){
-      if(on) localStorage.setItem(KEY_HIDE_UNTIL(NOTICE.noticeId), String(endOfTodayTs()));
-      else localStorage.removeItem(KEY_HIDE_UNTIL(NOTICE.noticeId));
-    }
-
-    function isAcked(){
-      return localStorage.getItem(KEY_ACK(NOTICE.noticeId)) === "1";
-    }
-
-    function setAcked(){
-      localStorage.setItem(KEY_ACK(NOTICE.noticeId), "1");
-    }
-
     function faviconUrl(domain){
-      // Google S2 favicon service: 간편 & 수집 필요 없음
       return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
     }
 
@@ -527,7 +482,6 @@
         const ic = document.createElement("div");
         ic.className = "svc-ic";
 
-        // 아이콘(파비콘) 로드 실패 시 이니셜로 대체
         const img = document.createElement("img");
         img.alt = "";
         img.loading = "lazy";
@@ -555,7 +509,6 @@
         a.appendChild(ic);
         a.appendChild(txt);
 
-        // url이 비어있으면 클릭 막기 + 시각 표시
         if(!s.url){
           a.style.opacity = ".55";
           a.style.cursor = "not-allowed";
@@ -569,14 +522,9 @@
     }
 
     function renderNotice(){
-      const hidden = isHiddenToday();
-      hideToday.checked = hidden;
-
-      // 헤더 표시
       noticeHeadline.textContent = NOTICE.title;
       noticeDate.textContent = `마지막 변경: ${NOTICE.lastUpdated}`;
 
-      // 태그(요약)
       noticeKv.innerHTML = "";
       for(const t of (NOTICE.summaryTags || [])){
         const sp = document.createElement("span");
@@ -584,7 +532,6 @@
         noticeKv.appendChild(sp);
       }
 
-      // 항목
       noticeList.innerHTML = "";
       for(const it of (NOTICE.items || [])){
         const li = document.createElement("li");
@@ -611,22 +558,14 @@
         noticeList.appendChild(li);
       }
 
-      // 상태 배지
-      const acked = isAcked();
+      // 상태 배지: 기존 로컬스토리지 ACK 기반(버튼은 삭제했지만 '상태' 표시는 유지)
+      const acked = localStorage.getItem(KEY_ACK(NOTICE.noticeId)) === "1";
       if(!acked) {
         noticeBadge.textContent = "새 공지";
         noticeBadge.className = "badge new";
       } else {
         noticeBadge.textContent = "확인됨";
         noticeBadge.className = "badge";
-      }
-
-      // 오늘 숨김이면 본문 흐리게
-      const body = $("#noticeBody");
-      if(hidden){
-        body.style.opacity = ".55";
-      } else {
-        body.style.opacity = "1";
       }
     }
 
@@ -635,33 +574,11 @@
       $("#renderAt").textContent = fmtNow();
     }
 
-    // Actions
-    $("#copyPageUrl").addEventListener("click", async () => {
-      try{
-        await navigator.clipboard.writeText(location.href);
-        alert("페이지 주소를 복사했습니다.");
-      }catch{
-        prompt("복사가 막혀있습니다. 아래 주소를 복사하세요:", location.href);
-      }
-    });
-
-    hideToday.addEventListener("change", () => {
-      setHiddenToday(hideToday.checked);
-      renderNotice();
-    });
-
-    ackBtn.addEventListener("click", () => {
-      setAcked();
-      renderNotice();
-      alert("공지 확인 처리했습니다.");
-    });
-
+    // 공지상태 초기화(링크 유지)
     resetLocal.addEventListener("click", (e) => {
       e.preventDefault();
-      // 현재 공지 ID 관련 키만 초기화
       localStorage.removeItem(KEY_ACK(NOTICE.noticeId));
       localStorage.removeItem(KEY_HIDE_UNTIL(NOTICE.noticeId));
-      hideToday.checked = false;
       renderNotice();
       alert("이 PC의 공지 상태를 초기화했습니다.");
     });
@@ -671,12 +588,9 @@
     renderServices();
     renderNotice();
 
-    // 시계(분 단위)
     setInterval(() => {
       $("#nowPill").textContent = fmtNow();
     }, 60 * 1000);
   </script>
 </body>
 </html>
-
-
