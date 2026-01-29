@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>회사 공지 · 시작페이지</title>
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root{
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.08);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --line: rgba(255,255,255,.14);
+      --accent: #5eead4;
+      --warn: #fbbf24;
+      --ok: #34d399;
+      --danger: #fb7185;
+      --shadow: 0 18px 55px rgba(0,0,0,.35);
+      --radius: 18px;
+      --radius2: 14px;
+      --font: system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#f6f7fb;
+        --panel: rgba(255,255,255,.72);
+        --panel2: rgba(255,255,255,.92);
+        --text: rgba(17,24,39,.92);
+        --muted: rgba(17,24,39,.62);
+        --line: rgba(17,24,39,.12);
+        --shadow: 0 18px 55px rgba(17,24,39,.12);
+      }
+    }
+
+    *{ box-sizing:border-box; }
+    html, body{ height:100%; }
+    body{
+      margin:0;
+      font-family: var(--font);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 500px at 15% 0%, rgba(94,234,212,.18), transparent 55%),
+        radial-gradient(900px 450px at 95% 10%, rgba(251,191,36,.16), transparent 50%),
+        radial-gradient(1000px 600px at 60% 120%, rgba(96,165,250,.14), transparent 55%),
+        var(--bg);
+    }
+
+    .wrap{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 22px 18px 32px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 14px;
+      padding: 6px 2px 18px;
+    }
+    .brand{
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .title{
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .pill{
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(94,234,212,.14);
+      border: 1px solid rgba(94,234,212,.28);
+      color: var(--text);
+      font-weight: 700;
+    }
+    .sub{
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .top-actions{
+      display:flex; gap:10px; flex-wrap:wrap;
+      align-items:center; justify-content:flex-end;
+    }
+    .btn{
+      appearance:none;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight: 700;
+      font-size: 13px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      transition: transform .05s ease, background .15s ease, border-color .15s ease;
+      text-decoration:none;
+    }
+    .btn:hover{ background: var(--panel2); border-color: rgba(94,234,212,.35); }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      background: rgba(94,234,212,.14);
+      border-color: rgba(94,234,212,.32);
+    }
+
+    main{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 14px;
+    }
+    @media (max-width: 980px){
+      main{ grid-template-columns: 1fr; }
+    }
+
+    .panel{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panel-hd{
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--line);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .panel-title{
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin:0;
+      font-size: 16px;
+    }
+    .panel-meta{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+      line-height: 1.35;
+    }
+    .badge{
+      font-size: 12px;
+      font-weight: 800;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .badge.new{
+      border-color: rgba(251,191,36,.45);
+      background: rgba(251,191,36,.14);
+      color: var(--text);
+    }
+    .panel-bd{ padding: 14px 16px 16px; }
+
+    /* Services */
+    .svc-grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 980px){
+      .svc-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px){
+      .svc-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .svc{
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: var(--radius2);
+      padding: 12px 10px;
+      text-decoration:none;
+      color: var(--text);
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-height: 58px;
+      transition: background .15s ease, border-color .15s ease, transform .05s ease;
+    }
+    .svc:hover{ background: rgba(255,255,255,.06); border-color: rgba(94,234,212,.35); }
+    .svc:active{ transform: translateY(1px); }
+
+    .svc-ic{
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      display:grid;
+      place-items:center;
+      flex: 0 0 auto;
+      overflow:hidden;
+    }
+    .svc-ic img{
+      width: 20px; height: 20px;
+      display:block;
+    }
+    .svc-ic.fallback{
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .svc-name{
+      font-weight: 850;
+      font-size: 13px;
+      line-height: 1.1;
+    }
+    .svc-sub{
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+      line-height: 1.2;
+    }
+    .svc-txt{ min-width:0; }
+    .svc-sub, .svc-name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* Notice */
+    .notice-headline{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      padding: 12px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius2);
+      background: rgba(255,255,255,.03);
+    }
+    .notice-title{
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .notice-date{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .kv{
+      display:flex; gap: 8px; flex-wrap:wrap; margin-top: 6px;
+      color: var(--muted); font-size: 12px;
+    }
+    .kv span{
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.03);
+    }
+
+    .notice-list{
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+    }
+    .notice-item{
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: var(--radius2);
+      padding: 10px 10px;
+      display:flex;
+      gap: 10px;
+      align-items:flex-start;
+    }
+    .tag{
+      font-size: 11px;
+      font-weight: 900;
+      padding: 5px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.02);
+      white-space:nowrap;
+      flex: 0 0 auto;
+      margin-top: 1px;
+    }
+    .tag.ok{ border-color: rgba(52,211,153,.45); background: rgba(52,211,153,.14); }
+    .tag.warn{ border-color: rgba(251,191,36,.55); background: rgba(251,191,36,.14); }
+    .tag.danger{ border-color: rgba(251,113,133,.5); background: rgba(251,113,133,.12); }
+
+    .ni-title{
+      font-weight: 900;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+    .ni-sub{
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .notice-actions{
+      margin-top: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap:wrap;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+    .check{
+      display:flex; align-items:center; gap:8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .check input{ transform: translateY(1px); }
+
+    .foot{
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap:wrap;
+      padding: 0 2px;
+    }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    a.muted{ color: var(--muted); text-decoration:none; }
+    a.muted:hover{ text-decoration:underline; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="title">
+          회사 공지 · 시작페이지
+          <span class="pill" id="nowPill">로딩중…</span>
+        </div>
+        <div class="sub">
+          좌측은 <b>구독 서비스</b> 바로가기, 우측은 <b>최신 공지</b>입니다. (공지 확인/숨김은 이 PC의 브라우저에 저장됩니다)
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <a class="btn primary" href="https://www.google.com/" target="_blank" rel="noopener">Google</a>
+        <button class="btn" id="copyPageUrl" type="button">페이지 주소 복사</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- 1) 구독 서비스 -->
+      <section class="panel" aria-labelledby="svcTitle">
+        <div class="panel-hd">
+          <div>
+            <h2 class="panel-title" id="svcTitle">구독 중인 서비스</h2>
+            <div class="panel-meta">아래 <span class="mono">SERVICES</span> 배열만 수정하면 자동 반영됩니다.</div>
+          </div>
+          <span class="badge" id="svcCount">0개</span>
+        </div>
+        <div class="panel-bd">
+          <div class="svc-grid" id="svcGrid"></div>
+        </div>
+      </section>
+
+      <!-- 2) 공지사항 -->
+      <section class="panel" aria-labelledby="ntTitle">
+        <div class="panel-hd">
+          <div>
+            <h2 class="panel-title" id="ntTitle">공지 사항</h2>
+            <div class="panel-meta">자주 바뀌는 내용은 우측 공지 영역만 수정하면 됩니다.</div>
+          </div>
+          <span class="badge" id="noticeBadge">상태</span>
+        </div>
+
+        <div class="panel-bd" id="noticeBody">
+          <div class="notice-headline">
+            <div class="notice-title" id="noticeHeadline">-</div>
+            <div class="notice-date" id="noticeDate">-</div>
+            <div class="kv" id="noticeKv"></div>
+          </div>
+
+          <ul class="notice-list" id="noticeList"></ul>
+
+          <div class="notice-actions">
+            <label class="check">
+              <input type="checkbox" id="hideToday" />
+              오늘 하루 이 공지 숨기기
+            </label>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn" id="ackBtn" type="button">확인 처리</button>
+              <a class="btn primary" href="https://www.google.com/" id="goBtn">업무 시작</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="foot">
+      <div>마지막 렌더링: <span class="mono" id="renderAt">-</span></div>
+      <div><a class="muted" href="#" id="resetLocal">이 PC의 공지상태 초기화</a></div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * =========================
+     * 1) 여기만 주로 수정하세요
+     * =========================
+     */
+
+    // 서비스 목록 (수정 잦음)
+    const SERVICES = [
+      { name: "ChatGPT",  url: "https://chatgpt.com/",           domain: "chatgpt.com",           note: "대화/문서" },
+      { name: "Genspark", url: "https://www.genspark.ai/",       domain: "genspark.ai",          note: "리서치" },
+      { name: "Gemini",   url: "https://gemini.google.com/",     domain: "gemini.google.com",    note: "검색/요약" },
+      { name: "Manus",    url: "https://manus.im/",              domain: "manus.im",             note: "자동화" },
+      { name: "Canva",    url: "https://www.canva.com/",         domain: "canva.com",            note: "디자인" },
+      { name: "Flowith",  url: "https://flowith.io/",            domain: "flowith.io",           note: "워크플로" },
+      { name: "Skywork",  url: "https://skywork.ai/",            domain: "skywork.ai",           note: "업무도구" },
+      { name: "CapCut",   url: "https://www.capcut.com/",        domain: "capcut.com",           note: "영상" },
+      { name: "Lilys AI", url: "https://lilys.ai/",              domain: "lilys.ai",             note: "노트/요약" },
+      { name: "ElevenLabs", url:"https://elevenlabs.io/",        domain: "elevenlabs.io",        note: "TTS" },
+    ];
+
+    /**
+     * 공지(자주 변경)
+     * - noticeId만 바꾸면(예: 날짜) '새 공지'로 인식되게 설계
+     */
+    const NOTICE = {
+      noticeId: "2026-01-28",                  // <- 공지 업데이트 시 이것만 바꿔도 됨 (예: 2026-01-29)
+      title: "2026년 01월 28 공지",
+      summaryTags: ["구독 변경", "업무 영향 있음"],
+      items: [
+        { tag: "danger", title: "Perplexity 구독 종료", sub: "사유: 사용량 저조" },
+        { tag: "ok",     title: "Gemini 구독 시작",     sub: "필요 시 라이선스 추가 요청" }
+      ],
+      lastUpdated: "2026-01-28 09:00"
+    };
+
+    // 공지 확인/숨김 로컬스토리지 키
+    const KEY_ACK = (id) => `notice:ack:${id}`;
+    const KEY_HIDE_UNTIL = (id) => `notice:hideUntil:${id}`;
+
+    /**
+     * =========================
+     * 2) 렌더링/동작 로직
+     * =========================
+     */
+    const $ = (sel) => document.querySelector(sel);
+
+    const svcGrid = $("#svcGrid");
+    const svcCount = $("#svcCount");
+
+    const noticeBadge = $("#noticeBadge");
+    const noticeHeadline = $("#noticeHeadline");
+    const noticeDate = $("#noticeDate");
+    const noticeKv = $("#noticeKv");
+    const noticeList = $("#noticeList");
+
+    const hideToday = $("#hideToday");
+    const ackBtn = $("#ackBtn");
+    const resetLocal = $("#resetLocal");
+
+    function fmtNow(){
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2,"0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function endOfTodayTs(){
+      const now = new Date();
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      return end.getTime();
+    }
+
+    function isHiddenToday(){
+      const raw = localStorage.getItem(KEY_HIDE_UNTIL(NOTICE.noticeId));
+      if(!raw) return false;
+      const until = Number(raw);
+      return Number.isFinite(until) && Date.now() < until;
+    }
+
+    function setHiddenToday(on){
+      if(on) localStorage.setItem(KEY_HIDE_UNTIL(NOTICE.noticeId), String(endOfTodayTs()));
+      else localStorage.removeItem(KEY_HIDE_UNTIL(NOTICE.noticeId));
+    }
+
+    function isAcked(){
+      return localStorage.getItem(KEY_ACK(NOTICE.noticeId)) === "1";
+    }
+
+    function setAcked(){
+      localStorage.setItem(KEY_ACK(NOTICE.noticeId), "1");
+    }
+
+    function faviconUrl(domain){
+      // Google S2 favicon service: 간편 & 수집 필요 없음
+      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+    }
+
+    function renderServices(){
+      svcGrid.innerHTML = "";
+      for(const s of SERVICES){
+        const a = document.createElement("a");
+        a.className = "svc";
+        a.href = s.url || "#";
+        a.target = "_blank";
+        a.rel = "noopener";
+
+        const ic = document.createElement("div");
+        ic.className = "svc-ic";
+
+        // 아이콘(파비콘) 로드 실패 시 이니셜로 대체
+        const img = document.createElement("img");
+        img.alt = "";
+        img.loading = "lazy";
+        img.referrerPolicy = "no-referrer";
+        if(s.domain) img.src = faviconUrl(s.domain);
+        img.onerror = () => {
+          img.remove();
+          ic.classList.add("fallback");
+          ic.textContent = (s.name || "?").trim().slice(0,1).toUpperCase();
+        };
+        ic.appendChild(img);
+
+        const txt = document.createElement("div");
+        txt.className = "svc-txt";
+        const nm = document.createElement("div");
+        nm.className = "svc-name";
+        nm.textContent = s.name || "(이름 없음)";
+        const sub = document.createElement("div");
+        sub.className = "svc-sub";
+        sub.textContent = s.note || (s.domain ? s.domain : "");
+
+        txt.appendChild(nm);
+        txt.appendChild(sub);
+
+        a.appendChild(ic);
+        a.appendChild(txt);
+
+        // url이 비어있으면 클릭 막기 + 시각 표시
+        if(!s.url){
+          a.style.opacity = ".55";
+          a.style.cursor = "not-allowed";
+          a.addEventListener("click", (e) => e.preventDefault());
+          sub.textContent = "URL 설정 필요";
+        }
+
+        svcGrid.appendChild(a);
+      }
+      svcCount.textContent = `${SERVICES.length}개`;
+    }
+
+    function renderNotice(){
+      const hidden = isHiddenToday();
+      hideToday.checked = hidden;
+
+      // 헤더 표시
+      noticeHeadline.textContent = NOTICE.title;
+      noticeDate.textContent = `마지막 변경: ${NOTICE.lastUpdated}`;
+
+      // 태그(요약)
+      noticeKv.innerHTML = "";
+      for(const t of (NOTICE.summaryTags || [])){
+        const sp = document.createElement("span");
+        sp.textContent = t;
+        noticeKv.appendChild(sp);
+      }
+
+      // 항목
+      noticeList.innerHTML = "";
+      for(const it of (NOTICE.items || [])){
+        const li = document.createElement("li");
+        li.className = "notice-item";
+
+        const tag = document.createElement("span");
+        tag.className = `tag ${it.tag || ""}`.trim();
+        tag.textContent = (it.tag === "danger") ? "중요" :
+                          (it.tag === "warn")   ? "주의" :
+                          (it.tag === "ok")     ? "안내" : "공지";
+
+        const box = document.createElement("div");
+        const t = document.createElement("div");
+        t.className = "ni-title";
+        t.textContent = it.title || "-";
+        const s = document.createElement("div");
+        s.className = "ni-sub";
+        s.textContent = it.sub || "";
+        box.appendChild(t);
+        box.appendChild(s);
+
+        li.appendChild(tag);
+        li.appendChild(box);
+        noticeList.appendChild(li);
+      }
+
+      // 상태 배지
+      const acked = isAcked();
+      if(!acked) {
+        noticeBadge.textContent = "새 공지";
+        noticeBadge.className = "badge new";
+      } else {
+        noticeBadge.textContent = "확인됨";
+        noticeBadge.className = "badge";
+      }
+
+      // 오늘 숨김이면 본문 흐리게
+      const body = $("#noticeBody");
+      if(hidden){
+        body.style.opacity = ".55";
+      } else {
+        body.style.opacity = "1";
+      }
+    }
+
+    function renderHeader(){
+      $("#nowPill").textContent = fmtNow();
+      $("#renderAt").textContent = fmtNow();
+    }
+
+    // Actions
+    $("#copyPageUrl").addEventListener("click", async () => {
+      try{
+        await navigator.clipboard.writeText(location.href);
+        alert("페이지 주소를 복사했습니다.");
+      }catch{
+        prompt("복사가 막혀있습니다. 아래 주소를 복사하세요:", location.href);
+      }
+    });
+
+    hideToday.addEventListener("change", () => {
+      setHiddenToday(hideToday.checked);
+      renderNotice();
+    });
+
+    ackBtn.addEventListener("click", () => {
+      setAcked();
+      renderNotice();
+      alert("공지 확인 처리했습니다.");
+    });
+
+    resetLocal.addEventListener("click", (e) => {
+      e.preventDefault();
+      // 현재 공지 ID 관련 키만 초기화
+      localStorage.removeItem(KEY_ACK(NOTICE.noticeId));
+      localStorage.removeItem(KEY_HIDE_UNTIL(NOTICE.noticeId));
+      hideToday.checked = false;
+      renderNotice();
+      alert("이 PC의 공지 상태를 초기화했습니다.");
+    });
+
+    // Init
+    renderHeader();
+    renderServices();
+    renderNotice();
+
+    // 시계(분 단위)
+    setInterval(() => {
+      $("#nowPill").textContent = fmtNow();
+    }, 60 * 1000);
+  </script>
+</body>
+</html>
