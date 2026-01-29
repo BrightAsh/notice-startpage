@@ -3,8 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>회사 공지 · 시작페이지</title>
+  <title>KNOC · AI Field Zone</title>
   <meta name="color-scheme" content="light dark" />
+
+  <!-- 탭 아이콘(파비콘): repo/main/asset/logo.png -->
+  <link rel="icon" type="image/png" href="./asset/logo.png" />
+
   <style>
     :root{
       --bg: #0b1220;
@@ -62,15 +66,34 @@
     }
     .brand{
       display:flex; flex-direction:column; gap:6px;
+      min-width: 0;
     }
-    .title{
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
+
+    /* 로고 + 이름 라인 */
+    .brandline{
       display:flex;
       align-items:center;
-      gap:10px;
+      gap:12px;
+      min-width: 0;
     }
+    .brandlogo{
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      object-fit: contain;
+      flex: 0 0 auto;
+    }
+    .brandname{
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .pill{
       font-size: 12px;
       padding: 4px 10px;
@@ -79,6 +102,7 @@
       border: 1px solid rgba(94,234,212,.28);
       color: var(--text);
       font-weight: 700;
+      flex: 0 0 auto;
     }
     .sub{
       color: var(--muted);
@@ -169,117 +193,95 @@
     }
     .panel-bd{ padding: 14px 16px 16px; }
 
-    /* Services */
+    /* Services: 3열 n행 */
     .svc-grid{
       display:grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
     }
     @media (max-width: 980px){
-      .svc-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .svc-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 520px){
-      .svc-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .svc-grid{ grid-template-columns: 1fr; }
     }
 
     .svc{
       border: 1px solid var(--line);
       background: rgba(255,255,255,.03);
       border-radius: var(--radius2);
-      padding: 12px 10px;
+      padding: 12px 12px;
       text-decoration:none;
       color: var(--text);
       display:flex;
-      align-items:center;
-      gap: 10px;
-      min-height: 58px;
+      align-items:flex-start;
+      gap: 12px;
+      min-height: 86px;
       transition: background .15s ease, border-color .15s ease, transform .05s ease;
     }
     .svc:hover{ background: rgba(255,255,255,.06); border-color: rgba(94,234,212,.35); }
     .svc:active{ transform: translateY(1px); }
 
+    /* 아이콘 더 키움 */
     .svc-ic{
-      width: 34px; height: 34px;
-      border-radius: 10px;
+      width: 56px; height: 56px;
+      border-radius: 16px;
       border: 1px solid var(--line);
       background: rgba(255,255,255,.04);
       display:grid;
       place-items:center;
       flex: 0 0 auto;
       overflow:hidden;
+      margin-top: 1px;
     }
     .svc-ic img{
-      width: 20px; height: 20px;
+      width: 36px; height: 36px;
       display:block;
     }
     .svc-ic.fallback{
       font-weight: 900;
       letter-spacing: -0.02em;
-      font-size: 14px;
+      font-size: 18px;
       color: var(--text);
     }
-    .svc-name{
-      font-weight: 850;
-      font-size: 13px;
-      line-height: 1.1;
-    }
-    .svc-sub{
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 3px;
-      line-height: 1.2;
-    }
-    .svc-txt{ min-width:0; }
-    .svc-sub, .svc-name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-    /* Notice */
-    .notice-headline{
-      display:flex;
-      flex-direction:column;
-      gap: 6px;
-      padding: 12px 12px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius2);
-      background: rgba(255,255,255,.03);
-    }
-    .notice-title{
-      font-size: 15px;
+    .svc-name{
       font-weight: 900;
-      letter-spacing: -0.02em;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
+      font-size: 14px;
+      line-height: 1.1;
+      margin-top: 2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
-    .notice-date{
+
+    /* 기능(줄바꿈 유지, 안 잘리게) */
+    .svc-sub{
       font-size: 12px;
       color: var(--muted);
-      font-weight: 700;
+      margin-top: 6px;
+      line-height: 1.35;
+      white-space: pre-line; /* \n 줄바꿈 표시 */
+      overflow: visible;
+      text-overflow: clip;
+      word-break: keep-all;
     }
-    .kv{
-      display:flex; gap: 8px; flex-wrap:wrap; margin-top: 6px;
-      color: var(--muted); font-size: 12px;
-    }
-    .kv span{
-      padding: 4px 8px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(255,255,255,.03);
-    }
+    .svc-txt{ min-width:0; }
 
+    /* Notice list */
     .notice-list{
-      margin: 10px 0 0;
+      margin: 0;
       padding: 0;
       list-style: none;
       display:flex;
       flex-direction:column;
-      gap: 8px;
+      gap: 10px;
     }
     .notice-item{
       border: 1px solid var(--line);
       background: rgba(255,255,255,.03);
       border-radius: var(--radius2);
-      padding: 10px 10px;
+      padding: 12px 12px;
       display:flex;
       gap: 10px;
       align-items:flex-start;
@@ -287,7 +289,7 @@
     .tag{
       font-size: 11px;
       font-weight: 900;
-      padding: 5px 8px;
+      padding: 6px 9px;
       border-radius: 999px;
       border: 1px solid var(--line);
       background: rgba(255,255,255,.02);
@@ -296,8 +298,6 @@
       margin-top: 1px;
     }
     .tag.ok{ border-color: rgba(52,211,153,.45); background: rgba(52,211,153,.14); }
-    .tag.warn{ border-color: rgba(251,191,36,.55); background: rgba(251,191,36,.14); }
-    .tag.danger{ border-color: rgba(251,113,133,.5); background: rgba(251,113,133,.12); }
 
     .ni-title{
       font-weight: 900;
@@ -311,14 +311,15 @@
       line-height: 1.35;
     }
 
-    /* 공지 버튼 영역 삭제 요청에 따라 .notice-actions 제거 (CSS는 남겨도 무방하지만 깔끔히 제거) */
-
-    .check{
-      display:flex; align-items:center; gap:8px;
+    /* Notice misc */
+    .notice-hide{
+      margin-top:12px;
+      display:flex;
+      align-items:center;
+      gap:8px;
       color: var(--muted);
-      font-size: 12px;
+      font-size:12px;
     }
-    .check input{ transform: translateY(1px); }
 
     .foot{
       margin-top: 16px;
@@ -340,18 +341,18 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <div class="title">
-          회사 공지 · 시작페이지
+        <div class="brandline">
+          <img class="brandlogo" src="./asset/logo.png" alt="KNOC">
+          <div class="brandname">AI Field Zone</div>
           <span class="pill" id="nowPill">로딩중…</span>
         </div>
         <div class="sub">
-          좌측은 <b>구독 서비스</b> 바로가기, 우측은 <b>최신 공지</b>입니다. (공지 확인/숨김은 이 PC의 브라우저에 저장됩니다)
+          좌측은 <b>구독 서비스</b> 바로가기, 우측은 <b>공지</b>입니다. (공지 숨김은 이 PC의 브라우저에 저장됩니다)
         </div>
       </div>
 
       <div class="top-actions">
         <a class="btn primary" href="https://www.google.com/" target="_blank" rel="noopener">Google</a>
-        <!-- (1) 페이지 주소 복사 버튼 삭제 -->
       </div>
     </header>
 
@@ -361,7 +362,7 @@
         <div class="panel-hd">
           <div>
             <h2 class="panel-title" id="svcTitle">구독 중인 서비스</h2>
-            <div class="panel-meta">아래 <span class="mono">SERVICES</span> 배열만 수정하면 자동 반영됩니다.</div>
+            <div class="panel-meta"> <span class="mono"></span> AI 구독 서비스는 변경될 수 있습니다. (현재 구독 목록)</div>
           </div>
           <span class="badge" id="svcCount">0개</span>
         </div>
@@ -375,21 +376,20 @@
         <div class="panel-hd">
           <div>
             <h2 class="panel-title" id="ntTitle">공지 사항</h2>
-            <div class="panel-meta">자주 바뀌는 내용은 우측 공지 영역만 수정하면 됩니다.</div>
+            <div class="panel-meta"> </div>
           </div>
-          <span class="badge" id="noticeBadge">상태</span>
+          <span class="badge new" id="noticeBadge">공지</span>
         </div>
 
         <div class="panel-bd" id="noticeBody">
-          <div class="notice-headline">
-            <div class="notice-title" id="noticeHeadline">-</div>
-            <div class="notice-date" id="noticeDate">-</div>
-            <div class="kv" id="noticeKv"></div>
-          </div>
+          <!-- (요청) 맨 위 헤드라인 블록 제거: 날짜는 사용자가 원하는 방식으로 직접 삽입 -->
 
           <ul class="notice-list" id="noticeList"></ul>
 
-          <!-- (3) 공지사항: 확인 처리/업무 시작 등 버튼 삭제 (hideToday 체크박스도 함께 제거) -->
+          <div class="notice-hide">
+            <input type="checkbox" id="hideToday" />
+            <label for="hideToday">오늘 하루 이 공지 숨기기</label>
+          </div>
         </div>
       </section>
     </main>
@@ -407,39 +407,53 @@
      * =========================
      */
 
-    // 서비스 목록 (수정 잦음)
-    // (2) note: "단어 단어 형태 / 5개 이하"로 구체화
-    // 표기 규칙: "단어 · 단어 · 단어" (최대 5개)
+    // 서비스 목록 (기능만 / 줄바꿈은 \n)
     const SERVICES = [
-      { name: "ChatGPT",     url: "https://chatgpt.com/",       domain: "chatgpt.com",        note: "문서작성 · 요약 · 아이디어 · 번역 · Q&A" },
-      { name: "Genspark",    url: "https://www.genspark.ai/",   domain: "genspark.ai",       note: "리서치 · 자료수집 · 비교분석 · 출처정리 · 보고서" },
-      { name: "Gemini",      url: "https://gemini.google.com/", domain: "gemini.google.com", note: "검색 · 초안 · 요약 · 이미지해석 · 구글연동" },
-      { name: "Manus",       url: "https://manus.im/",          domain: "manus.im",          note: "반복작업 · 자동화 · 워크플로 · 템플릿 · 실행" },
-      { name: "Canva",       url: "https://www.canva.com/",     domain: "canva.com",         note: "포스터 · PPT · 카드뉴스 · 템플릿 · 편집" },
-      { name: "Flowith",     url: "https://flowith.io/",        domain: "flowith.io",        note: "업무흐름 · 정리 · 협업 · 태스크 · 문서" },
-      { name: "Skywork",     url: "https://skywork.ai/",        domain: "skywork.ai",        note: "업무도구 · 생산성 · 작성 · 정리 · 자동화" },
-      { name: "CapCut",      url: "https://www.capcut.com/",    domain: "capcut.com",        note: "영상편집 · 자막 · 컷편집 · 템플릿 · 출력" },
-      { name: "Lilys AI",    url: "https://lilys.ai/",          domain: "lilys.ai",          note: "회의록 · 요약 · 노트 · 하이라이트 · 정리" },
-      { name: "ElevenLabs",  url: "https://elevenlabs.io/",     domain: "elevenlabs.io",     note: "TTS · 더빙 · 음성합성 · 나레이션 · 음성변환" },
+      { name: "ChatGPT",     url: "https://chatgpt.com/",       domain: "chatgpt.com",
+        note: "대화형 생성\n문서 작성\n요약\n코딩\n이미지" },
+
+      { name: "Genspark",    url: "https://www.genspark.ai/",   domain: "genspark.ai",
+        note: "슬라이드 생성\n스프레드시트 생성\n이미지 생성\n리서치\n보고서" },
+
+      { name: "Gemini",      url: "https://gemini.google.com/", domain: "gemini.google.com",
+        note: "대화형 생성\n요약\n번역\n이미지\n아이디어" },
+
+      { name: "Manus",       url: "https://manus.im/",          domain: "manus.im",
+        note: "에이전트 실행\n자동화\n웹 작업\n반복 실행\n정리" },
+
+      { name: "Canva",       url: "https://www.canva.com/",     domain: "canva.com",
+        note: "디자인\n템플릿\nPPT\n포스터\n카드뉴스" },
+
+      { name: "Flowith",     url: "https://flowith.io/",        domain: "flowith.io",
+        note: "워크플로우\n노트\n지식관리\n문서 구성\n프로젝트" },
+
+      { name: "Skywork",     url: "https://skywork.ai/",        domain: "skywork.ai",
+        note: "문서 자동작성\n요약\n서식\n업무 템플릿\n정리" },
+
+      { name: "CapCut",      url: "https://www.capcut.com/",    domain: "capcut.com",
+        note: "영상 편집\n자동 자막\nAI 효과\n템플릿\n내보내기" },
+
+      { name: "Lilys AI",    url: "https://lilys.ai/",          domain: "lilys.ai",
+        note: "회의록\n요약\n하이라이트\n챕터\n노트" },
+
+      { name: "ElevenLabs",  url: "https://elevenlabs.io/",     domain: "elevenlabs.io",
+        note: "TTS\n음성 합성\n보이스 클론\n더빙\n음성 변환" },
     ];
 
     /**
      * 공지(자주 변경)
-     * - noticeId만 바꾸면(예: 날짜) '새 공지'로 인식되게 설계
+     * - (요청) 헤드라인 블록 제거했으므로, 아래 items만 렌더링됨
+     * - (요청) 전부 '안내'로 통일
      */
     const NOTICE = {
       noticeId: "2026-01-28",
-      title: "2026년 01월 28 공지",
-      summaryTags: ["구독 변경", "업무 영향 있음"],
       items: [
-        { tag: "danger", title: "Perplexity 구독 종료", sub: "사유: 사용량 저조" },
-        { tag: "ok",     title: "Gemini 구독 시작",     sub: "필요 시 라이선스 추가 요청" }
-      ],
-      lastUpdated: "2026-01-28 09:00"
+        { title: "Perplexity 구독 종료", sub: "사유: 사용량 저조" },
+        { title: "Gemini 구독 시작",     sub: "필요 시 라이선스 추가 요청" }
+      ]
     };
 
-    // 공지 확인/숨김 로컬스토리지 키 (초기화 링크 유지 목적)
-    const KEY_ACK = (id) => `notice:ack:${id}`;
+    // 공지 숨김 로컬스토리지 키
     const KEY_HIDE_UNTIL = (id) => `notice:hideUntil:${id}`;
 
     /**
@@ -452,12 +466,8 @@
     const svcGrid = $("#svcGrid");
     const svcCount = $("#svcCount");
 
-    const noticeBadge = $("#noticeBadge");
-    const noticeHeadline = $("#noticeHeadline");
-    const noticeDate = $("#noticeDate");
-    const noticeKv = $("#noticeKv");
     const noticeList = $("#noticeList");
-
+    const hideToday = $("#hideToday");
     const resetLocal = $("#resetLocal");
 
     function fmtNow(){
@@ -466,7 +476,27 @@
       return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
+    function endOfTodayTs(){
+      const now = new Date();
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      return end.getTime();
+    }
+
+    function isHiddenToday(){
+      const raw = localStorage.getItem(KEY_HIDE_UNTIL(NOTICE.noticeId));
+      if(!raw) return false;
+      const until = Number(raw);
+      return Number.isFinite(until) && Date.now() < until;
+    }
+
+    function setHiddenToday(on){
+      if(on) localStorage.setItem(KEY_HIDE_UNTIL(NOTICE.noticeId), String(endOfTodayTs()));
+      else localStorage.removeItem(KEY_HIDE_UNTIL(NOTICE.noticeId));
+    }
+
     function faviconUrl(domain){
+      // ChatGPT 파비콘이 S2에서 가끔 깨져서 예외 처리(안정적인 소스)
+      if (domain === "chatgpt.com") return "https://chatgpt.com/favicon.ico";
       return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
     }
 
@@ -496,12 +526,14 @@
 
         const txt = document.createElement("div");
         txt.className = "svc-txt";
+
         const nm = document.createElement("div");
         nm.className = "svc-name";
         nm.textContent = s.name || "(이름 없음)";
+
         const sub = document.createElement("div");
         sub.className = "svc-sub";
-        sub.textContent = s.note || (s.domain ? s.domain : "");
+        sub.textContent = s.note || "";
 
         txt.appendChild(nm);
         txt.appendChild(sub);
@@ -522,34 +554,28 @@
     }
 
     function renderNotice(){
-      noticeHeadline.textContent = NOTICE.title;
-      noticeDate.textContent = `마지막 변경: ${NOTICE.lastUpdated}`;
-
-      noticeKv.innerHTML = "";
-      for(const t of (NOTICE.summaryTags || [])){
-        const sp = document.createElement("span");
-        sp.textContent = t;
-        noticeKv.appendChild(sp);
-      }
+      const hidden = isHiddenToday();
+      hideToday.checked = hidden;
 
       noticeList.innerHTML = "";
       for(const it of (NOTICE.items || [])){
         const li = document.createElement("li");
         li.className = "notice-item";
 
+        // (요청) 전부 '안내'로 통일
         const tag = document.createElement("span");
-        tag.className = `tag ${it.tag || ""}`.trim();
-        tag.textContent = (it.tag === "danger") ? "중요" :
-                          (it.tag === "warn")   ? "주의" :
-                          (it.tag === "ok")     ? "안내" : "공지";
+        tag.className = "tag ok";
+        tag.textContent = "안내";
 
         const box = document.createElement("div");
         const t = document.createElement("div");
         t.className = "ni-title";
         t.textContent = it.title || "-";
+
         const s = document.createElement("div");
         s.className = "ni-sub";
         s.textContent = it.sub || "";
+
         box.appendChild(t);
         box.appendChild(s);
 
@@ -558,15 +584,8 @@
         noticeList.appendChild(li);
       }
 
-      // 상태 배지: 기존 로컬스토리지 ACK 기반(버튼은 삭제했지만 '상태' 표시는 유지)
-      const acked = localStorage.getItem(KEY_ACK(NOTICE.noticeId)) === "1";
-      if(!acked) {
-        noticeBadge.textContent = "새 공지";
-        noticeBadge.className = "badge new";
-      } else {
-        noticeBadge.textContent = "확인됨";
-        noticeBadge.className = "badge";
-      }
+      const body = $("#noticeBody");
+      body.style.opacity = hidden ? ".55" : "1";
     }
 
     function renderHeader(){
@@ -574,11 +593,15 @@
       $("#renderAt").textContent = fmtNow();
     }
 
-    // 공지상태 초기화(링크 유지)
+    hideToday.addEventListener("change", () => {
+      setHiddenToday(hideToday.checked);
+      renderNotice();
+    });
+
     resetLocal.addEventListener("click", (e) => {
       e.preventDefault();
-      localStorage.removeItem(KEY_ACK(NOTICE.noticeId));
       localStorage.removeItem(KEY_HIDE_UNTIL(NOTICE.noticeId));
+      hideToday.checked = false;
       renderNotice();
       alert("이 PC의 공지 상태를 초기화했습니다.");
     });
