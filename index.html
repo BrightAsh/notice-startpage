@@ -484,37 +484,40 @@
      */
 
     // 서비스 목록 (기능만 / 줄바꿈은 \n)
-    const SERVICES = [
-      { name: "ChatGPT",     url: "https://chatgpt.com/",       domain: "chatgpt.com",
-        note: "대화형 생성\n문서 작성\n요약\n코딩\n이미지" },
+const SERVICES = [
+  { name: "ChatGPT",     url: "https://chatgpt.com/",       domain: "chatgpt.com",
+    note: "대화형 문제 해결\n문서/메일/기획안 작성\n요약·정리·리라이트\n코드 작성·디버깅\n이미지 이해·생성" },
 
-      { name: "Genspark",    url: "https://www.genspark.ai/",   domain: "genspark.ai",
-        note: "슬라이드 생성\n스프레드시트 생성\n이미지 생성\n리서치\n보고서" },
+  { name: "Genspark",    url: "https://www.genspark.ai/",   domain: "genspark.ai",
+    note: "슬라이드 자동 생성\n스프레드시트 자동 생성\n리서치·자료 수집\n보고서 초안 작성\n이미지 생성" },
 
-      { name: "Gemini",      url: "https://gemini.google.com/", domain: "gemini.google.com",
-        note: "대화형 생성\n요약\n번역\n이미지\n아이디어" },
+  { name: "Gemini",      url: "https://gemini.google.com/", domain: "gemini.google.com",
+    note: "대화형 질의응답\n요약·정리\n번역·다국어 작업\n아이디어 발상\n이미지 활용" },
 
-      { name: "Manus",       url: "https://manus.im/",          domain: "manus.im",
-        note: "에이전트 실행\n자동화\n웹 작업\n반복 실행\n정리" },
+  { name: "NotebookLM",  url: "https://notebooklm.google/", domain: "notebooklm.google",
+    note: "자료 기반 Q&A(근거 중심)\n문서/링크 요약·핵심 추출\n리서치 노트 구조화\n출처 기반 정리·비교\n오디오 오버뷰" },
 
-      { name: "Canva",       url: "https://www.canva.com/",     domain: "canva.com",
-        note: "디자인\n템플릿\nPPT\n포스터\n카드뉴스" },
+  { name: "Manus",       url: "https://manus.im/",          domain: "manus.im",
+    note: "에이전트로 작업 실행\n반복 업무 자동화\n웹 기반 작업 처리\n절차형 워크플로우 구성\n결과 취합·정리" },
 
-      { name: "Flowith",     url: "https://flowith.io/",        domain: "flowith.io",
-        note: "워크플로우\n노트\n지식관리\n문서 구성\n프로젝트" },
+  { name: "Canva",       url: "https://www.canva.com/",     domain: "canva.com",
+    note: "템플릿 기반 디자인\nPPT/포스터 제작\n브랜드 키트·스타일 적용\n간편 편집·공유\n콘텐츠 리사이징" },
 
-      { name: "Skywork",     url: "https://skywork.ai/",        domain: "skywork.ai",
-        note: "문서 자동작성\n요약\n서식\n업무 템플릿\n정리" },
+  { name: "Flowith",     url: "https://flowith.io/",        domain: "flowith.io",
+    note: "프로젝트 지식 정리\n노트 연결·구조화\n워크플로우 설계\n문서 구성·초안화\n작업 추적" },
 
-      { name: "CapCut",      url: "https://www.capcut.com/",    domain: "capcut.com",
-        note: "영상 편집\n자동 자막\nAI 효과\n템플릿\n내보내기" },
+  { name: "Skywork",     url: "https://skywork.ai/",        domain: "skywork.ai",
+    note: "업무 문서 자동 작성\n템플릿 기반 산출물\n요약·정리\n서식 맞춤 작성\n반복 문서 생산" },
 
-      { name: "Lilys AI",    url: "https://lilys.ai/",          domain: "lilys.ai",
-        note: "회의록\n요약\n하이라이트\n챕터\n노트" },
+  { name: "CapCut",      url: "https://www.capcut.com/",    domain: "capcut.com",
+    note: "영상 편집(컷/자막)\n자동 자막 생성\n템플릿 기반 제작\nAI 이펙트·보정\n내보내기 최적화" },
 
-      { name: "ElevenLabs",  url: "https://elevenlabs.io/",     domain: "elevenlabs.io",
-        note: "TTS\n음성 합성\n보이스 클론\n더빙\n음성 변환" },
-    ];
+  { name: "Lilys AI",    url: "https://lilys.ai/",          domain: "lilys.ai",
+    note: "회의/강의 요약\n하이라이트 추출\n챕터·목차 생성\n액션 아이템 정리\n노트화" },
+
+  { name: "ElevenLabs",  url: "https://elevenlabs.io/",     domain: "elevenlabs.io",
+    note: "TTS 음성 생성\n보이스 클로닝\n더빙·다국어 음성\n음성 스타일 제어\n오디오 제작" },
+];
 
     /**
      * 공지(자주 변경)
