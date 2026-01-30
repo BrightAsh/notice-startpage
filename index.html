@@ -77,14 +77,17 @@
       min-width: 0;
     }
     .brandlogo{
-      width: 40px;
+      width: 80px;
       height: 40px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,.04);
+
+      border: none;          /* 테두리 제거 */
+      background: transparent; /* 배경 제거 */
+      border-radius: 0;      /* (원하면) 둥근 모서리도 제거 */
+
       object-fit: contain;
       flex: 0 0 auto;
     }
+
     .brandname{
       font-size: 20px;
       font-weight: 900;
@@ -334,6 +337,79 @@
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
     a.muted{ color: var(--muted); text-decoration:none; }
     a.muted:hover{ text-decoration:underline; }
+    /* ===== 카드(서비스) 3D/클릭 가능 느낌 강화 ===== */
+    .svc{
+      position: relative;
+      will-change: transform, box-shadow, border-color, background;
+      box-shadow:
+        0 6px 16px rgba(0,0,0,.18),
+        inset 0 1px 0 rgba(255,255,255,.06);
+      transition:
+        transform .18s ease,
+        box-shadow .18s ease,
+        background .18s ease,
+        border-color .18s ease;
+    }
+
+    /* 은은한 상단 하이라이트(광원) */
+    .svc::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius: var(--radius2);
+      pointer-events:none;
+      background: radial-gradient(600px 140px at 20% 0%,
+        rgba(94,234,212,.18), transparent 60%);
+      opacity:0;
+      transition: opacity .18s ease;
+    }
+
+    .svc:hover{
+      transform: translateY(-4px) scale(1.01);
+      background: rgba(255,255,255,.07);
+      border-color: rgba(94,234,212,.60);
+      box-shadow:
+        0 22px 55px rgba(0,0,0,.38),
+        0 0 0 1px rgba(94,234,212,.35);
+    }
+    .svc:hover::before{ opacity:1; }
+
+    /* 눌림(클릭) 느낌 */
+    .svc:active{
+      transform: translateY(-1px) scale(0.995);
+      box-shadow:
+        0 12px 28px rgba(0,0,0,.30),
+        inset 0 2px 12px rgba(0,0,0,.25);
+    }
+
+    /* 키보드 탭 이동 시에도 “선택됨/클릭 가능” 표시 */
+    .svc:focus-visible{
+      outline: none;
+      border-color: rgba(94,234,212,.70);
+      box-shadow:
+        0 22px 55px rgba(0,0,0,.38),
+        0 0 0 3px rgba(94,234,212,.45);
+    }
+
+    /* 아이콘도 같이 ‘떠오르게’ */
+    .svc-ic{
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .svc:hover .svc-ic{
+      transform: translateY(-1px);
+      border-color: rgba(94,234,212,.55);
+      box-shadow: 0 12px 26px rgba(0,0,0,.28);
+    }
+
+    /* 모션 민감 사용자 배려 */
+    @media (prefers-reduced-motion: reduce){
+      .svc, .svc-ic, .svc::before{
+        transition: none !important;
+      }
+      .svc:hover, .svc:active{
+        transform: none !important;
+      }
+    }
   </style>
 </head>
 
@@ -362,7 +438,7 @@
         <div class="panel-hd">
           <div>
             <h2 class="panel-title" id="svcTitle">구독 중인 서비스</h2>
-            <div class="panel-meta"> <span class="mono"></span> AI 구독 서비스는 변경될 수 있습니다. (현재 구독 목록)</div>
+            <div class="panel-meta"> <span class="mono"></span> 구독 중인 AI 서비스는 변경될 수 있습니다. </div>
           </div>
           <span class="badge" id="svcCount">0개</span>
         </div>
@@ -378,7 +454,7 @@
             <h2 class="panel-title" id="ntTitle">공지 사항</h2>
             <div class="panel-meta"> </div>
           </div>
-          <span class="badge new" id="noticeBadge">공지</span>
+          <span class="badge new" id="noticeBadge">기준일: 2026-01-30</span>
         </div>
 
         <div class="panel-bd" id="noticeBody">
@@ -448,8 +524,9 @@
     const NOTICE = {
       noticeId: "2026-01-28",
       items: [
-        { title: "Perplexity 구독 종료", sub: "사유: 사용량 저조" },
-        { title: "Gemini 구독 시작",     sub: "필요 시 라이선스 추가 요청" }
+        { title: "Perplexity 구독 해지", sub: "사유: 사용량 저조" },
+        { title: "Google AI Pro 구독 시작",     sub: "Gemini, NotebookLM 등 사용 가능" },
+        { title: "ElevenLabs 플랜 다운그레이드",     sub: "사유: 사용량 저조 (Creator -> Starter)" }
       ]
     };
 
