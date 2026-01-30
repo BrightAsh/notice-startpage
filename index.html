@@ -142,7 +142,8 @@
 
     main{
       display:grid;
-      grid-template-columns: 1.05fr .95fr;
+      /* ✅ (수정) 왼쪽(구독 서비스) 더 넓게 */
+      grid-template-columns: 1.30fr .70fr;
       gap: 14px;
     }
     @media (max-width: 980px){
@@ -337,6 +338,7 @@
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
     a.muted{ color: var(--muted); text-decoration:none; }
     a.muted:hover{ text-decoration:underline; }
+
     /* ===== 카드(서비스) 3D/클릭 가능 느낌 강화 ===== */
     .svc{
       position: relative;
@@ -410,6 +412,44 @@
         transform: none !important;
       }
     }
+
+    /* ==================================================
+       ✅ (추가) 비활성 카드(예: CapCut): 클릭/호버 효과 제거
+       ================================================== */
+    .svc--disabled{
+      cursor: default;
+      opacity: .82;
+      user-select: none;
+    }
+    .svc--disabled:hover{
+      transform: none;
+      background: rgba(255,255,255,.03);
+      border-color: var(--line);
+      box-shadow:
+        0 6px 16px rgba(0,0,0,.18),
+        inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .svc--disabled:active{
+      transform: none;
+      box-shadow:
+        0 6px 16px rgba(0,0,0,.18),
+        inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .svc--disabled:focus-visible{
+      outline: none;
+      border-color: var(--line);
+      box-shadow:
+        0 6px 16px rgba(0,0,0,.18),
+        inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .svc--disabled::before{
+      opacity: 0 !important;
+    }
+    .svc--disabled:hover .svc-ic{
+      transform: none;
+      box-shadow: none;
+      border-color: var(--line);
+    }
   </style>
 </head>
 
@@ -458,8 +498,6 @@
         </div>
 
         <div class="panel-bd" id="noticeBody">
-          <!-- (요청) 맨 위 헤드라인 블록 제거: 날짜는 사용자가 원하는 방식으로 직접 삽입 -->
-
           <ul class="notice-list" id="noticeList"></ul>
 
           <div class="notice-hide">
@@ -484,40 +522,42 @@
      */
 
     // 서비스 목록 (기능만 / 줄바꿈은 \n)
-const SERVICES = [
-  { name: "ChatGPT",     url: "https://chatgpt.com/",       domain: "chatgpt.com",
-    note: "대화형 문제 해결\n문서/메일/기획안 작성\n요약·정리·리라이트\n코드 작성·디버깅\n이미지 이해·생성" },
+    const SERVICES = [
+      { name: "ChatGPT",     url: "https://chatgpt.com/",       domain: "chatgpt.com",
+        note: "대화형 문제 해결\n문서/메일/기획안 작성\n요약·정리·리라이트\n코드 작성·디버깅\n이미지 이해·생성" },
 
-  { name: "Genspark",    url: "https://www.genspark.ai/",   domain: "genspark.ai",
-    note: "슬라이드 자동 생성\n스프레드시트 자동 생성\n리서치·자료 수집\n보고서 초안 작성\n이미지 생성" },
+      { name: "Genspark",    url: "https://www.genspark.ai/",   domain: "genspark.ai",
+        note: "슬라이드 자동 생성\n스프레드시트 자동 생성\n리서치·자료 수집\n보고서 초안 작성\n이미지 생성" },
 
-  { name: "Gemini",      url: "https://gemini.google.com/", domain: "gemini.google.com",
-    note: "대화형 질의응답\n요약·정리\n번역·다국어 작업\n아이디어 발상\n이미지 활용" },
+      { name: "Gemini",      url: "https://gemini.google.com/", domain: "gemini.google.com",
+        note: "대화형 질의응답\n요약·정리\n번역·다국어 작업\n아이디어 발상\n이미지 활용" },
 
-  { name: "NotebookLM",  url: "https://notebooklm.google/", domain: "notebooklm.google",
-    note: "자료 기반 Q&A(근거 중심)\n문서/링크 요약·핵심 추출\n리서치 노트 구조화\n출처 기반 정리·비교\n오디오 오버뷰" },
+      { name: "NotebookLM",  url: "https://notebooklm.google/", domain: "notebooklm.google",
+        note: "자료 기반 Q&A(근거 중심)\n문서/링크 요약·핵심 추출\n리서치 노트 구조화\n출처 기반 정리·비교\n오디오 오버뷰" },
 
-  { name: "Manus",       url: "https://manus.im/",          domain: "manus.im",
-    note: "에이전트로 작업 실행\n반복 업무 자동화\n웹 기반 작업 처리\n절차형 워크플로우 구성\n결과 취합·정리" },
+      { name: "Manus",       url: "https://manus.im/",          domain: "manus.im",
+        note: "에이전트로 작업 실행\n반복 업무 자동화\n웹 기반 작업 처리\n절차형 워크플로우 구성\n결과 취합·정리" },
 
-  { name: "Canva",       url: "https://www.canva.com/",     domain: "canva.com",
-    note: "템플릿 기반 디자인\nPPT/포스터 제작\n브랜드 키트·스타일 적용\n간편 편집·공유\n콘텐츠 리사이징" },
+      { name: "Canva",       url: "https://www.canva.com/",     domain: "canva.com",
+        note: "템플릿 기반 디자인\nPPT/포스터 제작\n브랜드 키트·스타일 적용\n간편 편집·공유\n콘텐츠 리사이징" },
 
-  { name: "Flowith",     url: "https://flowith.io/",        domain: "flowith.io",
-    note: "프로젝트 지식 정리\n노트 연결·구조화\n워크플로우 설계\n문서 구성·초안화\n작업 추적" },
+      { name: "Flowith",     url: "https://flowith.io/",        domain: "flowith.io",
+        note: "프로젝트 지식 정리\n노트 연결·구조화\n워크플로우 설계\n문서 구성·초안화\n작업 추적" },
 
-  { name: "Skywork",     url: "https://skywork.ai/",        domain: "skywork.ai",
-    note: "업무 문서 자동 작성\n템플릿 기반 산출물\n요약·정리\n서식 맞춤 작성\n반복 문서 생산" },
+      { name: "Skywork",     url: "https://skywork.ai/",        domain: "skywork.ai",
+        note: "업무 문서 자동 작성\n템플릿 기반 산출물\n요약·정리\n서식 맞춤 작성\n반복 문서 생산" },
 
-  { name: "CapCut",      url: "https://www.capcut.com/",    domain: "capcut.com",
-    note: "영상 편집(컷/자막)\n자동 자막 생성\n템플릿 기반 제작\nAI 이펙트·보정\n내보내기 최적화" },
+      /* ✅ (수정) CapCut만 비활성화: 클릭/호버/링크 이동 모두 불가 */
+      { name: "CapCut",      url: "https://www.capcut.com/",    domain: "capcut.com",
+        disabled: true,
+        note: "영상 편집(컷/자막)\n자동 자막 생성\n템플릿 기반 제작\nAI 이펙트·보정\n내보내기 최적화" },
 
-  { name: "Lilys AI",    url: "https://lilys.ai/",          domain: "lilys.ai",
-    note: "회의/강의 요약\n하이라이트 추출\n챕터·목차 생성\n액션 아이템 정리\n노트화" },
+      { name: "Lilys AI",    url: "https://lilys.ai/",          domain: "lilys.ai",
+        note: "회의/강의 요약\n하이라이트 추출\n챕터·목차 생성\n액션 아이템 정리\n노트화" },
 
-  { name: "ElevenLabs",  url: "https://elevenlabs.io/",     domain: "elevenlabs.io",
-    note: "TTS 음성 생성\n보이스 클로닝\n더빙·다국어 음성\n음성 스타일 제어\n오디오 제작" },
-];
+      { name: "ElevenLabs",  url: "https://elevenlabs.io/",     domain: "elevenlabs.io",
+        note: "TTS 음성 생성\n보이스 클로닝\n더빙·다국어 음성\n음성 스타일 제어\n오디오 제작" },
+    ];
 
     /**
      * 공지(자주 변경)
@@ -582,12 +622,20 @@ const SERVICES = [
 
     function renderServices(){
       svcGrid.innerHTML = "";
+
       for(const s of SERVICES){
-        const a = document.createElement("a");
-        a.className = "svc";
-        a.href = s.url || "#";
-        a.target = "_blank";
-        a.rel = "noopener";
+        // ✅ disabled면 a가 아니라 div로 생성(링크 자체 제거)
+        const card = document.createElement(s.disabled ? "div" : "a");
+        card.className = "svc" + (s.disabled ? " svc--disabled" : "");
+
+        if(!s.disabled){
+          card.href = s.url || "#";
+          card.target = "_blank";
+          card.rel = "noopener";
+        } else {
+          card.setAttribute("aria-disabled", "true");
+          card.tabIndex = -1; // (선택) 탭 포커스 제외
+        }
 
         const ic = document.createElement("div");
         ic.className = "svc-ic";
@@ -618,18 +666,20 @@ const SERVICES = [
         txt.appendChild(nm);
         txt.appendChild(sub);
 
-        a.appendChild(ic);
-        a.appendChild(txt);
+        card.appendChild(ic);
+        card.appendChild(txt);
 
-        if(!s.url){
-          a.style.opacity = ".55";
-          a.style.cursor = "not-allowed";
-          a.addEventListener("click", (e) => e.preventDefault());
+        // (기존) url 없을 때 처리(단, disabled는 제외)
+        if(!s.disabled && !s.url){
+          card.style.opacity = ".55";
+          card.style.cursor = "not-allowed";
+          card.addEventListener("click", (e) => e.preventDefault());
           sub.textContent = "URL 설정 필요";
         }
 
-        svcGrid.appendChild(a);
+        svcGrid.appendChild(card);
       }
+
       svcCount.textContent = `${SERVICES.length}개`;
     }
 
