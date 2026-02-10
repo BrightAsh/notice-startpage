@@ -475,6 +475,11 @@
       </div>
 
       <div class="top-actions">
+        <!-- (선택) 관리자용: content.json 편집 화면으로 이동 -->
+        <a class="btn" href="https://github.com/knoc-aifieldzone/Notice-page/edit/main/content.json" target="_blank" rel="noopener">
+          공지/서비스 수정
+        </a>
+
         <a class="btn primary" href="https://www.google.com/" target="_blank" rel="noopener">Google</a>
       </div>
     </header>
@@ -501,7 +506,7 @@
             <h2 class="panel-title" id="ntTitle">공지 사항</h2>
             <div class="panel-meta"> </div>
           </div>
-          <span class="badge new" id="noticeBadge">기준일: 2026-01-30</span>
+          <span class="badge new" id="noticeBadge">기준일: -</span>
         </div>
 
         <div class="panel-bd" id="noticeBody">
@@ -523,69 +528,40 @@
 
   <script>
     /**
-     * =========================
-     * 1) 여기만 주로 수정하세요
-     * =========================
+     * ✅ 앞으로 수정은 index.html이 아니라 content.json만 건드리면 됨.
+     * (note는 문자열(\n 포함)도 되고, 배열도 됨)
      */
+    let SERVICES = [];
+    let NOTICE = { noticeId: "", items: [] };
 
-    // 서비스 목록 (기능만 / 줄바꿈은 \n)
-    const SERVICES = [
-      { name: "ChatGPT",     url: "https://chatgpt.com/",       domain: "chatgpt.com",
-        note: "대화형 문제 해결\n문서/메일/기획안 작성\n요약·정리·리라이트\n코드 작성·디버깅\n이미지 이해·생성" },
+    function noteText(note){
+      if (Array.isArray(note)) return note.join("\n");
+      return note || "";
+    }
 
-      { name: "Genspark",    url: "https://www.genspark.ai/",   domain: "genspark.ai",
-        note: "슬라이드 자동 생성\n스프레드시트 자동 생성\n리서치·자료 수집\n보고서 초안 작성\n이미지 생성" },
-
-      { name: "Gemini",      url: "https://gemini.google.com/", domain: "gemini.google.com",
-        note: "대화형 질의응답\n요약·정리\n번역·다국어 작업\n아이디어 발상\n이미지 활용" },
-
-      { name: "NotebookLM",  url: "https://notebooklm.google/", domain: "notebooklm.google",
-        note: "자료 기반 Q&A(근거 중심)\n문서/링크 요약·핵심 추출\n리서치 노트 구조화\n출처 기반 정리·비교\n오디오 오버뷰" },
-
-      { name: "Manus",       url: "https://manus.im/",          domain: "manus.im",
-        note: "에이전트로 작업 실행\n반복 업무 자동화\n웹 기반 작업 처리\n절차형 워크플로우 구성\n결과 취합·정리" },
-
-      { name: "Canva",       url: "https://www.canva.com/",     domain: "canva.com",
-        note: "템플릿 기반 디자인\nPPT/포스터 제작\n브랜드 키트·스타일 적용\n간편 편집·공유\n콘텐츠 리사이징" },
-
-      { name: "Flowith",     url: "https://flowith.io/",        domain: "flowith.io",
-        note: "프로젝트 지식 정리\n노트 연결·구조화\n워크플로우 설계\n문서 구성·초안화\n작업 추적" },
-
-      { name: "Skywork",     url: "https://skywork.ai/",        domain: "skywork.ai",
-        note: "업무 문서 자동 작성\n템플릿 기반 산출물\n요약·정리\n서식 맞춤 작성\n반복 문서 생산" },
-
-      /* ✅ (수정) CapCut만 비활성화: 클릭/호버/링크 이동 모두 불가 */
-      { name: "CapCut",      url: "https://www.capcut.com/",    domain: "capcut.com",
-        disabled: true,
-        note: "영상 편집(컷/자막)\n자동 자막 생성\n템플릿 기반 제작\nAI 이펙트·보정\n내보내기 최적화" },
-
-      { name: "Lilys AI",    url: "https://lilys.ai/",          domain: "lilys.ai",
-        note: "회의/강의 요약\n하이라이트 추출\n챕터·목차 생성\n액션 아이템 정리\n노트화" },
-
-      { name: "ElevenLabs",  url: "https://elevenlabs.io/",     domain: "elevenlabs.io",
-        note: "TTS 음성 생성\n보이스 클로닝\n더빙·다국어 음성\n음성 스타일 제어\n오디오 제작" },
-    ];
-
-    /**
-     * 공지(자주 변경)
-     * - (요청) 헤드라인 블록 제거했으므로, 아래 items만 렌더링됨
-     * - (요청) 전부 '안내'로 통일
-     */
-    const NOTICE = {
-      noticeId: "2026-01-30",
-      items: [
-        { title: "Perplexity 구독 해지", sub: "사유: 사용량 저조" },
-        { title: "Google AI Pro 구독 시작",     sub: "Gemini, NotebookLM 등 사용 가능" },
-        { title: "ElevenLabs 플랜 다운그레이드",     sub: "사유: 사용량 저조 (Creator -> Starter)" } 
-      ]
-    };
+    async function loadContent(){
+      try{
+        const res = await fetch("./content.json", { cache: "no-store" });
+        if(!res.ok) throw new Error(`content.json 로드 실패 (${res.status})`);
+        const data = await res.json();
+        SERVICES = data.services || [];
+        NOTICE = data.notice || { noticeId: "", items: [] };
+      }catch(err){
+        console.error(err);
+        SERVICES = [];
+        NOTICE = { noticeId: "", items: [] };
+        // 최소 표시
+        const badge = document.querySelector("#noticeBadge");
+        if(badge) badge.textContent = "기준일: - (content.json 오류)";
+      }
+    }
 
     // 공지 숨김 로컬스토리지 키
     const KEY_HIDE_UNTIL = (id) => `notice:hideUntil:${id}`;
 
     /**
      * =========================
-     * 2) 렌더링/동작 로직
+     * 렌더링/동작 로직
      * =========================
      */
     const $ = (sel) => document.querySelector(sel);
@@ -668,7 +644,7 @@
 
         const sub = document.createElement("div");
         sub.className = "svc-sub";
-        sub.textContent = s.note || "";
+        sub.textContent = noteText(s.note);   // ✅ 여기 중요
 
         txt.appendChild(nm);
         txt.appendChild(sub);
@@ -691,6 +667,10 @@
     }
 
     function renderNotice(){
+      // ✅ 기준일 배지 자동 갱신
+      const badge = $("#noticeBadge");
+      if(badge) badge.textContent = `기준일: ${NOTICE.noticeId || "-"}`;
+
       const hidden = isHiddenToday();
       hideToday.checked = hidden;
 
@@ -743,14 +723,17 @@
       alert("이 PC의 공지 상태를 초기화했습니다.");
     });
 
-    // Init
-    renderHeader();
-    renderServices();
-    renderNotice();
+    // ✅ Init (content.json 로드 → 렌더)
+    (async function init(){
+      renderHeader();
+      await loadContent();
+      renderServices();
+      renderNotice();
 
-    setInterval(() => {
-      $("#nowPill").textContent = fmtNow();
-    }, 60 * 1000);
+      setInterval(() => {
+        $("#nowPill").textContent = fmtNow();
+      }, 60 * 1000);
+    })();
   </script>
 </body>
 </html>
