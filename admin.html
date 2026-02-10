@@ -1,0 +1,56 @@
+<button id="save">저장(커밋)</button>
+<script>
+const OWNER = "<OWNER>";
+const REPO  = "<REPO>";
+const BRANCH = "main";
+const PATH = "content.js"; // 실제 경로로 수정
+
+function b64(s){ return btoa(unescape(encodeURIComponent(s))); }
+
+function buildContentJS(data){
+  return `window.SITE_CONTENT = ${JSON.stringify(data, null, 2)};\n`;
+}
+
+async function getFileSha(token){
+  const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}?ref=${BRANCH}`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` }});
+  if(!r.ok) throw new Error("파일 조회 실패");
+  const j = await r.json();
+  return j.sha;
+}
+
+async function updateFile(token, newText, sha){
+  const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
+  const body = {
+    message: "Update content via admin",
+    content: b64(newText),
+    sha,
+    branch: BRANCH
+  };
+  const r = await fetch(url, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(body)
+  });
+  if(!r.ok) throw new Error("커밋 실패");
+}
+
+document.getElementById("save").onclick = async () => {
+  const token = localStorage.getItem("gh_token") || prompt("GitHub 토큰 1회 입력");
+  localStorage.setItem("gh_token", token);
+
+  // TODO: 여기서 폼 입력값으로 data 구성
+  const data = {
+    notices: [{ date:"2026-02-10", title:"공지 1", link:"#"}],
+    ai: [{ title:"AI 소식 1", desc:"한 줄", link:"#"}]
+  };
+
+  const jsText = buildContentJS(data);
+  const sha = await getFileSha(token);
+  await updateFile(token, jsText, sha);
+  alert("저장 완료!");
+};
+</script>
