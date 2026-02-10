@@ -80,9 +80,9 @@
       width: 80px;
       height: 40px;
 
-      border: none;          /* 테두리 제거 */
-      background: transparent; /* 배경 제거 */
-      border-radius: 0;      /* (원하면) 둥근 모서리도 제거 */
+      border: none;
+      background: transparent;
+      border-radius: 0;
 
       object-fit: contain;
       flex: 0 0 auto;
@@ -142,7 +142,6 @@
 
     main{
       display:grid;
-      /* ✅ (수정) 왼쪽(구독 서비스) 더 넓게 */
       grid-template-columns: 1.40fr .60fr;
       gap: 14px;
     }
@@ -475,11 +474,11 @@
       </div>
 
       <div class="top-actions">
-        <!-- (선택) 관리자용: content.json 편집 화면으로 이동 -->
+        <!-- (선택) content.json 바로 편집(관리자만 커밋 가능)
         <a class="btn" href="https://github.com/knoc-aifieldzone/Notice-page/edit/main/content.json" target="_blank" rel="noopener">
           공지/서비스 수정
         </a>
-
+        -->
         <a class="btn primary" href="https://www.google.com/" target="_blank" rel="noopener">Google</a>
       </div>
     </header>
@@ -528,8 +527,9 @@
 
   <script>
     /**
-     * ✅ 앞으로 수정은 index.html이 아니라 content.json만 건드리면 됨.
-     * (note는 문자열(\n 포함)도 되고, 배열도 됨)
+     * =========================
+     * 1) 앞으로는 content.json만 수정
+     * =========================
      */
     let SERVICES = [];
     let NOTICE = { noticeId: "", items: [] };
@@ -540,20 +540,11 @@
     }
 
     async function loadContent(){
-      try{
-        const res = await fetch("./content.json", { cache: "no-store" });
-        if(!res.ok) throw new Error(`content.json 로드 실패 (${res.status})`);
-        const data = await res.json();
-        SERVICES = data.services || [];
-        NOTICE = data.notice || { noticeId: "", items: [] };
-      }catch(err){
-        console.error(err);
-        SERVICES = [];
-        NOTICE = { noticeId: "", items: [] };
-        // 최소 표시
-        const badge = document.querySelector("#noticeBadge");
-        if(badge) badge.textContent = "기준일: - (content.json 오류)";
-      }
+      const res = await fetch("./content.json", { cache: "no-store" });
+      if(!res.ok) throw new Error(`content.json 로드 실패 (${res.status})`);
+      const data = await res.json();
+      SERVICES = data.services || [];
+      NOTICE = data.notice || { noticeId: "", items: [] };
     }
 
     // 공지 숨김 로컬스토리지 키
@@ -561,7 +552,7 @@
 
     /**
      * =========================
-     * 렌더링/동작 로직
+     * 2) 렌더링/동작 로직
      * =========================
      */
     const $ = (sel) => document.querySelector(sel);
@@ -644,7 +635,7 @@
 
         const sub = document.createElement("div");
         sub.className = "svc-sub";
-        sub.textContent = noteText(s.note);   // ✅ 여기 중요
+        sub.textContent = noteText(s.note); // ✅ 변경(문자열/배열 지원)
 
         txt.appendChild(nm);
         txt.appendChild(sub);
@@ -723,10 +714,20 @@
       alert("이 PC의 공지 상태를 초기화했습니다.");
     });
 
-    // ✅ Init (content.json 로드 → 렌더)
+    // Init (content.json 로드 후 렌더)
     (async function init(){
       renderHeader();
-      await loadContent();
+
+      try{
+        await loadContent();
+      }catch(err){
+        console.error(err);
+        const badge = $("#noticeBadge");
+        if(badge) badge.textContent = "기준일: - (content.json 오류)";
+        SERVICES = [];
+        NOTICE = { noticeId: "", items: [] };
+      }
+
       renderServices();
       renderNotice();
 
