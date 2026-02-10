@@ -3,104 +3,250 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Content Admin</title>
+  <title>Content Admin · AI Field Zone</title>
+  <meta name="color-scheme" content="light dark" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; line-height: 1.4; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
-    label { display:block; font-size: 12px; opacity: .8; margin-bottom: 4px; }
-    input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 10px; }
-    textarea { min-height: 90px; }
-    .card { border: 1px solid #eee; border-radius: 14px; padding: 14px; margin: 14px 0; }
-    .btn { padding: 10px 12px; border: 1px solid #ddd; background: #fff; border-radius: 10px; cursor: pointer; }
-    .btn.primary { border-color: #111; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid #eee; padding: 8px; vertical-align: top; }
-    th { text-align: left; font-size: 12px; opacity: .8; }
-    .small { font-size: 12px; opacity: .75; }
-    .danger { color: #b00020; }
-    .ok { color: #0b6b2f; }
+    :root{
+      --bg:#0b1220;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --line: rgba(255,255,255,.14);
+      --accent:#5eead4;
+      --danger:#fb7185;
+      --ok:#34d399;
+      --warn:#fbbf24;
+      --shadow: 0 18px 55px rgba(0,0,0,.35);
+      --radius: 18px;
+      --radius2: 14px;
+      --font: system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#f6f7fb;
+        --panel: rgba(255,255,255,.82);
+        --panel2: rgba(255,255,255,.98);
+        --text: rgba(17,24,39,.92);
+        --muted: rgba(17,24,39,.62);
+        --line: rgba(17,24,39,.14);
+        --shadow: 0 18px 55px rgba(17,24,39,.12);
+      }
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: var(--font);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 500px at 15% 0%, rgba(94,234,212,.18), transparent 55%),
+        radial-gradient(900px 450px at 95% 10%, rgba(251,191,36,.16), transparent 50%),
+        radial-gradient(1000px 600px at 60% 120%, rgba(96,165,250,.14), transparent 55%),
+        var(--bg);
+    }
+    .wrap{ max-width: 1100px; margin:0 auto; padding: 20px 16px 34px; }
+    header{
+      display:flex; justify-content:space-between; align-items:flex-end; gap:12px;
+      padding: 6px 2px 16px;
+    }
+    .title{ font-size:18px; font-weight:900; letter-spacing:-.02em; }
+    .sub{ font-size:13px; color:var(--muted); margin-top:6px; line-height:1.45; }
+    .panel{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      margin-top: 12px;
+    }
+    .panel-hd{
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--line);
+      display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+    }
+    .panel-title{ margin:0; font-size:15px; font-weight:900; letter-spacing:-.02em; }
+    .panel-bd{ padding: 14px 16px 16px; }
+
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .row > *{ min-width: 0; }
+    .input{
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      outline: none;
+    }
+    .input:focus{ border-color: rgba(94,234,212,.55); box-shadow: 0 0 0 3px rgba(94,234,212,.18); }
+    label{ font-size:12px; color: var(--muted); display:block; margin: 0 0 6px; }
+    .btn{
+      appearance:none;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight: 800;
+      font-size: 13px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      text-decoration:none;
+      transition: transform .05s ease, background .15s ease, border-color .15s ease;
+    }
+    .btn:hover{ background: var(--panel2); border-color: rgba(94,234,212,.35); }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      background: rgba(94,234,212,.14);
+      border-color: rgba(94,234,212,.32);
+    }
+    .btn.danger{
+      background: rgba(251,113,133,.12);
+      border-color: rgba(251,113,133,.35);
+    }
+    .status{
+      margin-top:10px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .status b{ color: var(--text); }
+    .pill{
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .pill.ok{ border-color: rgba(52,211,153,.45); background: rgba(52,211,153,.14); }
+    .pill.warn{ border-color: rgba(251,191,36,.45); background: rgba(251,191,36,.14); }
+
+    .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width: 820px){ .grid2{ grid-template-columns: 1fr; } }
+
+    .list{
+      display:flex; flex-direction:column; gap:10px;
+      margin-top: 10px;
+    }
+    .card{
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: var(--radius2);
+      padding: 12px;
+    }
+    .card-top{
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      margin-bottom: 10px;
+    }
+    .card-title{
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: -.02em;
+    }
+    .checkline{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+    .footer-actions{
+      display:flex; justify-content:flex-end; margin-top: 14px;
+    }
+    .hint{
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
   </style>
 </head>
+
 <body>
-  <h1>콘텐츠 관리자</h1>
-  <p class="small">
-    이 페이지는 <code>content.json</code>을 불러와 폼으로 편집한 뒤, GitHub에 커밋합니다.
-    (토큰 없는 사람은 저장 불가)
-  </p>
-
-  <div class="card">
-    <h3>Repo 설정</h3>
-    <div class="row">
-      <div style="flex:1; min-width: 160px;">
-        <label>Owner</label>
-        <input id="owner" placeholder="예: knoc-ai" />
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="title">콘텐츠 관리자</div>
+        <div class="sub">
+          토큰만 입력 → <b>불러오기</b>로 <span class="mono">content.json</span> 읽기 → 수정 → <b>저장</b>으로 커밋 반영
+        </div>
       </div>
-      <div style="flex:1; min-width: 180px;">
-        <label>Repo</label>
-        <input id="repo" placeholder="예: notice-startpage" />
-      </div>
-      <div style="width: 140px;">
-        <label>Branch</label>
-        <input id="branch" value="main" />
-      </div>
-      <div style="width: 200px;">
-        <label>Path</label>
-        <input id="path" value="content.json" />
-      </div>
-    </div>
+      <div class="pill" id="repoPill">repo: -</div>
+    </header>
 
-    <div class="row" style="margin-top:10px;">
-      <div style="flex:1; min-width: 280px;">
-        <label>GitHub Token (Fine-grained PAT 권장)</label>
-        <input id="token" placeholder="ghp_... 또는 github_pat_..." />
-        <div class="small danger">※ 토큰을 코드에 하드코딩하지 마세요. 이 입력칸으로만 사용.</div>
+    <!-- 1) 토큰 + 불러오기 -->
+    <section class="panel">
+      <div class="panel-hd">
+        <h2 class="panel-title">1) 로그인</h2>
+        <span class="pill warn" id="authPill">토큰 필요</span>
       </div>
-      <button class="btn" id="btnLoad">불러오기</button>
-      <button class="btn primary" id="btnSave">저장(커밋)</button>
-    </div>
+      <div class="panel-bd">
+        <div class="row">
+          <div style="flex:1 1 520px;">
+            <label for="token">GitHub Token (Fine-grained PAT)</label>
+            <input class="input" id="token" type="password" placeholder="토큰을 입력하세요" autocomplete="off" />
+          </div>
+          <div style="flex:0 0 auto; margin-top: 18px;">
+            <!-- ✅ 요청: 불러오기 버튼을 토큰 옆에 -->
+            <button class="btn primary" id="btnLoad">불러오기</button>
+          </div>
+        </div>
 
-    <div id="status" class="small" style="margin-top:10px;"></div>
-  </div>
-
-  <div class="card">
-    <h3>공지 (notice)</h3>
-    <div class="row">
-      <div style="width:220px;">
-        <label>noticeId</label>
-        <input id="noticeId" />
+        <div class="status" id="status">
+          <b>상태:</b> 토큰 입력 후 <b>불러오기</b>를 누르세요.
+        </div>
+        <div class="hint">
+          ※ 토큰은 브라우저에서 사용됩니다. (보안이 매우 중요하지 않다고 하셨지만, 최소 권한/만료 설정 권장)
+        </div>
       </div>
-      <button class="btn" id="btnAddNoticeItem">+ 공지 추가</button>
-    </div>
-    <div id="noticeItems" style="margin-top:10px;"></div>
-  </div>
+    </section>
 
-  <div class="card">
-    <h3>서비스 목록 (services)</h3>
-    <button class="btn" id="btnAddService">+ 서비스 추가</button>
-    <div style="margin-top:10px; overflow:auto;">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:140px;">name</th>
-            <th style="width:240px;">url</th>
-            <th style="width:180px;">domain</th>
-            <th>note</th>
-            <th style="width:90px;">disabled</th>
-            <th style="width:70px;">삭제</th>
-          </tr>
-        </thead>
-        <tbody id="servicesBody"></tbody>
-      </table>
-    </div>
-  </div>
+    <!-- 2) 편집 영역 -->
+    <section class="panel" id="editPanel" style="display:none;">
+      <div class="panel-hd">
+        <h2 class="panel-title">2) 내용 수정</h2>
+        <span class="pill ok" id="loadedPill">불러옴</span>
+      </div>
+      <div class="panel-bd">
+        <div class="grid2">
+          <div>
+            <label for="noticeId">공지 기준일 (notice.noticeId)</label>
+            <input class="input" id="noticeId" placeholder="예: 2026-01-30" />
+          </div>
+          <div>
+            <label>현재 파일 SHA</label>
+            <input class="input mono" id="shaView" disabled />
+          </div>
+        </div>
 
-  <div class="card">
-    <h3>고급: Raw JSON</h3>
-    <p class="small">폼이 꼬였을 때 여기서 직접 수정 후 “적용” 가능</p>
-    <textarea id="rawJson"></textarea>
-    <div class="row" style="margin-top:10px;">
-      <button class="btn" id="btnApplyRaw">Raw JSON 적용</button>
-    </div>
+        <!-- Services -->
+        <div style="margin-top:14px;">
+          <div class="row" style="justify-content:space-between;">
+            <div style="font-weight:900;">서비스 목록 (services)</div>
+            <button class="btn" id="btnAddSvc">+ 서비스 추가</button>
+          </div>
+          <div class="list" id="svcList"></div>
+        </div>
+
+        <!-- Notice items -->
+        <div style="margin-top:18px;">
+          <div class="row" style="justify-content:space-between;">
+            <div style="font-weight:900;">공지 목록 (notice.items)</div>
+            <button class="btn" id="btnAddNotice">+ 공지 추가</button>
+          </div>
+          <!-- ✅ 요청: 공지도 서비스처럼 목록 UI -->
+          <div class="list" id="noticeItems"></div>
+        </div>
+
+        <!-- ✅ 요청: 저장 버튼을 수정 영역 아래에 -->
+        <div class="footer-actions">
+          <button class="btn primary" id="btnSave">저장(커밋)</button>
+        </div>
+
+        <div class="hint" id="saveHint" style="margin-top:10px;">
+          저장하면 <span class="mono">main</span> 브랜치의 <span class="mono">content.json</span>이 업데이트됩니다.
+        </div>
+      </div>
+    </section>
   </div>
 
   <script src="./admin.js"></script>
