@@ -1,1 +1,1 @@
-https://brightash.github.io/notice-startpage/index.html
+https://brightash.github.io/notice-startpage/
