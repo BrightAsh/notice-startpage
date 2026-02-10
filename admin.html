@@ -1,56 +1,108 @@
-<button id="save">저장(커밋)</button>
-<script>
-const OWNER = "<OWNER>";
-const REPO  = "<REPO>";
-const BRANCH = "main";
-const PATH = "content.js"; // 실제 경로로 수정
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Content Admin</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; line-height: 1.4; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+    label { display:block; font-size: 12px; opacity: .8; margin-bottom: 4px; }
+    input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 10px; }
+    textarea { min-height: 90px; }
+    .card { border: 1px solid #eee; border-radius: 14px; padding: 14px; margin: 14px 0; }
+    .btn { padding: 10px 12px; border: 1px solid #ddd; background: #fff; border-radius: 10px; cursor: pointer; }
+    .btn.primary { border-color: #111; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; vertical-align: top; }
+    th { text-align: left; font-size: 12px; opacity: .8; }
+    .small { font-size: 12px; opacity: .75; }
+    .danger { color: #b00020; }
+    .ok { color: #0b6b2f; }
+  </style>
+</head>
+<body>
+  <h1>콘텐츠 관리자</h1>
+  <p class="small">
+    이 페이지는 <code>content.json</code>을 불러와 폼으로 편집한 뒤, GitHub에 커밋합니다.
+    (토큰 없는 사람은 저장 불가)
+  </p>
 
-function b64(s){ return btoa(unescape(encodeURIComponent(s))); }
+  <div class="card">
+    <h3>Repo 설정</h3>
+    <div class="row">
+      <div style="flex:1; min-width: 160px;">
+        <label>Owner</label>
+        <input id="owner" placeholder="예: knoc-ai" />
+      </div>
+      <div style="flex:1; min-width: 180px;">
+        <label>Repo</label>
+        <input id="repo" placeholder="예: notice-startpage" />
+      </div>
+      <div style="width: 140px;">
+        <label>Branch</label>
+        <input id="branch" value="main" />
+      </div>
+      <div style="width: 200px;">
+        <label>Path</label>
+        <input id="path" value="content.json" />
+      </div>
+    </div>
 
-function buildContentJS(data){
-  return `window.SITE_CONTENT = ${JSON.stringify(data, null, 2)};\n`;
-}
+    <div class="row" style="margin-top:10px;">
+      <div style="flex:1; min-width: 280px;">
+        <label>GitHub Token (Fine-grained PAT 권장)</label>
+        <input id="token" placeholder="ghp_... 또는 github_pat_..." />
+        <div class="small danger">※ 토큰을 코드에 하드코딩하지 마세요. 이 입력칸으로만 사용.</div>
+      </div>
+      <button class="btn" id="btnLoad">불러오기</button>
+      <button class="btn primary" id="btnSave">저장(커밋)</button>
+    </div>
 
-async function getFileSha(token){
-  const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}?ref=${BRANCH}`;
-  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` }});
-  if(!r.ok) throw new Error("파일 조회 실패");
-  const j = await r.json();
-  return j.sha;
-}
+    <div id="status" class="small" style="margin-top:10px;"></div>
+  </div>
 
-async function updateFile(token, newText, sha){
-  const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
-  const body = {
-    message: "Update content via admin",
-    content: b64(newText),
-    sha,
-    branch: BRANCH
-  };
-  const r = await fetch(url, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify(body)
-  });
-  if(!r.ok) throw new Error("커밋 실패");
-}
+  <div class="card">
+    <h3>공지 (notice)</h3>
+    <div class="row">
+      <div style="width:220px;">
+        <label>noticeId</label>
+        <input id="noticeId" />
+      </div>
+      <button class="btn" id="btnAddNoticeItem">+ 공지 추가</button>
+    </div>
+    <div id="noticeItems" style="margin-top:10px;"></div>
+  </div>
 
-document.getElementById("save").onclick = async () => {
-  const token = localStorage.getItem("gh_token") || prompt("GitHub 토큰 1회 입력");
-  localStorage.setItem("gh_token", token);
+  <div class="card">
+    <h3>서비스 목록 (services)</h3>
+    <button class="btn" id="btnAddService">+ 서비스 추가</button>
+    <div style="margin-top:10px; overflow:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:140px;">name</th>
+            <th style="width:240px;">url</th>
+            <th style="width:180px;">domain</th>
+            <th>note</th>
+            <th style="width:90px;">disabled</th>
+            <th style="width:70px;">삭제</th>
+          </tr>
+        </thead>
+        <tbody id="servicesBody"></tbody>
+      </table>
+    </div>
+  </div>
 
-  // TODO: 여기서 폼 입력값으로 data 구성
-  const data = {
-    notices: [{ date:"2026-02-10", title:"공지 1", link:"#"}],
-    ai: [{ title:"AI 소식 1", desc:"한 줄", link:"#"}]
-  };
+  <div class="card">
+    <h3>고급: Raw JSON</h3>
+    <p class="small">폼이 꼬였을 때 여기서 직접 수정 후 “적용” 가능</p>
+    <textarea id="rawJson"></textarea>
+    <div class="row" style="margin-top:10px;">
+      <button class="btn" id="btnApplyRaw">Raw JSON 적용</button>
+    </div>
+  </div>
 
-  const jsText = buildContentJS(data);
-  const sha = await getFileSha(token);
-  await updateFile(token, jsText, sha);
-  alert("저장 완료!");
-};
-</script>
+  <script src="./admin.js"></script>
+</body>
+</html>
