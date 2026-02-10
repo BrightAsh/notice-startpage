@@ -1,297 +1,370 @@
-// admin.js
-let currentSha = null;
-let data = null;
+/**
+ * ======================================================
+ * ✅ 여기만 보면 됨: 오너/레포/브랜치/파일경로 하드코딩
+ * ======================================================
+ */
+const OWNER = "BrightAsh";
+const REPO = "notice-startpage";
+const BRANCH = "main";
+const CONTENT_PATH = "content.json"; // repo root에 있는 경우
 
-const $ = (id) => document.getElementById(id);
+const API_BASE = "https://api.github.com";
 
-function setStatus(msg, type = "") {
-  const el = $("status");
-  el.textContent = msg;
-  el.className = "small " + (type === "ok" ? "ok" : type === "danger" ? "danger" : "");
+let FILE_SHA = null;     // content.json sha (PUT에 필요)
+let STATE = {
+  services: [],
+  notice: { noticeId: "", items: [] }
+};
+
+const $ = (sel) => document.querySelector(sel);
+
+function setStatus(msg, type = "info"){
+  const el = $("#status");
+  if (!el) return;
+  el.innerHTML = `<b>상태:</b> ${msg}`;
+  const pill = $("#authPill");
+  if (!pill) return;
+  if (type === "ok"){
+    pill.textContent = "인증 OK";
+    pill.className = "pill ok";
+  } else if (type === "warn"){
+    pill.textContent = "토큰 필요";
+    pill.className = "pill warn";
+  } else {
+    pill.textContent = "대기";
+    pill.className = "pill";
+  }
 }
 
-function utf8ToB64(str) {
+function setRepoPill(){
+  const el = $("#repoPill");
+  if (el) el.textContent = `repo: ${OWNER}/${REPO} · ${BRANCH}`;
+}
+
+function b64EncodeUnicode(str){
+  // Unicode 안전 base64
   return btoa(unescape(encodeURIComponent(str)));
 }
-function b64ToUtf8(b64) {
+function b64DecodeUnicode(b64){
   return decodeURIComponent(escape(atob(b64)));
 }
 
-function readRepoConfig() {
-  const owner = $("owner").value.trim();
-  const repo = $("repo").value.trim();
-  const branch = $("branch").value.trim() || "main";
-  const path = $("path").value.trim() || "content.json";
-  const token = $("token").value.trim();
-  if (!owner || !repo) throw new Error("owner/repo를 입력하세요.");
-  return { owner, repo, branch, path, token };
+function authHeaders(token){
+  // Fine-grained PAT: Bearer 권장
+  return {
+    "Authorization": `Bearer ${token}`,
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
 }
 
-function renderAll() {
-  if (!data) return;
-
-  // notice
-  $("noticeId").value = data.notice?.noticeId ?? "";
-  renderNoticeItems();
-
-  // services
-  renderServices();
-
-  // raw json
-  $("rawJson").value = JSON.stringify(data, null, 2);
-}
-
-function renderNoticeItems() {
-  const wrap = $("noticeItems");
-  wrap.innerHTML = "";
-
-  const items = (data.notice?.items ?? []);
-  items.forEach((it, idx) => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.style.margin = "10px 0";
-    card.innerHTML = `
-      <div class="row">
-        <div style="flex:1; min-width:220px;">
-          <label>title</label>
-          <input data-n-title="${idx}" value="${escapeHtml(it.title ?? "")}" />
-        </div>
-        <div style="flex:2; min-width:260px;">
-          <label>sub</label>
-          <input data-n-sub="${idx}" value="${escapeHtml(it.sub ?? "")}" />
-        </div>
-        <button class="btn" data-n-del="${idx}">삭제</button>
-      </div>
-    `;
-    wrap.appendChild(card);
-  });
-
-  // bind
-  wrap.querySelectorAll("[data-n-title]").forEach((inp) => {
-    inp.addEventListener("input", (e) => {
-      const i = Number(e.target.getAttribute("data-n-title"));
-      data.notice.items[i].title = e.target.value;
-      syncRaw();
-    });
-  });
-  wrap.querySelectorAll("[data-n-sub]").forEach((inp) => {
-    inp.addEventListener("input", (e) => {
-      const i = Number(e.target.getAttribute("data-n-sub"));
-      data.notice.items[i].sub = e.target.value;
-      syncRaw();
-    });
-  });
-  wrap.querySelectorAll("[data-n-del]").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const i = Number(e.target.getAttribute("data-n-del"));
-      data.notice.items.splice(i, 1);
-      renderAll();
-    });
-  });
-}
-
-function renderServices() {
-  const body = $("servicesBody");
-  body.innerHTML = "";
-
-  const services = (data.services ?? []);
-  services.forEach((s, idx) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><input data-s-name="${idx}" value="${escapeHtml(s.name ?? "")}" /></td>
-      <td><input data-s-url="${idx}" value="${escapeHtml(s.url ?? "")}" /></td>
-      <td><input data-s-domain="${idx}" value="${escapeHtml(s.domain ?? "")}" /></td>
-      <td><textarea data-s-note="${idx}">${escapeHtml(s.note ?? "")}</textarea></td>
-      <td style="text-align:center;">
-        <input type="checkbox" data-s-dis="${idx}" ${s.disabled ? "checked" : ""} />
-      </td>
-      <td style="text-align:center;">
-        <button class="btn" data-s-del="${idx}">삭제</button>
-      </td>
-    `;
-    body.appendChild(tr);
-  });
-
-  // bind
-  body.querySelectorAll("[data-s-name]").forEach((inp) => {
-    inp.addEventListener("input", (e) => {
-      const i = Number(e.target.getAttribute("data-s-name"));
-      data.services[i].name = e.target.value;
-      syncRaw();
-    });
-  });
-  body.querySelectorAll("[data-s-url]").forEach((inp) => {
-    inp.addEventListener("input", (e) => {
-      const i = Number(e.target.getAttribute("data-s-url"));
-      data.services[i].url = e.target.value;
-      syncRaw();
-    });
-  });
-  body.querySelectorAll("[data-s-domain]").forEach((inp) => {
-    inp.addEventListener("input", (e) => {
-      const i = Number(e.target.getAttribute("data-s-domain"));
-      data.services[i].domain = e.target.value;
-      syncRaw();
-    });
-  });
-  body.querySelectorAll("[data-s-note]").forEach((ta) => {
-    ta.addEventListener("input", (e) => {
-      const i = Number(e.target.getAttribute("data-s-note"));
-      data.services[i].note = e.target.value;
-      syncRaw();
-    });
-  });
-  body.querySelectorAll("[data-s-dis]").forEach((cb) => {
-    cb.addEventListener("change", (e) => {
-      const i = Number(e.target.getAttribute("data-s-dis"));
-      const checked = e.target.checked;
-      if (checked) data.services[i].disabled = true;
-      else delete data.services[i].disabled;
-      syncRaw();
-    });
-  });
-  body.querySelectorAll("[data-s-del]").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const i = Number(e.target.getAttribute("data-s-del"));
-      data.services.splice(i, 1);
-      renderAll();
-    });
-  });
-}
-
-function syncRaw() {
-  $("rawJson").value = JSON.stringify(data, null, 2);
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-async function loadFromGitHub() {
-  const { owner, repo, branch, path, token } = readRepoConfig();
-  setStatus("불러오는 중...");
-
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
-  const res = await fetch(url, {
-    headers: token ? { "Authorization": `Bearer ${token}` } : {}
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`불러오기 실패: ${res.status} ${t}`);
+async function ghGetContentJson(token){
+  const url = `${API_BASE}/repos/${OWNER}/${REPO}/contents/${encodeURIComponent(CONTENT_PATH)}?ref=${encodeURIComponent(BRANCH)}`;
+  const res = await fetch(url, { headers: authHeaders(token) });
+  if (!res.ok){
+    const text = await res.text().catch(()=> "");
+    throw new Error(`GET 실패 (${res.status}) ${text}`);
   }
-  const j = await res.json();
-  currentSha = j.sha;
-
-  const text = b64ToUtf8(j.content.replace(/\n/g, ""));
-  data = JSON.parse(text);
-
-  // 구조 보정
-  data.services = Array.isArray(data.services) ? data.services : [];
-  data.notice = data.notice ?? { noticeId: "", items: [] };
-  data.notice.items = Array.isArray(data.notice.items) ? data.notice.items : [];
-
-  // 토큰은 sessionStorage에만
-  if (token) sessionStorage.setItem("gh_token", token);
-
-  renderAll();
-  setStatus("불러오기 완료", "ok");
+  const data = await res.json();
+  // data.content(base64), data.sha
+  return data;
 }
 
-async function saveToGitHub() {
-  const { owner, repo, branch, path, token } = readRepoConfig();
-  if (!token) throw new Error("저장하려면 GitHub Token이 필요합니다.");
-
-  // noticeId/폼 반영
-  data.notice = data.notice ?? {};
-  data.notice.noticeId = $("noticeId").value.trim();
-
-  // Raw JSON이 수정돼 있으면 그걸 우선 적용
-  try {
-    const raw = $("rawJson").value;
-    const parsed = JSON.parse(raw);
-    data = parsed;
-  } catch (e) {
-    // raw json 파싱 실패면 폼 상태로 진행 (원하면 여기서 실패 처리해도 됨)
-  }
-
-  const contentStr = JSON.stringify(data, null, 2);
+async function ghPutContentJson(token, newJsonText, sha){
+  const url = `${API_BASE}/repos/${OWNER}/${REPO}/contents/${encodeURIComponent(CONTENT_PATH)}`;
   const body = {
     message: `Update content.json via admin (${new Date().toISOString()})`,
-    content: utf8ToB64(contentStr),
-    sha: currentSha,
-    branch
+    content: b64EncodeUnicode(newJsonText),
+    sha,
+    branch: BRANCH
   };
 
-  setStatus("저장(커밋) 중...");
-
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
   const res = await fetch(url, {
     method: "PUT",
     headers: {
-      "Authorization": `Bearer ${token}`,
+      ...authHeaders(token),
       "Content-Type": "application/json"
     },
     body: JSON.stringify(body)
   });
 
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`저장 실패: ${res.status} ${t}`);
+  if (!res.ok){
+    const text = await res.text().catch(()=> "");
+    throw new Error(`PUT 실패 (${res.status}) ${text}`);
+  }
+  return await res.json();
+}
+
+/** =======================
+ * UI 렌더링
+ * ======================= */
+function renderAll(){
+  // 기본값 채우기
+  $("#noticeId").value = STATE.notice?.noticeId || "";
+  $("#shaView").value = FILE_SHA || "";
+
+  renderServices();
+  renderNoticeItems();
+}
+
+function renderServices(){
+  const list = $("#svcList");
+  list.innerHTML = "";
+
+  STATE.services.forEach((svc, idx) => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const top = document.createElement("div");
+    top.className = "card-top";
+
+    const ttl = document.createElement("div");
+    ttl.className = "card-title";
+    ttl.textContent = `서비스 #${idx+1}`;
+
+    const del = document.createElement("button");
+    del.className = "btn danger";
+    del.textContent = "삭제";
+    del.addEventListener("click", () => {
+      STATE.services.splice(idx, 1);
+      renderServices();
+    });
+
+    top.appendChild(ttl);
+    top.appendChild(del);
+
+    const grid = document.createElement("div");
+    grid.className = "grid2";
+
+    grid.appendChild(makeField("이름(name)", svc.name ?? "", (v)=> svc.name = v));
+    grid.appendChild(makeField("URL(url)", svc.url ?? "", (v)=> svc.url = v));
+    grid.appendChild(makeField("도메인(domain)", svc.domain ?? "", (v)=> svc.domain = v));
+
+    // note: textarea
+    const noteWrap = document.createElement("div");
+    noteWrap.style.gridColumn = "1 / -1";
+    noteWrap.appendChild(makeTextarea("설명(note) - 줄바꿈 가능", svc.note ?? "", (v)=> svc.note = v));
+
+    // disabled checkbox
+    const chkWrap = document.createElement("div");
+    chkWrap.style.gridColumn = "1 / -1";
+    chkWrap.className = "checkline";
+    const chk = document.createElement("input");
+    chk.type = "checkbox";
+    chk.checked = !!svc.disabled;
+    chk.addEventListener("change", ()=> svc.disabled = chk.checked);
+    const lbl = document.createElement("span");
+    lbl.textContent = "비활성(disabled)";
+
+    chkWrap.appendChild(chk);
+    chkWrap.appendChild(lbl);
+
+    card.appendChild(top);
+    card.appendChild(grid);
+    card.appendChild(noteWrap);
+    card.appendChild(chkWrap);
+
+    list.appendChild(card);
+  });
+}
+
+function renderNoticeItems(){
+  const list = $("#noticeItems");
+  list.innerHTML = "";
+
+  const items = STATE.notice?.items || [];
+  items.forEach((it, idx) => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const top = document.createElement("div");
+    top.className = "card-top";
+
+    const ttl = document.createElement("div");
+    ttl.className = "card-title";
+    ttl.textContent = `공지 #${idx+1}`;
+
+    const del = document.createElement("button");
+    del.className = "btn danger";
+    del.textContent = "삭제";
+    del.addEventListener("click", () => {
+      items.splice(idx, 1);
+      renderNoticeItems();
+    });
+
+    top.appendChild(ttl);
+    top.appendChild(del);
+
+    const grid = document.createElement("div");
+    grid.className = "grid2";
+
+    grid.appendChild(makeField("제목(title)", it.title ?? "", (v)=> it.title = v));
+    grid.appendChild(makeField("부제(sub)", it.sub ?? "", (v)=> it.sub = v));
+
+    card.appendChild(top);
+    card.appendChild(grid);
+
+    list.appendChild(card);
+  });
+}
+
+function makeField(labelText, value, onInput){
+  const wrap = document.createElement("div");
+  const label = document.createElement("label");
+  label.textContent = labelText;
+  const input = document.createElement("input");
+  input.className = "input";
+  input.value = value;
+  input.addEventListener("input", () => onInput(input.value));
+  wrap.appendChild(label);
+  wrap.appendChild(input);
+  return wrap;
+}
+
+function makeTextarea(labelText, value, onInput){
+  const wrap = document.createElement("div");
+  const label = document.createElement("label");
+  label.textContent = labelText;
+  const ta = document.createElement("textarea");
+  ta.className = "input";
+  ta.rows = 5;
+  ta.value = value;
+  ta.addEventListener("input", () => onInput(ta.value));
+  wrap.appendChild(label);
+  wrap.appendChild(ta);
+  return wrap;
+}
+
+/** =======================
+ * Load / Save
+ * ======================= */
+async function handleLoad(){
+  const token = $("#token").value.trim();
+  if (!token){
+    setStatus("토큰이 비어있습니다.", "warn");
+    return;
   }
 
-  const j = await res.json();
-  currentSha = j.content?.sha ?? currentSha;
+  setStatus("불러오는 중…", "info");
 
-  setStatus("저장 완료! (Pages 반영은 약간 지연될 수 있음)", "ok");
+  try{
+    const data = await ghGetContentJson(token);
+    FILE_SHA = data.sha;
+
+    const jsonText = b64DecodeUnicode(data.content || "");
+    const parsed = JSON.parse(jsonText);
+
+    STATE.services = Array.isArray(parsed.services) ? parsed.services : [];
+    STATE.notice = parsed.notice || { noticeId: "", items: [] };
+    if (!Array.isArray(STATE.notice.items)) STATE.notice.items = [];
+
+    $("#editPanel").style.display = "block";
+    $("#loadedPill").textContent = "불러옴";
+    $("#loadedPill").className = "pill ok";
+
+    renderAll();
+    setStatus(`불러오기 완료 (sha: <span class="mono">${FILE_SHA}</span>)`, "ok");
+  }catch(err){
+    console.error(err);
+    setStatus(`불러오기 실패: ${escapeHtml(err.message)}`, "warn");
+  }
 }
 
-function init() {
-  // 토큰 자동 채움(세션 한정)
-  const savedToken = sessionStorage.getItem("gh_token");
-  if (savedToken) $("token").value = savedToken;
+function collectStateFromUI(){
+  // noticeId
+  STATE.notice.noticeId = $("#noticeId").value.trim();
 
-  $("btnLoad").addEventListener("click", async () => {
-    try { await loadFromGitHub(); }
-    catch (e) { setStatus(e.message, "danger"); }
-  });
+  // services / notice.items는 이미 input 이벤트로 반영됨
+  // 다만 최소 구조 보장
+  if (!Array.isArray(STATE.services)) STATE.services = [];
+  if (!STATE.notice || typeof STATE.notice !== "object") STATE.notice = { noticeId: "", items: [] };
+  if (!Array.isArray(STATE.notice.items)) STATE.notice.items = [];
 
-  $("btnSave").addEventListener("click", async () => {
-    try { await saveToGitHub(); }
-    catch (e) { setStatus(e.message, "danger"); }
-  });
+  // 불필요한 빈 키 정리는 선택사항(여기선 최소만)
+}
 
-  $("btnAddNoticeItem").addEventListener("click", () => {
-    data.notice = data.notice ?? { noticeId: "", items: [] };
-    data.notice.items = data.notice.items ?? [];
-    data.notice.items.push({ title: "", sub: "" });
-    renderAll();
-  });
+async function handleSave(){
+  const token = $("#token").value.trim();
+  if (!token){
+    setStatus("토큰이 비어있습니다.", "warn");
+    return;
+  }
+  if (!FILE_SHA){
+    setStatus("먼저 '불러오기'로 기존 파일을 불러와야 저장할 수 있습니다.(sha 필요)", "warn");
+    return;
+  }
 
-  $("btnAddService").addEventListener("click", () => {
-    data.services = data.services ?? [];
-    data.services.push({ name: "", url: "", domain: "", note: "" });
-    renderAll();
-  });
+  collectStateFromUI();
 
-  $("btnApplyRaw").addEventListener("click", () => {
-    try {
-      const parsed = JSON.parse($("rawJson").value);
-      data = parsed;
-      // 구조 보정
-      data.services = Array.isArray(data.services) ? data.services : [];
-      data.notice = data.notice ?? { noticeId: "", items: [] };
-      data.notice.items = Array.isArray(data.notice.items) ? data.notice.items : [];
-      renderAll();
-      setStatus("Raw JSON 적용 완료", "ok");
-    } catch (e) {
-      setStatus("Raw JSON 파싱 실패: " + e.message, "danger");
+  // 최종 JSON 생성
+  const payload = {
+    services: STATE.services,
+    notice: {
+      noticeId: STATE.notice.noticeId || "",
+      items: STATE.notice.items || []
     }
-  });
+  };
+
+  // JSON 유효성 (문법 오류 방지)
+  let jsonText = "";
+  try{
+    jsonText = JSON.stringify(payload, null, 2) + "\n";
+    JSON.parse(jsonText);
+  }catch(err){
+    setStatus(`저장 전 JSON 생성 오류: ${escapeHtml(err.message)}`, "warn");
+    return;
+  }
+
+  setStatus("저장(커밋) 중…", "info");
+
+  try{
+    const result = await ghPutContentJson(token, jsonText, FILE_SHA);
+
+    // 저장 성공 시 새 sha로 갱신
+    FILE_SHA = result?.content?.sha || FILE_SHA;
+    $("#shaView").value = FILE_SHA;
+
+    setStatus(`저장 완료 ✅ (new sha: <span class="mono">${FILE_SHA}</span>)`, "ok");
+  }catch(err){
+    console.error(err);
+    setStatus(`저장 실패: ${escapeHtml(err.message)}`, "warn");
+  }
 }
 
-init();
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/** =======================
+ * Init
+ * ======================= */
+document.addEventListener("DOMContentLoaded", () => {
+  setRepoPill();
+  setStatus("토큰 입력 후 '불러오기'를 누르세요.", "warn");
+
+  $("#btnLoad").addEventListener("click", handleLoad);
+
+  $("#btnAddSvc").addEventListener("click", () => {
+    STATE.services.push({
+      name: "",
+      url: "",
+      domain: "",
+      note: "",
+      disabled: false
+    });
+    renderServices();
+  });
+
+  $("#btnAddNotice").addEventListener("click", () => {
+    if (!STATE.notice.items) STATE.notice.items = [];
+    STATE.notice.items.push({ title: "", sub: "" });
+    renderNoticeItems();
+  });
+
+  $("#btnSave").addEventListener("click", handleSave);
+});
