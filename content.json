@@ -4,78 +4,105 @@
       "name": "ChatGPT",
       "url": "https://chatgpt.com/",
       "domain": "chatgpt.com",
-      "note": "대화형 문제 해결\n문서/메일/기획안 작성\n요약·정리·리라이트\n코드 작성·디버깅\n이미지 이해·생성"
+      "note": "대화형 문제 해결\n문서/메일/기획안 작성\n요약·정리·리라이트\n코드 작성·디버깅\n이미지 이해·생성",
+      "disabled": false
     },
     {
       "name": "Genspark",
       "url": "https://www.genspark.ai/",
       "domain": "genspark.ai",
-      "note": "슬라이드 자동 생성\n스프레드시트 자동 생성\n리서치·자료 수집\n보고서 초안 작성\n이미지 생성"
+      "note": "슬라이드 자동 생성\n스프레드시트 자동 생성\n리서치·자료 수집\n보고서 초안 작성\n이미지 생성",
+      "disabled": false
     },
     {
       "name": "Gemini",
       "url": "https://gemini.google.com/",
       "domain": "gemini.google.com",
-      "note": "대화형 질의응답\n요약·정리\n번역·다국어 작업\n아이디어 발상\n이미지 활용"
+      "note": "대화형 질의응답\n요약·정리\n번역·다국어 작업\n아이디어 발상\n이미지 활용",
+      "disabled": false
     },
     {
       "name": "NotebookLM",
       "url": "https://notebooklm.google/",
       "domain": "notebooklm.google",
-      "note": "자료 기반 Q&A(근거 중심)\n문서/링크 요약·핵심 추출\n리서치 노트 구조화\n출처 기반 정리·비교\n오디오 오버뷰"
+      "note": "자료 기반 Q&A(근거 중심)\n문서/링크 요약·핵심 추출\n리서치 노트 구조화\n출처 기반 정리·비교\n오디오 오버뷰",
+      "disabled": false
     },
     {
       "name": "Manus",
       "url": "https://manus.im/",
       "domain": "manus.im",
-      "note": "에이전트로 작업 실행\n반복 업무 자동화\n웹 기반 작업 처리\n절차형 워크플로우 구성\n결과 취합·정리"
+      "note": "에이전트로 작업 실행\n반복 업무 자동화\n웹 기반 작업 처리\n절차형 워크플로우 구성\n결과 취합·정리",
+      "disabled": false
     },
     {
       "name": "Canva",
       "url": "https://www.canva.com/",
       "domain": "canva.com",
-      "note": "템플릿 기반 디자인\nPPT/포스터 제작\n브랜드 키트·스타일 적용\n간편 편집·공유\n콘텐츠 리사이징"
+      "note": "템플릿 기반 디자인\nPPT/포스터 제작\n브랜드 키트·스타일 적용\n간편 편집·공유\n콘텐츠 리사이징",
+      "disabled": false
     },
     {
       "name": "Flowith",
       "url": "https://flowith.io/",
       "domain": "flowith.io",
-      "note": "프로젝트 지식 정리\n노트 연결·구조화\n워크플로우 설계\n문서 구성·초안화\n작업 추적"
+      "note": "프로젝트 지식 정리\n노트 연결·구조화\n워크플로우 설계\n문서 구성·초안화\n작업 추적",
+      "disabled": false
     },
     {
       "name": "Skywork",
       "url": "https://skywork.ai/",
       "domain": "skywork.ai",
-      "note": "업무 문서 자동 작성\n템플릿 기반 산출물\n요약·정리\n서식 맞춤 작성\n반복 문서 생산"
+      "note": "업무 문서 자동 작성\n템플릿 기반 산출물\n요약·정리\n서식 맞춤 작성\n반복 문서 생산",
+      "disabled": false
     },
     {
       "name": "CapCut",
       "url": "https://www.capcut.com/",
       "domain": "capcut.com",
-      "disabled": true,
-      "note": "영상 편집(컷/자막)\n자동 자막 생성\n템플릿 기반 제작\nAI 이펙트·보정\n내보내기 최적화"
+      "note": "영상 편집(컷/자막)\n자동 자막 생성\n템플릿 기반 제작\nAI 이펙트·보정\n내보내기 최적화",
+      "disabled": true
     },
     {
       "name": "Lilys AI",
       "url": "https://lilys.ai/",
       "domain": "lilys.ai",
-      "note": "회의/강의 요약\n하이라이트 추출\n챕터·목차 생성\n액션 아이템 정리\n노트화"
+      "note": "회의/강의 요약\n하이라이트 추출\n챕터·목차 생성\n액션 아이템 정리\n노트화",
+      "disabled": false
     },
     {
       "name": "ElevenLabs",
       "url": "https://elevenlabs.io/",
       "domain": "elevenlabs.io",
-      "note": "TTS 음성 생성\n보이스 클로닝\n더빙·다국어 음성\n음성 스타일 제어\n오디오 제작"
+      "note": "TTS 음성 생성\n보이스 클로닝\n더빙·다국어 음성\n음성 스타일 제어\n오디오 제작",
+      "disabled": false
+    },
+    {
+      "name": "Test 중",
+      "url": "https://www.google.com/",
+      "domain": "google.com",
+      "note": "",
+      "disabled": false
     }
   ],
   "notice": {
     "noticeId": "2026-01-30",
     "items": [
-      { "title": "Perplexity 구독 해지", "sub": "사유: 사용량 저조" },
-      { "title": "Google AI Pro 구독 시작", "sub": "Gemini, NotebookLM 등 사용 가능" },
+      {
+        "title": "Perplexity 구독 해지",
+        "sub": "사유: 사용량 저조"
+      },
+      {
+        "title": "Google AI Pro 구독 시작",
+        "sub": "Gemini, NotebookLM 등 사용 가능"
+      },
       {
         "title": "ElevenLabs 플랜 다운그레이드",
         "sub": "사유: 사용량 저조 (Creator -> Starter)"
+      },
+      {
+        "title": "",
+        "sub": ""
       }
     ]
   }
