@@ -5,3 +5,4 @@ Test repo
 
 
 https://brightash.github.io/notice-startpage/
+https://knoc-aifieldzone.github.io/Notice-page/
