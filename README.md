@@ -4,5 +4,6 @@ Test repo
 2. Admin page
 
 
-https://brightash.github.io/notice-startpage/
-https://knoc-aifieldzone.github.io/Notice-page/
+Test: https://brightash.github.io/notice-startpage/
+
+Main: https://knoc-aifieldzone.github.io/Notice-page/
