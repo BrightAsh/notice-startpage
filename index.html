@@ -544,6 +544,19 @@
     #resetLocal{
       display: none !important;
     }
+
+    .btn-ic{
+      width: 18px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+    .btn-ic svg, .btn-ic img{
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
   </style>
 </head>
 
@@ -583,23 +596,7 @@
       </section>
 
       <div class="right-stack">
-        <!-- 2) 가이드 소개 -->
-        <section class="panel" aria-labelledby="gdTitle">
-          <div class="panel-hd">
-            <div>
-              <h2 class="panel-title" id="gdTitle">가이드 소개</h2>
-              <div class="panel-meta">Prompt 가이드 및 AI SaaS 소개 PDF</div>
-            </div>
-          </div>
-
-          <div class="panel-bd">
-            <a class="btn primary block" href="./files/Prompt.pdf" target="_blank" rel="noopener">Prompt 가이드(PDF)</a>
-            <div class="divider-sm"></div>
-            <div class="guide-grid" id="guideGrid"></div>
-          </div>
-        </section>
-
-        <!-- 3) 공지사항 -->
+        <!-- 2) 공지사항 -->
         <section class="panel" aria-labelledby="ntTitle">
           <div class="panel-hd">
             <div>
@@ -616,6 +613,32 @@
               <input type="checkbox" id="hideToday" />
               <label for="hideToday">오늘 하루 이 공지 숨기기</label>
             </div>
+          </div>
+        </section>
+
+        <!-- 3) 가이드 소개 -->
+        <section class="panel" aria-labelledby="gdTitle">
+          <div class="panel-hd">
+            <div>
+              <h2 class="panel-title" id="gdTitle">가이드 소개</h2>
+              <div class="panel-meta">Prompt 가이드 및 AI SaaS 소개 PDF</div>
+            </div>
+          </div>
+
+          <div class="panel-bd">
+            <a class="btn primary block" href="./files/Prompt.pdf" target="_blank" rel="noopener">
+              <span class="btn-ic" aria-hidden="true">
+                <!-- 문서 아이콘 (SVG) -->
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M8 13h8M8 17h8M8 9h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
+              Prompt 가이드(PDF)
+            </a>
+            <div class="divider-sm"></div>
+            <div class="guide-grid" id="guideGrid"></div>
           </div>
         </section>
       </div>
@@ -924,3 +947,4 @@
   </script>
 </body>
 </html>
+
