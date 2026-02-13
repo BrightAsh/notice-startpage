@@ -271,6 +271,94 @@
     }
     .svc-txt{ min-width:0; }
 
+    /* Right column: stacked panels */
+    .right-stack{
+      display:flex;
+      flex-direction:column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    /* Guide section */
+    .btn.block{
+      width: 100%;
+      justify-content: center;
+    }
+    .divider-sm{
+      height: 1px;
+      background: var(--line);
+      margin: 12px 0;
+    }
+    .guide-grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 980px){
+      .guide-grid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px){
+      .guide-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    .gitem{
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: 14px;
+      padding: 10px 8px 9px;
+      text-decoration:none;
+      color: var(--text);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap: 8px;
+      transition: background .15s ease, border-color .15s ease, transform .05s ease;
+      min-height: 86px;
+    }
+    .gitem:hover{ background: rgba(255,255,255,.06); border-color: rgba(94,234,212,.35); }
+    .gitem:active{ transform: translateY(1px); }
+
+    .gic{
+      width: 52px; height: 52px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+    }
+    .gic img{ width: 34px; height: 34px; display:block; }
+    .gic.fallback{
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .glabel{
+      font-weight: 900;
+      font-size: 12px;
+      line-height: 1.1;
+      color: var(--text);
+      text-align:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      width: 100%;
+    }
+
+    .gitem--disabled{
+      cursor: default;
+      opacity: .55;
+      user-select:none;
+    }
+    .gitem--disabled:hover{
+      background: rgba(255,255,255,.03);
+      border-color: var(--line);
+      transform: none;
+    }
+    .gitem--disabled:active{ transform:none; }
+
     /* Notice list */
     .notice-list{
       margin: 0;
@@ -474,14 +562,8 @@
       </div>
 
       <div class="top-actions">
-        <!-- (선택) content.json 바로 편집(관리자만 커밋 가능)
-        <a class="btn" href="https://github.com/knoc-aifieldzone/Notice-page/edit/main/content.json" target="_blank" rel="noopener">
-          공지/서비스 수정
-        </a>
-        -->
         <a class="btn" href="./admin.html" target="_blank" rel="noopener">관리자</a>
         <a class="btn primary" href="https://www.google.com/" target="_blank" rel="noopener">Google</a>
-
       </div>
     </header>
 
@@ -500,25 +582,43 @@
         </div>
       </section>
 
-      <!-- 2) 공지사항 -->
-      <section class="panel" aria-labelledby="ntTitle">
-        <div class="panel-hd">
-          <div>
-            <h2 class="panel-title" id="ntTitle">공지 사항</h2>
-            <div class="panel-meta"> </div>
+      <div class="right-stack">
+        <!-- 2) 가이드 소개 -->
+        <section class="panel" aria-labelledby="gdTitle">
+          <div class="panel-hd">
+            <div>
+              <h2 class="panel-title" id="gdTitle">가이드 소개</h2>
+              <div class="panel-meta">Prompt 가이드 및 AI SaaS 소개 PDF</div>
+            </div>
           </div>
-          <span class="badge new" id="noticeBadge">기준일: -</span>
-        </div>
 
-        <div class="panel-bd" id="noticeBody">
-          <ul class="notice-list" id="noticeList"></ul>
-
-          <div class="notice-hide">
-            <input type="checkbox" id="hideToday" />
-            <label for="hideToday">오늘 하루 이 공지 숨기기</label>
+          <div class="panel-bd">
+            <a class="btn primary block" href="./files/Prompt.pdf" target="_blank" rel="noopener">Prompt 가이드(PDF)</a>
+            <div class="divider-sm"></div>
+            <div class="guide-grid" id="guideGrid"></div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <!-- 3) 공지사항 -->
+        <section class="panel" aria-labelledby="ntTitle">
+          <div class="panel-hd">
+            <div>
+              <h2 class="panel-title" id="ntTitle">공지 사항</h2>
+              <div class="panel-meta"> </div>
+            </div>
+            <span class="badge new" id="noticeBadge">기준일: -</span>
+          </div>
+
+          <div class="panel-bd" id="noticeBody">
+            <ul class="notice-list" id="noticeList"></ul>
+
+            <div class="notice-hide">
+              <input type="checkbox" id="hideToday" />
+              <label for="hideToday">오늘 하루 이 공지 숨기기</label>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
 
     <div class="foot">
@@ -594,6 +694,89 @@
       // ChatGPT 파비콘이 S2에서 가끔 깨져서 예외 처리(안정적인 소스)
       if (domain === "chatgpt.com") return "https://chatgpt.com/favicon.ico";
       return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+    }
+
+    function pdfHrefFor(name){
+      const file = `${name}.pdf`;
+      return `./files/${encodeURIComponent(file)}`;
+    }
+
+    async function urlExists(url){
+      try{
+        // 1) HEAD 우선 (가볍게 존재 여부만 확인)
+        const head = await fetch(url, { method: "HEAD", cache: "no-store" });
+        if(head.ok) return true;
+
+        // 2) 일부 환경에서 HEAD가 막힐 수 있어 GET(Range)로 fallback
+        if(head.status === 405 || head.status === 403){
+          const get = await fetch(url, {
+            method: "GET",
+            headers: { "Range": "bytes=0-0" },
+            cache: "no-store",
+          });
+          return get.ok;
+        }
+        return false;
+      }catch(e){
+        return false;
+      }
+    }
+
+    async function renderGuide(){
+      const grid = $("#guideGrid");
+      if(!grid) return;
+
+      grid.innerHTML = "";
+
+      const checks = await Promise.all((SERVICES || []).map(async (s) => {
+        const name = (s && s.name) ? String(s.name) : "";
+        const href = name ? pdfHrefFor(name) : "";
+        const ok = (name && href) ? await urlExists(href) : false;
+        return { s, href, ok };
+      }));
+
+      for(const it of checks){
+        const s = it.s || {};
+        const enabled = !!it.ok;
+
+        const box = document.createElement(enabled ? "a" : "div");
+        box.className = "gitem" + (enabled ? "" : " gitem--disabled");
+
+        if(enabled){
+          box.href = it.href;
+          box.target = "_blank";
+          box.rel = "noopener";
+        }else{
+          box.setAttribute("aria-disabled", "true");
+          // 서비스명은 '준비중'으로 대체하되, 마우스 올리면 원래 이름이 보이도록 title 제공
+          box.title = `${(s.name || "").trim()} (PDF 준비중)`.trim();
+        }
+
+        const ic = document.createElement("div");
+        ic.className = "gic";
+
+        const img = document.createElement("img");
+        img.alt = "";
+        img.loading = "lazy";
+        img.referrerPolicy = "no-referrer";
+        if(s.domain) img.src = faviconUrl(s.domain);
+
+        img.onerror = () => {
+          img.remove();
+          ic.classList.add("fallback");
+          ic.textContent = (s.name || "?").trim().slice(0,1).toUpperCase();
+        };
+        ic.appendChild(img);
+
+        const label = document.createElement("div");
+        label.className = "glabel";
+        label.textContent = enabled ? (s.name || "-") : "준비중";
+
+        box.appendChild(ic);
+        box.appendChild(label);
+
+        grid.appendChild(box);
+      }
     }
 
     function renderServices(){
@@ -732,6 +915,7 @@
 
       renderServices();
       renderNotice();
+      await renderGuide();
 
       setInterval(() => {
         $("#nowPill").textContent = fmtNow();
