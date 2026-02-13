@@ -11,6 +11,10 @@ Test repo
  - 공지 사항 수정 기능 추가
  - 이용 가이드 첨부 기능 추가 (예정)
 
+3. Guide book
+ - Prompt Guide book 초안 완성
+ - 11개 서비스 초안 완성
+ > 추후 계속 고도화 예정
 
 Test: https://brightash.github.io/notice-startpage/
 
