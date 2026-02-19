@@ -67,6 +67,8 @@
       background: rgba(251,113,133,.18);
       border-color: rgba(251,113,133,.75);
     }
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}
+
     .msg{margin-top:10px;font-size:12px;color:var(--muted);}
     .msg.err{color:rgba(251,113,133,.95);}
     .msg.ok{color:rgba(52,211,153,.95);}
@@ -100,7 +102,7 @@
       <div class="panel-hd">
         <div>
           <h2 class="panel-title">1) 로그인</h2>
-          <div class="small">Fine-grained PAT 권장 (Contents: Read/Write · content.json + files/ 업로드/삭제)</div>
+          <div class="small">Fine-grained PAT 권장 (Contents: Read/Write · 모든 변경은 저장 시 1커밋으로 반영)</div>
         </div>
         <span class="pill" id="tokenState">토큰 필요</span>
       </div>
@@ -130,7 +132,7 @@
 
       <div class="panel-bd">
         <h3 style="margin:0 0 6px;font-size:14px;">서비스 목록</h3>
-        <div class="small">카드 단위로 추가/삭제 가능 · 소개 PDF는 <b>files/{서비스명}.pdf</b>로 저장(덮어쓰기) · 서비스 삭제 후 저장 시 PDF도 함께 삭제</div>
+        <div class="small">카드 단위로 추가/삭제 가능 · PDF는 <span class="mono">files/{서비스명}.pdf</span> · 첨부/삭제/교체는 저장 전까지 “대기”로만 표시됨</div>
         <div id="svcList"></div>
         <button class="btn" id="btnAddSvc" style="margin-top:10px;">+ 서비스 추가</button>
 
@@ -149,6 +151,7 @@
         <div class="divider"></div>
 
         <h3 style="margin:0 0 6px;font-size:14px;">저장(커밋)</h3>
+        <div class="small">변경사항(저장 대기): <b id="pendingSummary">-</b></div>
         <div class="grid2">
           <div>
             <label for="commitMsg">커밋 메시지</label>
