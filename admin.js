@@ -74,7 +74,7 @@ async function fileToB64(file) {
   return arrayBufferToB64(buf);
 }
 
-// ===== UID(서비스 카드 안정적 매핑용) =====
+// ===== UID(서비스/공지 안정적 매핑용) =====
 function makeUid() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return "uid_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
@@ -85,8 +85,14 @@ function ensureServiceUids(services) {
   });
   return services;
 }
+function ensureNoticeItemUids(items) {
+  (items || []).forEach((it) => {
+    if (!it._uid) it._uid = makeUid();
+  });
+  return items;
+}
 
-// ===== GitHub REST(읽기 전용 용도: content.json + files/ 목록) =====
+// ===== GitHub REST(읽기용: content.json + files/ 목록) =====
 function ghRestHeaders(token) {
   return {
     Accept: "application/vnd.github+json",
@@ -134,9 +140,7 @@ async function getBranchHeadOid(token) {
     query($owner:String!, $name:String!, $ref:String!){
       repository(owner:$owner, name:$name){
         ref(qualifiedName:$ref){
-          target{
-            ... on Commit { oid }
-          }
+          target{ ... on Commit { oid } }
         }
       }
     }
@@ -172,10 +176,7 @@ async function createSingleCommit(token, headline, additions, deletions) {
       body: "",
     },
     expectedHeadOid,
-    fileChanges: {
-      additions,
-      deletions,
-    },
+    fileChanges: { additions, deletions },
   };
 
   const data = await ghGraphQL(token, mutation, { input });
@@ -185,8 +186,8 @@ async function createSingleCommit(token, headline, additions, deletions) {
 }
 
 // ===== 상태(메모리 스테이징) =====
-let loadedSha = null; // REST로 content.json 읽을 때 sha(참고용)
-let loadedData = null; // 편집 화면에 보여주는 데이터(구조 변경 시만 갱신)
+let loadedSha = null; // 참고용(REST로 읽은 sha)
+let loadedData = null; // 편집 화면 데이터
 let filesIndex = new Set(); // repo의 files/*.pdf 존재 여부(읽기)
 let filesIndexLoaded = false;
 
@@ -194,9 +195,10 @@ let filesIndexLoaded = false;
 // value = { type:'upsert', b64, size, origName } or { type:'delete' }
 const stagedPdfOps = new Map();
 
-// 로드 시점 서비스 이름 보관(서비스 삭제/리네임 시 오래된 PDF 정리용)
-// key=uid, value={ name }
-let originalSvcByUid = new Map();
+// 로드 시점 기준(변경량 계산용)
+let originalSvcByUid = new Map();      // uid -> {name,url,domain,note,disabled}
+let originalNoticeByUid = new Map();   // uid -> {title,sub}
+let originalNoticeId = "";             // noticeId
 
 // ===== 템플릿 =====
 function serviceCardTemplate(s, idx) {
@@ -254,6 +256,7 @@ function noticeCardTemplate(it, idx) {
   const card = document.createElement("div");
   card.className = "card";
   card.dataset.idx = String(idx);
+  card.dataset.uid = String(it._uid || "");
 
   card.innerHTML = `
     <div class="card-hd">
@@ -289,6 +292,7 @@ function renderAll() {
   (loadedData.notice?.items || []).forEach((it, i) => ntList.appendChild(noticeCardTemplate(it, i)));
 
   refreshAllCardsPdfUI();
+  updatePendingSummary();
 }
 
 // ===== 폼 스냅샷(구조 변경/저장 시 사용) =====
@@ -315,7 +319,9 @@ function snapshotFromFormWithUids() {
   const ntCards = requireEl("noticeList").querySelectorAll(".card");
   ntCards.forEach((card) => {
     const get = (k) => card.querySelector(`[data-k="${k}"]`);
+    const uid = card.dataset.uid || makeUid();
     items.push({
+      _uid: uid,
       title: get("title")?.value?.trim() || "",
       sub: get("sub")?.value?.trim() || "",
     });
@@ -331,9 +337,15 @@ function stripInternalFields(dataWithUids) {
       url: s.url || "",
       domain: s.domain || "",
       note: s.note ?? "",
-      ...(s.disabled ? { disabled: true } : {}), // false면 생략해도 되고, 유지해도 무방
+      ...(s.disabled ? { disabled: true } : {}),
     })),
-    notice: dataWithUids.notice || { noticeId: "", items: [] },
+    notice: {
+      noticeId: dataWithUids.notice?.noticeId || "",
+      items: (dataWithUids.notice?.items || []).map((it) => ({
+        title: it.title || "",
+        sub: it.sub || "",
+      })),
+    },
   };
 }
 
@@ -351,14 +363,32 @@ async function loadContentJson(token) {
   const parsed = JSON.parse(text);
 
   const services = ensureServiceUids(Array.isArray(parsed.services) ? parsed.services : []);
-  loadedData = {
-    services,
-    notice: parsed.notice || { noticeId: "", items: [] },
-  };
 
-  // 원본 이름 저장
+  const notice = parsed.notice || { noticeId: "", items: [] };
+  notice.items = ensureNoticeItemUids(Array.isArray(notice.items) ? notice.items : []);
+
+  loadedData = { services, notice };
+
+  // 원본 스냅샷 저장: 변경량 계산용
   originalSvcByUid = new Map();
-  services.forEach((s) => originalSvcByUid.set(s._uid, { name: s.name || "" }));
+  services.forEach((s) => {
+    originalSvcByUid.set(String(s._uid), {
+      name: s.name || "",
+      url: s.url || "",
+      domain: s.domain || "",
+      note: s.note ?? "",
+      disabled: !!s.disabled,
+    });
+  });
+
+  originalNoticeId = notice.noticeId || "";
+  originalNoticeByUid = new Map();
+  (notice.items || []).forEach((it) => {
+    originalNoticeByUid.set(String(it._uid), {
+      title: it.title || "",
+      sub: it.sub || "",
+    });
+  });
 
   // 스테이징 초기화
   stagedPdfOps.clear();
@@ -454,9 +484,7 @@ function refreshCardPdfUI(card) {
   }
 
   if (staged?.type === "upsert") {
-    stateEl.textContent = repoHas
-      ? `저장 대기(교체): ${fileName}`
-      : `저장 대기(첨부): ${fileName}`;
+    stateEl.textContent = repoHas ? `저장 대기(교체): ${fileName}` : `저장 대기(첨부): ${fileName}`;
     btnDel.style.display = "";
     btnDel.textContent = "PDF 삭제";
     btnDel.disabled = !tokenOk;
@@ -481,25 +509,21 @@ function buildFileChangesForCommit(dataWithUids) {
   const contentJsonB64 = utf8ToB64(JSON.stringify(cleanData, null, 2));
 
   // additions: content.json + staged upserts
-  const additions = [
-    { path: FILE_PATH, contents: contentJsonB64 },
-  ];
+  const additions = [{ path: FILE_PATH, contents: contentJsonB64 }];
 
-  // deletions: staged deletes + removed services(old pdf) 정리
+  // deletions: staged deletes + “삭제된 서비스”의 옛 PDF 정리
   const deletionPaths = new Set();
   const additionPaths = new Set([FILE_PATH]);
 
-  // 현재 서비스 uid set + 이름 set
-  const curSvcByUid = new Map();
+  const curSvcByUid = new Map((dataWithUids.services || []).map((s) => [String(s._uid), s]));
   const curNameSet = new Set();
   (dataWithUids.services || []).forEach((s) => {
-    curSvcByUid.set(s._uid, s);
     if (norm(s.name)) curNameSet.add(norm(s.name));
   });
 
-  // 1) staged PDF ops 처리
+  // 1) staged PDF ops
   for (const [uid, op] of stagedPdfOps.entries()) {
-    const svc = curSvcByUid.get(uid);
+    const svc = curSvcByUid.get(String(uid));
     const svcName = norm(svc?.name);
     const fileName = pdfNameForService(svcName);
     const path = fileName ? `${FILES_DIR}/${fileName}` : "";
@@ -513,36 +537,126 @@ function buildFileChangesForCommit(dataWithUids) {
 
     if (op?.type === "delete") {
       if (!path) continue;
-      // repo에 실제로 존재하는 경우에만 삭제 대상으로
       if (filesIndex.has(fileName)) deletionPaths.add(path);
       continue;
     }
   }
 
-  // 2) 서비스 삭제/리네임으로 “이제 안 쓰는 옛 PDF” 정리
-  // - 로드 시점 uid가 현재에 없으면 “삭제된 서비스”
-  // - 그 서비스의 옛 name.pdf가 repo에 있고, 현재 서비스 중 같은 name이 없다면 삭제
-  for (const [uid, info] of originalSvcByUid.entries()) {
-    if (curSvcByUid.has(uid)) continue; // 아직 존재
-    const oldName = norm(info?.name);
+  // 2) 삭제된 서비스의 옛 PDF 삭제(보수적으로)
+  // - originalSvcByUid에는 로드 시점 서비스들이 모두 있음
+  // - 현재 uid가 없어진 서비스는 삭제된 서비스로 간주
+  for (const [uid, orig] of originalSvcByUid.entries()) {
+    if (curSvcByUid.has(String(uid))) continue;
+
+    const oldName = norm(orig?.name);
     if (!oldName) continue;
-    if (curNameSet.has(oldName)) continue; // 같은 이름 서비스가 남아 있으면 보수적으로 삭제 안 함
+    if (curNameSet.has(oldName)) continue; // 같은 이름이 남아 있으면 삭제 안 함
 
     const oldFile = `${oldName}.pdf`;
     if (!filesIndex.has(oldFile)) continue;
 
-    const p = `${FILES_DIR}/${oldFile}`;
-    deletionPaths.add(p);
+    deletionPaths.add(`${FILES_DIR}/${oldFile}`);
   }
 
-  // additions과 deletions가 같은 path면 additions 우선(삭제 제거)
+  // additions과 deletions 충돌 시 additions 우선
   for (const p of Array.from(deletionPaths)) {
     if (additionPaths.has(p)) deletionPaths.delete(p);
   }
 
   const deletions = Array.from(deletionPaths).map((p) => ({ path: p }));
-
   return { additions, deletions };
+}
+
+// ===== 변경 현황(pendingSummary) =====
+function isServiceChanged(orig, cur) {
+  if (!orig) return false;
+  const a = (v) => norm(v);
+  return (
+    a(orig.name) !== a(cur.name) ||
+    a(orig.url) !== a(cur.url) ||
+    a(orig.domain) !== a(cur.domain) ||
+    String(orig.note ?? "") !== String(cur.note ?? "") ||
+    !!orig.disabled !== !!cur.disabled
+  );
+}
+
+function isNoticeChanged(orig, cur) {
+  if (!orig) return false;
+  const a = (v) => norm(v);
+  return a(orig.title) !== a(cur.title) || a(orig.sub) !== a(cur.sub);
+}
+
+function updatePendingSummary() {
+  const el = document.getElementById("pendingSummary");
+  if (!el) return;
+
+  const editor = document.getElementById("editor");
+  if (!editor || editor.classList.contains("hidden") || !loadedData) {
+    el.textContent = "-";
+    return;
+  }
+
+  const snap = snapshotFromFormWithUids();
+
+  // PDF(스테이징)
+  let pdfAttach = 0,
+    pdfReplace = 0,
+    pdfDelete = 0;
+
+  const curSvcByUid = new Map((snap.services || []).map((s) => [String(s._uid), s]));
+  for (const [uid, op] of stagedPdfOps.entries()) {
+    const svc = curSvcByUid.get(String(uid));
+    const svcName = norm(svc?.name);
+    const fileName = pdfNameForService(svcName);
+
+    if (op?.type === "upsert") {
+      if (fileName && filesIndex.has(fileName)) pdfReplace += 1;
+      else pdfAttach += 1;
+    } else if (op?.type === "delete") {
+      pdfDelete += 1;
+    }
+  }
+  const pdfTotal = pdfAttach + pdfReplace + pdfDelete;
+
+  // 서비스(원본 vs 현재)
+  let svcAdd = 0,
+    svcMod = 0,
+    svcDel = 0;
+
+  for (const [uid, cur] of curSvcByUid.entries()) {
+    const orig = originalSvcByUid.get(String(uid));
+    if (!orig) svcAdd += 1;
+    else if (isServiceChanged(orig, cur)) svcMod += 1;
+  }
+  for (const uid of originalSvcByUid.keys()) {
+    if (!curSvcByUid.has(String(uid))) svcDel += 1;
+  }
+  const svcTotal = svcAdd + svcMod + svcDel;
+
+  // 공지(원본 vs 현재)
+  const curNtByUid = new Map(((snap.notice?.items) || []).map((it) => [String(it._uid), it]));
+  let ntAdd = 0,
+    ntMod = 0,
+    ntDel = 0;
+
+  for (const [uid, cur] of curNtByUid.entries()) {
+    const orig = originalNoticeByUid.get(String(uid));
+    if (!orig) ntAdd += 1;
+    else if (isNoticeChanged(orig, cur)) ntMod += 1;
+  }
+  for (const uid of originalNoticeByUid.keys()) {
+    if (!curNtByUid.has(String(uid))) ntDel += 1;
+  }
+
+  // noticeId 변경도 수정으로 포함(원치 않으면 다음 줄 삭제)
+  if (norm(snap.notice?.noticeId) !== norm(originalNoticeId)) ntMod += 1;
+
+  const ntTotal = ntAdd + ntMod + ntDel;
+
+  el.textContent =
+    `PDF ${pdfTotal}(첨부${pdfAttach}/교체${pdfReplace}/삭제${pdfDelete}) · ` +
+    `서비스 ${svcTotal}(추가${svcAdd}/수정${svcMod}/삭제${svcDel}) · ` +
+    `공지 ${ntTotal}(추가${ntAdd}/수정${ntMod}/삭제${ntDel})`;
 }
 
 // ===== init =====
@@ -562,6 +676,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const v = norm($("ghToken").value);
     $("tokenState").textContent = v ? "입력됨" : "토큰 필요";
     refreshAllCardsPdfUI();
+    updatePendingSummary();
   });
 
   // 1) 불러오기
@@ -577,14 +692,14 @@ document.addEventListener("DOMContentLoaded", () => {
       await loadContentJson(token);
       await loadFilesDirIndex(token);
       renderAll();
-      setMsg("불러오기 완료. 이제 수정/첨부/삭제 후 '저장'하면 한 번에 커밋됩니다.", "ok");
+      setMsg("불러오기 완료. 수정/첨부/삭제 후 '저장'하면 한 번에 커밋됩니다.", "ok");
     } catch (e) {
       console.error(e);
       setMsg(String(e.message || e), "err");
     }
   });
 
-  // 2) 서비스 추가(구조 변경 → 현재 폼값 스냅샷 후 렌더)
+  // 2) 서비스 추가
   $("btnAddSvc").addEventListener("click", () => {
     if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] } };
 
@@ -592,7 +707,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!requireEl("editor").classList.contains("hidden")) {
       const snap = snapshotFromFormWithUids();
       loadedData.services = ensureServiceUids(snap.services);
-      loadedData.notice = snap.notice;
+      loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
     }
 
     loadedData.services.push({
@@ -612,10 +727,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const snap = snapshotFromFormWithUids();
     loadedData.services = ensureServiceUids(snap.services);
-    loadedData.notice = snap.notice;
+    loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
 
     if (!loadedData.notice) loadedData.notice = { noticeId: "", items: [] };
-    loadedData.notice.items.push({ title: "", sub: "" });
+    loadedData.notice.items.push({ _uid: makeUid(), title: "", sub: "" });
     renderAll();
   });
 
@@ -632,15 +747,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // (A) 서비스 삭제
     const delSvcBtn = e.target.closest("button[data-act='delSvc']");
     if (delSvcBtn) {
-      // 현재 입력값 유지 스냅샷
       const snap = snapshotFromFormWithUids();
       loadedData.services = ensureServiceUids(snap.services);
-      loadedData.notice = snap.notice;
+      loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
 
-      // 삭제할 uid 찾기
       const idx = loadedData.services.findIndex((s) => String(s._uid) === String(uid));
       if (idx >= 0) {
-        // 이 서비스에 스테이징된 PDF 변경이 있으면 제거
         stagedPdfOps.delete(uid);
         loadedData.services.splice(idx, 1);
       }
@@ -668,30 +780,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const cur = stagedPdfOps.get(uid);
 
-      // 삭제 취소(undo)
+      // 삭제 취소
       if (cur?.type === "delete") {
         stagedPdfOps.delete(uid);
         refreshCardPdfUI(card);
-        setMsg(`PDF 삭제 취소됨(저장 대기 취소): ${pdfNameForService(svcName)}`, "ok");
+        updatePendingSummary();
+        setMsg(`PDF 삭제 취소됨: ${pdfNameForService(svcName)}`, "ok");
         return;
       }
 
-      // 현재 업서트 대기 중이면: (1) repo 원본 있으면 delete로 전환, (2) 원본 없으면 스테이징 제거
+      // 업서트 대기 중이면: 원본 있으면 delete로 전환, 원본 없으면 업서트 취소
       if (cur?.type === "upsert") {
         const fileName = pdfNameForService(svcName);
         if (filesIndex.has(fileName)) {
           stagedPdfOps.set(uid, { type: "delete" });
           refreshCardPdfUI(card);
+          updatePendingSummary();
           setMsg(`PDF 삭제 예정으로 변경됨: ${fileName} (저장 필요)`, "ok");
         } else {
           stagedPdfOps.delete(uid);
           refreshCardPdfUI(card);
+          updatePendingSummary();
           setMsg(`PDF 첨부 대기 취소됨: ${fileName}`, "ok");
         }
         return;
       }
 
-      // staged 없음 → repo에 원본이 있으면 delete 예약
+      // staged 없음 → repo에 원본 있으면 delete 예약
       const fileName = pdfNameForService(svcName);
       if (!filesIndex.has(fileName)) {
         setMsg(`삭제할 PDF가 없습니다: ${fileName}`, "err");
@@ -699,6 +814,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       stagedPdfOps.set(uid, { type: "delete" });
       refreshCardPdfUI(card);
+      updatePendingSummary();
       setMsg(`PDF 삭제 예정: ${fileName} (저장 필요)`, "ok");
     }
   });
@@ -714,7 +830,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const svcName = norm(card?.querySelector('input[data-k="name"]')?.value);
 
     const file = input.files?.[0];
-    input.value = ""; // 같은 파일 재선택 가능
+    input.value = "";
 
     if (!file) return;
     if (!token) return setMsg("토큰을 입력하세요.", "err");
@@ -732,6 +848,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       refreshCardPdfUI(card);
+      updatePendingSummary();
 
       const fileName = pdfNameForService(svcName);
       setMsg(`PDF ${filesIndex.has(fileName) ? "교체" : "첨부"} 저장 대기: ${fileName}`, "ok");
@@ -741,32 +858,40 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 6) name 입력 변경 시 PDF 상태도 즉시 갱신
+  // 6) 서비스 입력 변화 → 요약 갱신 + (name이면 PDF UI 갱신)
   $("svcList").addEventListener("input", (e) => {
-    if (!e.target.matches('input[data-k="name"]')) return;
-    const card = e.target.closest(".card");
-    if (card) refreshCardPdfUI(card);
+    updatePendingSummary();
+    if (e.target.matches('input[data-k="name"]')) {
+      const card = e.target.closest(".card");
+      if (card) refreshCardPdfUI(card);
+    }
   });
 
-  // 7) 공지 삭제
+  // 7) 공지 삭제(UID 기반)
   $("noticeList").addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-act='delNotice']");
     if (!btn) return;
 
-    // 현재 입력값 유지 스냅샷
     const snap = snapshotFromFormWithUids();
     loadedData.services = ensureServiceUids(snap.services);
-    loadedData.notice = snap.notice;
+    loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
 
     const card = btn.closest(".card");
-    const idx = Number(card?.dataset?.idx);
-    if (!Number.isFinite(idx)) return;
+    const uid = card?.dataset?.uid;
+    if (!uid) return;
 
-    loadedData.notice.items.splice(idx, 1);
+    const i = loadedData.notice.items.findIndex((x) => String(x._uid) === String(uid));
+    if (i < 0) return;
+
+    loadedData.notice.items.splice(i, 1);
     renderAll();
   });
 
-  // 8) 저장(한 번에 커밋 한 번)
+  // 8) 공지/noticeId 입력 변화 → 요약 갱신
+  $("noticeList").addEventListener("input", () => updatePendingSummary());
+  $("noticeId").addEventListener("input", () => updatePendingSummary());
+
+  // 9) 저장(한 번에 커밋 한 번)
   $("btnSave").addEventListener("click", async () => {
     setSaveMsg("");
 
@@ -779,17 +904,14 @@ document.addEventListener("DOMContentLoaded", () => {
         return setSaveMsg("noticeId(기준일)를 입력하세요.", "err");
       }
 
-      // file changes 계산(내용 + PDF)
       const { additions, deletions } = buildFileChangesForCommit(snap);
-
-      // 변경이 없더라도 content.json은 항상 갱신 커밋됨(원치 않으면 여기서 비교 로직 추가 가능)
       const headline = norm($("commitMsg")?.value) || "Update via admin";
 
       setSaveMsg("저장 중… (한 번의 커밋으로 반영)", "");
 
       const commit = await createSingleCommit(token, headline, additions, deletions);
 
-      // 성공 후: repo 기준으로 다시 읽어와 UI 동기화
+      // 성공 후: repo 기준으로 다시 로드해 UI 동기화
       await loadContentJson(token);
       await loadFilesDirIndex(token);
       renderAll();
