@@ -84,6 +84,71 @@
     .check{display:flex;align-items:center;gap:8px;margin-top:10px;color:var(--muted);font-size:12px;}
     .divider{height:1px;background:var(--line);margin:12px 0;}
     .hidden{display:none !important;}
+    /* --- Pending Summary Board --- */
+    .pending-board{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+    .pending-card{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px 12px 10px;
+      background: rgba(255,255,255,.04);
+    }
+    .pending-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .pending-title{
+      font-size:12px;
+      color: var(--muted);
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .badge{
+      font-size:11px;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(148,163,184,.12);
+      color: #e2e8f0;
+    }
+    .pending-total{
+      font-size:24px;
+      font-weight:800;
+      letter-spacing:-.02em;
+    }
+    .pending-sub{
+      margin-top:8px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      font-size:12px;
+      color: var(--muted);
+    }
+    .kv{
+      display:flex;
+      gap:6px;
+      align-items:baseline;
+      border:1px solid var(--line);
+      background: rgba(148,163,184,.08);
+      padding:4px 8px;
+      border-radius:10px;
+    }
+    .kv b{
+      font-size:13px;
+      color: #e2e8f0;
+    }
+    @media (max-width: 900px){
+      .pending-board{ grid-template-columns: 1fr; }
+    }
+
+    
   </style>
 </head>
 
@@ -151,7 +216,63 @@
         <div class="divider"></div>
 
         <h3 style="margin:0 0 6px;font-size:14px;">저장(커밋)</h3>
-        <div class="small">변경사항(저장 대기): <b id="pendingSummary">-</b></div>
+        <div class="small">저장 대기 변경사항</div>
+
+        <div class="pending-board">
+          <!-- PDF -->
+          <div class="pending-card">
+            <div class="pending-top">
+              <div class="pending-title">
+                <span class="badge">PDF</span>
+                <span>소개 파일</span>
+              </div>
+              <div class="pending-total" id="p_pdf_total">0</div>
+            </div>
+            <div class="pending-sub">
+              <span class="kv">첨부 <b id="p_pdf_attach">0</b></span>
+              <span class="kv">교체 <b id="p_pdf_replace">0</b></span>
+              <span class="kv">삭제 <b id="p_pdf_delete">0</b></span>
+            </div>
+          </div>
+        
+          <!-- 서비스 -->
+          <div class="pending-card">
+            <div class="pending-top">
+              <div class="pending-title">
+                <span class="badge">서비스</span>
+                <span>카드/정보</span>
+              </div>
+              <div class="pending-total" id="p_svc_total">0</div>
+            </div>
+            <div class="pending-sub">
+              <span class="kv">추가 <b id="p_svc_add">0</b></span>
+              <span class="kv">수정 <b id="p_svc_mod">0</b></span>
+              <span class="kv">삭제 <b id="p_svc_del">0</b></span>
+            </div>
+          </div>
+        
+          <!-- 공지 -->
+          <div class="pending-card">
+            <div class="pending-top">
+              <div class="pending-title">
+                <span class="badge">공지</span>
+                <span>목록/기준일</span>
+              </div>
+              <div class="pending-total" id="p_nt_total">0</div>
+            </div>
+            <div class="pending-sub">
+              <span class="kv">추가 <b id="p_nt_add">0</b></span>
+              <span class="kv">수정 <b id="p_nt_mod">0</b></span>
+              <span class="kv">삭제 <b id="p_nt_del">0</b></span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- (호환용) 기존 pendingSummary는 숨겨두기: JS 패치 전까지 에러 방지용 -->
+        <div style="display:none">
+          <b id="pendingSummary">-</b>
+        </div>
+
         <div class="grid2">
           <div>
             <label for="commitMsg">커밋 메시지</label>
