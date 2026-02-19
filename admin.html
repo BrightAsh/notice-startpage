@@ -3,61 +3,177 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>콘텐츠 관리자</title>
+  <title>AI Field </title>
+  <link rel="icon" href="./asset/logo.png" type="image/png" />
   <meta name="color-scheme" content="light dark" />
   <style>
     :root{
-      --bg:#0b1220; --panel:rgba(255,255,255,.06); --panel2:rgba(255,255,255,.08);
-      --text:rgba(255,255,255,.92); --muted:rgba(255,255,255,.68); --line:rgba(255,255,255,.14);
-      --accent:#5eead4; --warn:#fbbf24; --ok:#34d399; --danger:#fb7185;
-      --shadow:0 18px 55px rgba(0,0,0,.35); --radius:18px; --radius2:14px;
+      /* base */
+      --bg:#0b1220;
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.68);
+      --line:rgba(255,255,255,.14);
+
+      /* surfaces */
+      --panel:rgba(255,255,255,.06);
+      --panel2:rgba(255,255,255,.09);
+      --card:rgba(255,255,255,.045);
+      --field:rgba(255,255,255,.05);
+      --chip:rgba(255,255,255,.07);
+
+      /* accents */
+      --accent:#5eead4;
+      --accent2:rgba(94,234,212,.14);
+      --warn:#fbbf24;
+      --ok:#34d399;
+      --danger:#fb7185;
+
+      /* shadow/radius/font */
+      --shadow:0 18px 55px rgba(0,0,0,.35);
+      --shadow2:0 10px 24px rgba(0,0,0,.26);
+      --radius:18px;
+      --radius2:14px;
+      --radius3:12px;
       --font:system-ui,-apple-system,Segoe UI,Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+
+      /* focus */
+      --focus:rgba(94,234,212,.35);
     }
+
     @media (prefers-color-scheme: light){
       :root{
-        --bg:#f6f7fb; --panel:rgba(255,255,255,.72); --panel2:rgba(255,255,255,.92);
-        --text:rgba(17,24,39,.92); --muted:rgba(17,24,39,.62); --line:rgba(17,24,39,.12);
-        --shadow:0 18px 55px rgba(17,24,39,.12);
+        --bg:#f2f5fb;
+        --text:rgba(15,23,42,.92);
+        --muted:rgba(51,65,85,.72);
+        --line:rgba(30,41,59,.14);
+
+        --panel:rgba(255,255,255,.90);
+        --panel2:rgba(255,255,255,.98);
+        --card:rgba(248,250,255,.92);
+        --field:rgba(255,255,255,.98);
+        --chip:rgba(15,23,42,.05);
+
+        --shadow:0 18px 55px rgba(15,23,42,.10);
+        --shadow2:0 10px 24px rgba(15,23,42,.10);
+
+        /* light mode accent: calm blue-teal */
+        --accent:#0ea5e9;
+        --accent2:rgba(14,165,233,.12);
+        --focus:rgba(14,165,233,.28);
       }
     }
+
     *{box-sizing:border-box;}
     body{
-      margin:0; font-family:var(--font); color:var(--text);
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
       background:
-        radial-gradient(1200px 500px at 15% 0%, rgba(94,234,212,.18), transparent 55%),
-        radial-gradient(900px 450px at 95% 10%, rgba(251,191,36,.16), transparent 50%),
-        radial-gradient(1000px 600px at 60% 120%, rgba(96,165,250,.14), transparent 55%),
+        radial-gradient(1200px 500px at 15% 0%, rgba(94,234,212,.16), transparent 55%),
+        radial-gradient(900px 450px at 95% 10%, rgba(251,191,36,.12), transparent 55%),
+        radial-gradient(1000px 600px at 60% 120%, rgba(96,165,250,.12), transparent 55%),
         var(--bg);
     }
+
     .wrap{max-width:1100px;margin:0 auto;padding:22px 18px 32px;}
     header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:6px 2px 18px;}
     h1{margin:0;font-size:20px;font-weight:900;letter-spacing:-0.02em;}
-    .sub{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.4;}
-    .pill{font-size:12px;padding:4px 10px;border-radius:999px;background:rgba(94,234,212,.14);border:1px solid rgba(94,234,212,.28);font-weight:700;}
+    .sub{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.45;}
+
+    .pill{
+      font-size:12px;
+      padding:4px 10px;
+      border-radius:999px;
+      background:var(--accent2);
+      border:1px solid rgba(94,234,212,.28);
+      font-weight:800;
+      color:var(--text);
+    }
+    @media (prefers-color-scheme: light){
+      .pill{border-color:rgba(14,165,233,.24);}
+    }
+
     .panel{
-      background:var(--panel); border:1px solid var(--line);
-      border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;
+      background:linear-gradient(180deg, var(--panel2), var(--panel));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
       margin-top:14px;
     }
-    .panel-hd{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+    .panel-hd{
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+      background:rgba(148,163,184,.06);
+    }
+    @media (prefers-color-scheme: light){
+      .panel-hd{background:rgba(30,41,59,.04);}
+    }
     .panel-title{margin:0;font-size:15px;font-weight:900;letter-spacing:-0.02em;}
     .panel-bd{padding:14px 16px 16px;}
+
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px;}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px;font-weight:700;}
     input[type="text"], input[type="password"], textarea{
-      width:100%; padding:10px 12px; border-radius:12px;
-      border:1px solid var(--line); background:rgba(255,255,255,.04); color:var(--text);
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:var(--field);
+      color:var(--text);
       outline:none;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+    input[type="text"]:focus, input[type="password"]:focus, textarea:focus{
+      border-color:var(--focus);
+      box-shadow:0 0 0 4px rgba(94,234,212,.10);
+    }
+    @media (prefers-color-scheme: light){
+      input[type="text"]:focus, input[type="password"]:focus, textarea:focus{
+        box-shadow:0 0 0 4px rgba(14,165,233,.10);
+      }
     }
     textarea{min-height:88px;resize:vertical;white-space:pre-wrap;}
     .field{flex:1;min-width:240px;}
+
     .btn{
-      appearance:none; border:1px solid var(--line); background:var(--panel);
-      color:var(--text); padding:10px 12px; border-radius:12px;
-      cursor:pointer; font-weight:800; font-size:13px;
+      appearance:none;
+      border:1px solid var(--line);
+      background:var(--panel);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:900;
+      font-size:13px;
+      box-shadow:var(--shadow2);
     }
-    .btn:hover{background:var(--panel2);border-color:rgba(94,234,212,.35);}
-    .btn.primary{background:rgba(94,234,212,.14);border-color:rgba(94,234,212,.32);}
+    .btn:hover{background:var(--panel2);border-color:rgba(94,234,212,.28);}
+    .btn:active{transform:translateY(1px);}
+    .btn:focus-visible{
+      outline:none;
+      box-shadow:0 0 0 4px rgba(94,234,212,.12), var(--shadow2);
+      border-color:rgba(94,234,212,.35);
+    }
+    @media (prefers-color-scheme: light){
+      .btn:hover{border-color:rgba(14,165,233,.22);}
+      .btn:focus-visible{
+        box-shadow:0 0 0 4px rgba(14,165,233,.12), var(--shadow2);
+        border-color:rgba(14,165,233,.30);
+      }
+    }
+
+    .btn.primary{
+      background:var(--accent2);
+      border-color:rgba(94,234,212,.32);
+    }
+    @media (prefers-color-scheme: light){
+      .btn.primary{border-color:rgba(14,165,233,.30);}
+    }
 
     .btn.danger{
       border-color: rgba(251,113,133,.55);
@@ -67,23 +183,35 @@
       background: rgba(251,113,133,.18);
       border-color: rgba(251,113,133,.75);
     }
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}
 
     .msg{margin-top:10px;font-size:12px;color:var(--muted);}
-    .msg.err{color:rgba(251,113,133,.95);}
-    .msg.ok{color:rgba(52,211,153,.95);}
+    .msg.err{color:rgba(251,113,133,.95);font-weight:800;}
+    .msg.ok{color:rgba(52,211,153,.95);font-weight:800;}
+
     .card{
-      border:1px solid var(--line); background:rgba(255,255,255,.03);
-      border-radius:var(--radius2); padding:12px; margin-top:10px;
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, var(--card), rgba(255,255,255,.02));
+      border-radius:var(--radius2);
+      padding:12px;
+      margin-top:10px;
+      box-shadow:0 8px 18px rgba(0,0,0,.12);
     }
+    @media (prefers-color-scheme: light){
+      .card{box-shadow:0 8px 18px rgba(15,23,42,.06);}
+    }
+
     .card-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;}
     .card-title{font-weight:900;}
-    .small{font-size:12px;color:var(--muted);}
+    .small{font-size:12px;color:var(--muted);line-height:1.45;}
+
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
     @media (max-width:860px){ .grid2{grid-template-columns:1fr;} }
+
     .check{display:flex;align-items:center;gap:8px;margin-top:10px;color:var(--muted);font-size:12px;}
-    .divider{height:1px;background:var(--line);margin:12px 0;}
+    .divider{height:1px;background:var(--line);margin:14px 0;}
     .hidden{display:none !important;}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}
+
     /* --- Pending Summary Board --- */
     .pending-board{
       display:grid;
@@ -95,7 +223,11 @@
       border:1px solid var(--line);
       border-radius:14px;
       padding:12px 12px 10px;
-      background: rgba(255,255,255,.04);
+      background:linear-gradient(180deg, var(--panel2), var(--panel));
+      box-shadow:0 8px 18px rgba(0,0,0,.10);
+    }
+    @media (prefers-color-scheme: light){
+      .pending-card{box-shadow:0 8px 18px rgba(15,23,42,.06);}
     }
     .pending-top{
       display:flex;
@@ -105,50 +237,101 @@
     }
     .pending-title{
       font-size:12px;
-      color: var(--muted);
+      color:var(--muted);
       display:flex;
       align-items:center;
       gap:8px;
+      font-weight:800;
     }
     .badge{
       font-size:11px;
       padding:3px 8px;
       border-radius:999px;
       border:1px solid var(--line);
-      background: rgba(148,163,184,.12);
-      color: #e2e8f0;
+      background:var(--chip);
+      color:var(--text);
+      font-weight:900;
+      letter-spacing:-0.01em;
     }
     .pending-total{
       font-size:24px;
-      font-weight:800;
+      font-weight:900;
       letter-spacing:-.02em;
+      color:var(--text);
     }
     .pending-sub{
-      margin-top:8px;
+      margin-top:10px;
       display:flex;
       flex-wrap:wrap;
       gap:8px;
       font-size:12px;
-      color: var(--muted);
+      color:var(--muted);
     }
     .kv{
       display:flex;
       gap:6px;
       align-items:baseline;
       border:1px solid var(--line);
-      background: rgba(148,163,184,.08);
+      background:var(--chip);
       padding:4px 8px;
       border-radius:10px;
+      font-weight:800;
     }
     .kv b{
       font-size:13px;
-      color: #e2e8f0;
+      color:var(--text);
+      font-weight:900;
     }
+
+    /* subtle per-card tint (no HTML change) */
+    .pending-board .pending-card:nth-child(1) .badge{
+      background: rgba(59,130,246,.14);
+      border-color: rgba(59,130,246,.28);
+      color: rgba(147,197,253,.95);
+    }
+    .pending-board .pending-card:nth-child(1) .pending-total{ color: rgba(147,197,253,.95); }
+    @media (prefers-color-scheme: light){
+      .pending-board .pending-card:nth-child(1) .badge{
+        background: rgba(59,130,246,.12);
+        border-color: rgba(59,130,246,.20);
+        color: rgba(37,99,235,.95);
+      }
+      .pending-board .pending-card:nth-child(1) .pending-total{ color: rgba(37,99,235,.95); }
+    }
+
+    .pending-board .pending-card:nth-child(2) .badge{
+      background: rgba(16,185,129,.14);
+      border-color: rgba(16,185,129,.26);
+      color: rgba(167,243,208,.95);
+    }
+    .pending-board .pending-card:nth-child(2) .pending-total{ color: rgba(167,243,208,.95); }
+    @media (prefers-color-scheme: light){
+      .pending-board .pending-card:nth-child(2) .badge{
+        background: rgba(16,185,129,.10);
+        border-color: rgba(16,185,129,.18);
+        color: rgba(5,150,105,.95);
+      }
+      .pending-board .pending-card:nth-child(2) .pending-total{ color: rgba(5,150,105,.95); }
+    }
+
+    .pending-board .pending-card:nth-child(3) .badge{
+      background: rgba(139,92,246,.14);
+      border-color: rgba(139,92,246,.26);
+      color: rgba(221,214,254,.95);
+    }
+    .pending-board .pending-card:nth-child(3) .pending-total{ color: rgba(221,214,254,.95); }
+    @media (prefers-color-scheme: light){
+      .pending-board .pending-card:nth-child(3) .badge{
+        background: rgba(139,92,246,.10);
+        border-color: rgba(139,92,246,.18);
+        color: rgba(109,40,217,.95);
+      }
+      .pending-board .pending-card:nth-child(3) .pending-total{ color: rgba(109,40,217,.95); }
+    }
+
     @media (max-width: 900px){
       .pending-board{ grid-template-columns: 1fr; }
     }
-
-    
   </style>
 </head>
 
@@ -156,8 +339,13 @@
   <div class="wrap">
     <header>
       <div>
-        <h1>콘텐츠 관리자</h1>
-        <div class="sub">토큰만 입력 → <b>불러오기</b>로 content.json 읽기 → 수정 → <b>저장</b>으로 커밋 반영</div>
+        <h1>AI Field Homepage 관리자</h1>
+        <div class="sub">
+          1. 비밀번호(토큰) 입력 <br>
+          2. <b>불러오기</b> 클릭 (에러 떠도 계속 시도 - 회사 네트워크 오류) <br>
+          3. 변경 사항 수정 <br>
+          4. <b>저장</b> 클릭 (홈페이지 적용까지 다소 시간 소요)
+        </div>
       </div>
       <div class="pill" id="repoPill">repo: -</div>
     </header>
@@ -167,7 +355,6 @@
       <div class="panel-hd">
         <div>
           <h2 class="panel-title">1) 로그인</h2>
-          <div class="small">Fine-grained PAT 권장 (Contents: Read/Write · 모든 변경은 저장 시 1커밋으로 반영)</div>
         </div>
         <span class="pill" id="tokenState">토큰 필요</span>
       </div>
@@ -191,13 +378,14 @@
       <div class="panel-hd">
         <div>
           <h2 class="panel-title">2) 수정</h2>
-          <div class="small">services / notice를 폼에서 수정합니다. (Raw JSON 없음)</div>
+          <div class="small">services / notice를 수정합니다.</div>
         </div>
       </div>
 
       <div class="panel-bd">
         <h3 style="margin:0 0 6px;font-size:14px;">서비스 목록</h3>
-        <div class="small">카드 단위로 추가/삭제 가능 · PDF는 <span class="mono">files/{서비스명}.pdf</span> · 첨부/삭제/교체는 저장 전까지 “대기”로만 표시됨</div>
+        <div class="small">PDF는 업로드한 파일명이 무엇이든, <b><span class="mono">저장 시 자동으로 files/{서비스명}.pdf</span></b>로 저장됩니다. (서비스명은 위 <b>name</b> 기준)</div>
+        
         <div id="svcList"></div>
         <button class="btn" id="btnAddSvc" style="margin-top:10px;">+ 서비스 추가</button>
 
@@ -215,8 +403,7 @@
 
         <div class="divider"></div>
 
-        <h3 style="margin:0 0 6px;font-size:14px;">저장(커밋)</h3>
-        <div class="small">저장 대기 변경사항</div>
+        <h3 style="margin:0 0 6px;font-size:14px;">변경사항</h3>
 
         <div class="pending-board">
           <!-- PDF -->
@@ -234,7 +421,7 @@
               <span class="kv">삭제 <b id="p_pdf_delete">0</b></span>
             </div>
           </div>
-        
+
           <!-- 서비스 -->
           <div class="pending-card">
             <div class="pending-top">
@@ -250,7 +437,7 @@
               <span class="kv">삭제 <b id="p_svc_del">0</b></span>
             </div>
           </div>
-        
+
           <!-- 공지 -->
           <div class="pending-card">
             <div class="pending-top">
@@ -267,13 +454,11 @@
             </div>
           </div>
         </div>
-        
-        <!-- (호환용) 기존 pendingSummary는 숨겨두기: JS 패치 전까지 에러 방지용 -->
-        <div style="display:none">
-          <b id="pendingSummary">-</b>
-        </div>
 
-        <div class="grid2">
+        <!-- 호환용(숨김): 예전 pendingSummary 기반 JS가 남아있어도 에러 안 나게 -->
+        <div style="display:none"><b id="pendingSummary">-</b></div>
+
+        <div class="grid2" style="margin-top:12px;">
           <div>
             <label for="commitMsg">커밋 메시지</label>
             <input id="commitMsg" type="text" value="Update content.json via admin" />
