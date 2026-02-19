@@ -587,23 +587,31 @@ function isNoticeChanged(orig, cur) {
 }
 
 function updatePendingSummary() {
-  const el = document.getElementById("pendingSummary");
-  if (!el) return;
+  // 보드 숫자 갱신용 헬퍼
+  const setNum = (id, n) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(n);
+  };
+
+  // (호환용) 숨김 텍스트도 같이 유지
+  const legacy = document.getElementById("pendingSummary");
 
   const editor = document.getElementById("editor");
   if (!editor || editor.classList.contains("hidden") || !loadedData) {
-    el.textContent = "-";
+    // 초기화
+    setNum("p_pdf_total", 0); setNum("p_pdf_attach", 0); setNum("p_pdf_replace", 0); setNum("p_pdf_delete", 0);
+    setNum("p_svc_total", 0); setNum("p_svc_add", 0); setNum("p_svc_mod", 0); setNum("p_svc_del", 0);
+    setNum("p_nt_total", 0);  setNum("p_nt_add", 0);  setNum("p_nt_mod", 0);  setNum("p_nt_del", 0);
+    if (legacy) legacy.textContent = "-";
     return;
   }
 
   const snap = snapshotFromFormWithUids();
 
-  // PDF(스테이징)
-  let pdfAttach = 0,
-    pdfReplace = 0,
-    pdfDelete = 0;
-
+  // ===== PDF(스테이징) =====
+  let pdfAttach = 0, pdfReplace = 0, pdfDelete = 0;
   const curSvcByUid = new Map((snap.services || []).map((s) => [String(s._uid), s]));
+
   for (const [uid, op] of stagedPdfOps.entries()) {
     const svc = curSvcByUid.get(String(uid));
     const svcName = norm(svc?.name);
@@ -618,10 +626,8 @@ function updatePendingSummary() {
   }
   const pdfTotal = pdfAttach + pdfReplace + pdfDelete;
 
-  // 서비스(원본 vs 현재)
-  let svcAdd = 0,
-    svcMod = 0,
-    svcDel = 0;
+  // ===== 서비스(원본 vs 현재) =====
+  let svcAdd = 0, svcMod = 0, svcDel = 0;
 
   for (const [uid, cur] of curSvcByUid.entries()) {
     const orig = originalSvcByUid.get(String(uid));
@@ -633,11 +639,9 @@ function updatePendingSummary() {
   }
   const svcTotal = svcAdd + svcMod + svcDel;
 
-  // 공지(원본 vs 현재)
+  // ===== 공지(원본 vs 현재) =====
   const curNtByUid = new Map(((snap.notice?.items) || []).map((it) => [String(it._uid), it]));
-  let ntAdd = 0,
-    ntMod = 0,
-    ntDel = 0;
+  let ntAdd = 0, ntMod = 0, ntDel = 0;
 
   for (const [uid, cur] of curNtByUid.entries()) {
     const orig = originalNoticeByUid.get(String(uid));
@@ -648,16 +652,36 @@ function updatePendingSummary() {
     if (!curNtByUid.has(String(uid))) ntDel += 1;
   }
 
-  // noticeId 변경도 수정으로 포함(원치 않으면 다음 줄 삭제)
+  // noticeId 변경도 수정으로 포함(원치 않으면 아래 1줄 삭제)
   if (norm(snap.notice?.noticeId) !== norm(originalNoticeId)) ntMod += 1;
 
   const ntTotal = ntAdd + ntMod + ntDel;
 
-  el.textContent =
-    `PDF ${pdfTotal}(첨부${pdfAttach}/교체${pdfReplace}/삭제${pdfDelete}) · ` +
-    `서비스 ${svcTotal}(추가${svcAdd}/수정${svcMod}/삭제${svcDel}) · ` +
-    `공지 ${ntTotal}(추가${ntAdd}/수정${ntMod}/삭제${ntDel})`;
+  // ===== 보드 반영 =====
+  setNum("p_pdf_total", pdfTotal);
+  setNum("p_pdf_attach", pdfAttach);
+  setNum("p_pdf_replace", pdfReplace);
+  setNum("p_pdf_delete", pdfDelete);
+
+  setNum("p_svc_total", svcTotal);
+  setNum("p_svc_add", svcAdd);
+  setNum("p_svc_mod", svcMod);
+  setNum("p_svc_del", svcDel);
+
+  setNum("p_nt_total", ntTotal);
+  setNum("p_nt_add", ntAdd);
+  setNum("p_nt_mod", ntMod);
+  setNum("p_nt_del", ntDel);
+
+  // (호환용) 기존 문자열도 유지
+  if (legacy) {
+    legacy.textContent =
+      `PDF ${pdfTotal}(첨부${pdfAttach}/교체${pdfReplace}/삭제${pdfDelete}) · ` +
+      `서비스 ${svcTotal}(추가${svcAdd}/수정${svcMod}/삭제${svcDel}) · ` +
+      `공지 ${ntTotal}(추가${ntAdd}/수정${ntMod}/삭제${ntDel})`;
+  }
 }
+
 
 // ===== init =====
 document.addEventListener("DOMContentLoaded", () => {
