@@ -342,9 +342,14 @@
         <h1>AI Field Homepage 관리자</h1>
         <div class="sub">
           1. 비밀번호(토큰) 입력 <br>
-          2. <b>불러오기</b> 클릭 (에러 떠도 계속 시도 - 회사 네트워크 오류) <br>
+          2. <b>불러오기</b> 클릭 <br>
+          &nbsp;&nbsp;- <code>Failed to fetch</code>가 뜰 경우 <br>
+          &nbsp;&nbsp;&nbsp;&nbsp;1) 시크릿 모드로 접속 후 시도 <br>
+          &nbsp;&nbsp;&nbsp;&nbsp;2) (시크릿 모드가 아닐 경우) Chrome 확장 프로그램을 잠시 비활성화 후 재시도 <br>
           3. 변경 사항 수정 <br>
-          4. <b>저장</b> 클릭 (홈페이지 적용까지 다소 시간 소요)
+          4. <b>저장</b> 클릭 <br>
+          &nbsp;&nbsp;- 홈페이지 반영까지 약간의 시간이 걸릴 수 있음 <br>
+          &nbsp;&nbsp;- <code>Failed to fetch</code>가 뜰 경우: 다시 <b>2. 불러오기</b> 후 재시도 <br>
         </div>
       </div>
       <div class="pill" id="repoPill">repo: -</div>
