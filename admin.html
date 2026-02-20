@@ -379,6 +379,36 @@
       padding:12px;
       border-top:1px solid var(--line);
     }
+    /* ===== 작게보기(summary) 액션 버튼 ===== */
+    .sum-right{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .sum-actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .sum-actions .sum-btn{
+      padding:6px 10px;
+      font-size:12px;
+      box-shadow:none;
+    }
+    .sum-title{
+      flex:1;
+      min-width:140px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    
+    /* 펼치면 summary 액션 버튼 숨김(펼친 화면은 기존 그대로 사용) */
+    details.card[open] > summary .sum-actions{
+      display:none;
+    }
   </style>
 </head>
 
