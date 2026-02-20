@@ -3,32 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Field </title>
+  <title>AI Field</title>
   <link rel="icon" href="./asset/logo.png" type="image/png" />
   <meta name="color-scheme" content="light dark" />
   <style>
     :root{
-      /* base */
       --bg:#0b1220;
       --text:rgba(255,255,255,.92);
       --muted:rgba(255,255,255,.68);
       --line:rgba(255,255,255,.14);
 
-      /* surfaces */
       --panel:rgba(255,255,255,.06);
       --panel2:rgba(255,255,255,.09);
       --card:rgba(255,255,255,.045);
       --field:rgba(255,255,255,.05);
       --chip:rgba(255,255,255,.07);
 
-      /* accents */
       --accent:#5eead4;
       --accent2:rgba(94,234,212,.14);
       --warn:#fbbf24;
       --ok:#34d399;
       --danger:#fb7185;
 
-      /* shadow/radius/font */
       --shadow:0 18px 55px rgba(0,0,0,.35);
       --shadow2:0 10px 24px rgba(0,0,0,.26);
       --radius:18px;
@@ -36,7 +32,6 @@
       --radius3:12px;
       --font:system-ui,-apple-system,Segoe UI,Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
 
-      /* focus */
       --focus:rgba(94,234,212,.35);
     }
 
@@ -56,7 +51,6 @@
         --shadow:0 18px 55px rgba(15,23,42,.10);
         --shadow2:0 10px 24px rgba(15,23,42,.10);
 
-        /* light mode accent: calm blue-teal */
         --accent:#0ea5e9;
         --accent2:rgba(14,165,233,.12);
         --focus:rgba(14,165,233,.28);
@@ -283,7 +277,7 @@
       font-weight:900;
     }
 
-    /* subtle per-card tint (no HTML change) */
+    /* subtle per-card tint */
     .pending-board .pending-card:nth-child(1) .badge{
       background: rgba(59,130,246,.14);
       border-color: rgba(59,130,246,.28);
@@ -332,6 +326,59 @@
     @media (max-width: 900px){
       .pending-board{ grid-template-columns: 1fr; }
     }
+
+    /* ===== 접기/펼치기(details) 스타일 ===== */
+    details.card{
+      padding:0; /* 기존 .card padding override */
+    }
+    details.card > summary{
+      list-style:none;
+      cursor:pointer;
+      padding:12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      user-select:none;
+    }
+    details.card > summary::-webkit-details-marker{ display:none; }
+    .sum-title{
+      font-weight:900;
+      letter-spacing:-0.01em;
+      color:var(--text);
+    }
+    .chev{
+      width:28px;
+      height:28px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background:var(--chip);
+      color:var(--text);
+      font-size:18px;
+      line-height:1;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+      transform: rotate(0deg);
+    }
+    details.card[open] > summary .chev{
+      transform: rotate(90deg); /* › 가 아래 방향처럼 보이게 */
+    }
+    details.card > summary:hover .chev{
+      border-color: rgba(94,234,212,.28);
+      background: rgba(94,234,212,.10);
+    }
+    @media (prefers-color-scheme: light){
+      details.card > summary:hover .chev{
+        border-color: rgba(14,165,233,.22);
+        background: rgba(14,165,233,.08);
+      }
+    }
+    .card-body{
+      padding:12px;
+      border-top:1px solid var(--line);
+    }
   </style>
 </head>
 
@@ -342,12 +389,9 @@
         <h1>AI Field Homepage 관리자</h1>
         <div class="sub">
           1. 비밀번호(토큰) 입력 <br>
-          2. <b>불러오기</b> 클릭 <br>
-          &nbsp;&nbsp;- 'Failed to fetch'가 뜰 경우 잠시 대기 후 다시 시도 <br>
+          2. <b>불러오기</b> 클릭 (에러 떠도 계속 시도 - 회사 네트워크 오류) <br>
           3. 변경 사항 수정 <br>
-          4. <b>저장</b> 클릭 <br>
-          &nbsp;&nbsp;- 홈페이지 반영까지 약간의 시간이 걸릴 수 있음 <br>
-          &nbsp;&nbsp;- 'Failed to fetch'가 뜰 경우 다시 <b>2. 불러오기</b> 후 재시도 <br>
+          4. <b>저장</b> 클릭 (홈페이지 적용까지 다소 시간 소요)
         </div>
       </div>
       <div class="pill" id="repoPill">repo: -</div>
@@ -387,7 +431,19 @@
 
       <div class="panel-bd">
         <h3 style="margin:0 0 6px;font-size:14px;">서비스 목록</h3>
-        <!-- Prompt Guide PDF (고정 / 교체만) -->
+        <div class="small">
+          PDF는 업로드 파일명과 무관하게, <b><span class="mono">저장 시 files/{서비스명}.pdf</span></b>로 자동 저장됩니다.
+          (서비스명은 위 <b>name</b> 기준)
+        </div>
+
+        <div id="svcList"></div>
+        <button class="btn" id="btnAddSvc" style="margin-top:10px;">+ 서비스 추가</button>
+
+        <!-- ✅ Prompt 섹션: 서비스 ↔ 공지 사이 -->
+        <div class="divider"></div>
+        <h3 style="margin:0 0 6px;font-size:14px;">Prompt</h3>
+        <div class="small">Prompt Guide는 고정 파일이며, 삭제 없이 <b>교체만</b> 가능합니다.</div>
+
         <div class="card" id="promptPdfCard">
           <div class="card-hd">
             <div class="card-title">Prompt Guide (고정)</div>
@@ -395,18 +451,14 @@
               <button class="btn" id="btnPromptPdfReplace">PDF 교체</button>
             </div>
           </div>
-        
+
           <div class="small">
-            업로드한 파일명과 무관하게, <b><span class="mono">저장 시 files/Prompt.pdf</span></b>로 자동 저장됩니다. (삭제 기능 없음)
+            업로드 파일명과 무관하게, <b><span class="mono">저장 시 files/Prompt.pdf</span></b>로 자동 저장됩니다. (삭제 기능 없음)
           </div>
           <div class="small">상태: <b id="promptPdfStatus">-</b></div>
-        
+
           <input id="promptPdfInput" type="file" accept="application/pdf" class="hidden" />
         </div>
-        <div class="small">PDF는 업로드한 파일명이 무엇이든, <b><span class="mono">저장 시 자동으로 files/{서비스명}.pdf</span></b>로 저장됩니다. (서비스명은 위 <b>name</b> 기준)</div>
-        
-        <div id="svcList"></div>
-        <button class="btn" id="btnAddSvc" style="margin-top:10px;">+ 서비스 추가</button>
 
         <div class="divider"></div>
 
@@ -474,7 +526,6 @@
           </div>
         </div>
 
-        <!-- 호환용(숨김): 예전 pendingSummary 기반 JS가 남아있어도 에러 안 나게 -->
         <div style="display:none"><b id="pendingSummary">-</b></div>
 
         <div class="grid2" style="margin-top:12px;">
@@ -489,6 +540,7 @@
     </section>
   </div>
 
-  <script src="./admin.js" defer></script>
+  <!-- ✅ 캐시 이슈 있으면 v= 값을 바꾸세요 -->
+  <script src="./admin.js?v=1" defer></script>
 </body>
 </html>
