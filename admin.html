@@ -1,546 +1,981 @@
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Field</title>
-  <link rel="icon" href="./asset/logo.png" type="image/png" />
-  <meta name="color-scheme" content="light dark" />
-  <style>
-    :root{
-      --bg:#0b1220;
-      --text:rgba(255,255,255,.92);
-      --muted:rgba(255,255,255,.68);
-      --line:rgba(255,255,255,.14);
+// ===== 고정 설정 =====
+const OWNER = "BrightAsh";
+const REPO = "notice-startpage";
+const BRANCH = "main";
+const FILE_PATH = "content.json";
+const FILES_DIR = "files";
 
-      --panel:rgba(255,255,255,.06);
-      --panel2:rgba(255,255,255,.09);
-      --card:rgba(255,255,255,.045);
-      --field:rgba(255,255,255,.05);
-      --chip:rgba(255,255,255,.07);
+// Prompt Guide (고정 PDF: 교체만, 삭제 없음)
+const PROMPT_PDF_NAME = "Prompt.pdf";
+const PROMPT_PDF_PATH = `${FILES_DIR}/${PROMPT_PDF_NAME}`;
 
-      --accent:#5eead4;
-      --accent2:rgba(94,234,212,.14);
-      --warn:#fbbf24;
-      --ok:#34d399;
-      --danger:#fb7185;
+// ===== DOM helpers =====
+const $ = (id) => document.getElementById(id);
 
-      --shadow:0 18px 55px rgba(0,0,0,.35);
-      --shadow2:0 10px 24px rgba(0,0,0,.26);
-      --radius:18px;
-      --radius2:14px;
-      --radius3:12px;
-      --font:system-ui,-apple-system,Segoe UI,Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+function setMsg(text, kind = "") {
+  const el = $("msg");
+  if (!el) return;
+  el.className = "msg" + (kind ? " " + kind : "");
+  el.textContent = text || "";
+}
 
-      --focus:rgba(94,234,212,.35);
-    }
+function setSaveMsg(text, kind = "") {
+  const el = $("saveMsg");
+  if (!el) return;
+  el.className = "msg" + (kind ? " " + kind : "");
+  el.textContent = text || "";
+}
 
-    @media (prefers-color-scheme: light){
-      :root{
-        --bg:#f2f5fb;
-        --text:rgba(15,23,42,.92);
-        --muted:rgba(51,65,85,.72);
-        --line:rgba(30,41,59,.14);
+function requireEl(id) {
+  const el = $(id);
+  if (!el) throw new Error(`admin.html에 #${id} 요소가 없습니다. (id 불일치)`);
+  return el;
+}
 
-        --panel:rgba(255,255,255,.90);
-        --panel2:rgba(255,255,255,.98);
-        --card:rgba(248,250,255,.92);
-        --field:rgba(255,255,255,.98);
-        --chip:rgba(15,23,42,.05);
+// ===== util: XSS escape(간단) =====
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+function norm(s) { return String(s ?? "").trim(); }
+function pdfNameForService(serviceName) {
+  const n = norm(serviceName);
+  return n ? `${n}.pdf` : "";
+}
 
-        --shadow:0 18px 55px rgba(15,23,42,.10);
-        --shadow2:0 10px 24px rgba(15,23,42,.10);
+// ===== base64 (UTF-8) =====
+function utf8ToB64(str) {
+  const bytes = new TextEncoder().encode(String(str));
+  let bin = "";
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return btoa(bin);
+}
+function b64ToUtf8(b64) {
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
 
-        --accent:#0ea5e9;
-        --accent2:rgba(14,165,233,.12);
-        --focus:rgba(14,165,233,.28);
+// ===== base64 (binary/PDF) =====
+function arrayBufferToB64(buf) {
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(bin);
+}
+async function fileToB64(file) {
+  const buf = await file.arrayBuffer();
+  return arrayBufferToB64(buf);
+}
+
+// ===== UID =====
+function makeUid() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return "uid_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+}
+function ensureServiceUids(services) {
+  (services || []).forEach((s) => { if (!s._uid) s._uid = makeUid(); });
+  return services;
+}
+function ensureNoticeItemUids(items) {
+  (items || []).forEach((it) => { if (!it._uid) it._uid = makeUid(); });
+  return items;
+}
+
+// ===== GitHub REST =====
+function ghRestHeaders(token) {
+  return {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    Authorization: `Bearer ${token}`,
+  };
+}
+function ghRestContentUrl(path) {
+  const p = String(path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  return `https://api.github.com/repos/${OWNER}/${REPO}/contents/${p}`;
+}
+const REST_GET_CONTENT = (path) => `${ghRestContentUrl(path)}?ref=${encodeURIComponent(BRANCH)}`;
+
+// ===== GitHub GraphQL =====
+async function ghGraphQL(token, query, variables) {
+  const res = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/vnd.github+json",
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = json?.message || `${res.status} ${res.statusText}`;
+    throw new Error(`GraphQL HTTP 오류: ${msg}`);
+  }
+  if (json?.errors?.length) {
+    const e0 = json.errors[0];
+    throw new Error(`GraphQL 오류: ${e0?.message || "unknown"}`);
+  }
+  return json.data;
+}
+
+async function getBranchHeadOid(token) {
+  const q = `
+    query($owner:String!, $name:String!, $ref:String!){
+      repository(owner:$owner, name:$name){
+        ref(qualifiedName:$ref){
+          target{ ... on Commit { oid } }
+        }
       }
     }
+  `;
+  const data = await ghGraphQL(token, q, {
+    owner: OWNER,
+    name: REPO,
+    ref: `refs/heads/${BRANCH}`,
+  });
+  const oid = data?.repository?.ref?.target?.oid;
+  if (!oid) throw new Error("브랜치 HEAD OID를 가져오지 못했습니다. (브랜치/권한 확인)");
+  return oid;
+}
 
-    *{box-sizing:border-box;}
-    body{
-      margin:0;
-      font-family:var(--font);
-      color:var(--text);
-      background:
-        radial-gradient(1200px 500px at 15% 0%, rgba(94,234,212,.16), transparent 55%),
-        radial-gradient(900px 450px at 95% 10%, rgba(251,191,36,.12), transparent 55%),
-        radial-gradient(1000px 600px at 60% 120%, rgba(96,165,250,.12), transparent 55%),
-        var(--bg);
-    }
-
-    .wrap{max-width:1100px;margin:0 auto;padding:22px 18px 32px;}
-    header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:6px 2px 18px;}
-    h1{margin:0;font-size:20px;font-weight:900;letter-spacing:-0.02em;}
-    .sub{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.45;}
-
-    .pill{
-      font-size:12px;
-      padding:4px 10px;
-      border-radius:999px;
-      background:var(--accent2);
-      border:1px solid rgba(94,234,212,.28);
-      font-weight:800;
-      color:var(--text);
-    }
-    @media (prefers-color-scheme: light){
-      .pill{border-color:rgba(14,165,233,.24);}
-    }
-
-    .panel{
-      background:linear-gradient(180deg, var(--panel2), var(--panel));
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      margin-top:14px;
-    }
-    .panel-hd{
-      padding:14px 16px;
-      border-bottom:1px solid var(--line);
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:flex-start;
-      background:rgba(148,163,184,.06);
-    }
-    @media (prefers-color-scheme: light){
-      .panel-hd{background:rgba(30,41,59,.04);}
-    }
-    .panel-title{margin:0;font-size:15px;font-weight:900;letter-spacing:-0.02em;}
-    .panel-bd{padding:14px 16px 16px;}
-
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px;font-weight:700;}
-    input[type="text"], input[type="password"], textarea{
-      width:100%;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:var(--field);
-      color:var(--text);
-      outline:none;
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
-    }
-    input[type="text"]:focus, input[type="password"]:focus, textarea:focus{
-      border-color:var(--focus);
-      box-shadow:0 0 0 4px rgba(94,234,212,.10);
-    }
-    @media (prefers-color-scheme: light){
-      input[type="text"]:focus, input[type="password"]:focus, textarea:focus{
-        box-shadow:0 0 0 4px rgba(14,165,233,.10);
+async function createSingleCommit(token, headline, additions, deletions) {
+  const mutation = `
+    mutation($input: CreateCommitOnBranchInput!){
+      createCommitOnBranch(input: $input){
+        commit { oid url }
       }
     }
-    textarea{min-height:88px;resize:vertical;white-space:pre-wrap;}
-    .field{flex:1;min-width:240px;}
+  `;
 
-    .btn{
-      appearance:none;
-      border:1px solid var(--line);
-      background:var(--panel);
-      color:var(--text);
-      padding:10px 12px;
-      border-radius:12px;
-      cursor:pointer;
-      font-weight:900;
-      font-size:13px;
-      box-shadow:var(--shadow2);
-    }
-    .btn:hover{background:var(--panel2);border-color:rgba(94,234,212,.28);}
-    .btn:active{transform:translateY(1px);}
-    .btn:focus-visible{
-      outline:none;
-      box-shadow:0 0 0 4px rgba(94,234,212,.12), var(--shadow2);
-      border-color:rgba(94,234,212,.35);
-    }
-    @media (prefers-color-scheme: light){
-      .btn:hover{border-color:rgba(14,165,233,.22);}
-      .btn:focus-visible{
-        box-shadow:0 0 0 4px rgba(14,165,233,.12), var(--shadow2);
-        border-color:rgba(14,165,233,.30);
-      }
-    }
+  const expectedHeadOid = await getBranchHeadOid(token);
 
-    .btn.primary{
-      background:var(--accent2);
-      border-color:rgba(94,234,212,.32);
-    }
-    @media (prefers-color-scheme: light){
-      .btn.primary{border-color:rgba(14,165,233,.30);}
-    }
+  const input = {
+    branch: {
+      repositoryNameWithOwner: `${OWNER}/${REPO}`,
+      branchName: BRANCH,
+    },
+    message: { headline: headline || "Update via admin", body: "" },
+    expectedHeadOid,
+    fileChanges: { additions, deletions },
+  };
 
-    .btn.danger{
-      border-color: rgba(251,113,133,.55);
-      background: rgba(251,113,133,.14);
-    }
-    .btn.danger:hover{
-      background: rgba(251,113,133,.18);
-      border-color: rgba(251,113,133,.75);
-    }
+  const data = await ghGraphQL(token, mutation, { input });
+  const commit = data?.createCommitOnBranch?.commit;
+  if (!commit?.oid) throw new Error("커밋 생성 결과를 확인하지 못했습니다.");
+  return commit;
+}
 
-    .msg{margin-top:10px;font-size:12px;color:var(--muted);}
-    .msg.err{color:rgba(251,113,133,.95);font-weight:800;}
-    .msg.ok{color:rgba(52,211,153,.95);font-weight:800;}
+// ===== 상태 =====
+let loadedSha = null;
+let loadedData = null;
+let filesIndex = new Set();
+let filesIndexLoaded = false;
 
-    .card{
-      border:1px solid var(--line);
-      background:linear-gradient(180deg, var(--card), rgba(255,255,255,.02));
-      border-radius:var(--radius2);
-      padding:12px;
-      margin-top:10px;
-      box-shadow:0 8px 18px rgba(0,0,0,.12);
-    }
-    @media (prefers-color-scheme: light){
-      .card{box-shadow:0 8px 18px rgba(15,23,42,.06);}
-    }
+// 서비스별 PDF 스테이징
+const stagedPdfOps = new Map();
 
-    .card-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;}
-    .card-title{font-weight:900;}
-    .small{font-size:12px;color:var(--muted);line-height:1.45;}
+// Prompt PDF 스테이징(교체만)
+let stagedPromptPdfOp = null;
 
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
-    @media (max-width:860px){ .grid2{grid-template-columns:1fr;} }
+// 원본 스냅샷
+let originalSvcByUid = new Map();
+let originalNoticeByUid = new Map();
+let originalNoticeId = "";
 
-    .check{display:flex;align-items:center;gap:8px;margin-top:10px;color:var(--muted);font-size:12px;}
-    .divider{height:1px;background:var(--line);margin:14px 0;}
-    .hidden{display:none !important;}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}
+// ===== 접기 카드(서비스/공지) 템플릿 =====
+function serviceSummaryText(idx, name) {
+  const n = norm(name);
+  return n ? `서비스 #${idx + 1} · ${n}` : `서비스 #${idx + 1}`;
+}
 
-    /* --- Pending Summary Board --- */
-    .pending-board{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap:12px;
-      margin-top:10px;
-    }
-    .pending-card{
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:12px 12px 10px;
-      background:linear-gradient(180deg, var(--panel2), var(--panel));
-      box-shadow:0 8px 18px rgba(0,0,0,.10);
-    }
-    @media (prefers-color-scheme: light){
-      .pending-card{box-shadow:0 8px 18px rgba(15,23,42,.06);}
-    }
-    .pending-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .pending-title{
-      font-size:12px;
-      color:var(--muted);
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-weight:800;
-    }
-    .badge{
-      font-size:11px;
-      padding:3px 8px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:var(--chip);
-      color:var(--text);
-      font-weight:900;
-      letter-spacing:-0.01em;
-    }
-    .pending-total{
-      font-size:24px;
-      font-weight:900;
-      letter-spacing:-.02em;
-      color:var(--text);
-    }
-    .pending-sub{
-      margin-top:10px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      font-size:12px;
-      color:var(--muted);
-    }
-    .kv{
-      display:flex;
-      gap:6px;
-      align-items:baseline;
-      border:1px solid var(--line);
-      background:var(--chip);
-      padding:4px 8px;
-      border-radius:10px;
-      font-weight:800;
-    }
-    .kv b{
-      font-size:13px;
-      color:var(--text);
-      font-weight:900;
-    }
+function noticeSummaryText(idx, title) {
+  const t = norm(title);
+  return t ? `공지 #${idx + 1} · ${t}` : `공지 #${idx + 1}`;
+}
 
-    /* subtle per-card tint */
-    .pending-board .pending-card:nth-child(1) .badge{
-      background: rgba(59,130,246,.14);
-      border-color: rgba(59,130,246,.28);
-      color: rgba(147,197,253,.95);
-    }
-    .pending-board .pending-card:nth-child(1) .pending-total{ color: rgba(147,197,253,.95); }
-    @media (prefers-color-scheme: light){
-      .pending-board .pending-card:nth-child(1) .badge{
-        background: rgba(59,130,246,.12);
-        border-color: rgba(59,130,246,.20);
-        color: rgba(37,99,235,.95);
-      }
-      .pending-board .pending-card:nth-child(1) .pending-total{ color: rgba(37,99,235,.95); }
-    }
+function serviceCardTemplate(s, idx) {
+  const card = document.createElement("details");
+  card.className = "card";
+  card.dataset.idx = String(idx);
+  card.dataset.uid = String(s._uid);
+  // 기본: 접힘
+  card.open = false;
 
-    .pending-board .pending-card:nth-child(2) .badge{
-      background: rgba(16,185,129,.14);
-      border-color: rgba(16,185,129,.26);
-      color: rgba(167,243,208,.95);
-    }
-    .pending-board .pending-card:nth-child(2) .pending-total{ color: rgba(167,243,208,.95); }
-    @media (prefers-color-scheme: light){
-      .pending-board .pending-card:nth-child(2) .badge{
-        background: rgba(16,185,129,.10);
-        border-color: rgba(16,185,129,.18);
-        color: rgba(5,150,105,.95);
-      }
-      .pending-board .pending-card:nth-child(2) .pending-total{ color: rgba(5,150,105,.95); }
-    }
+  card.innerHTML = `
+    <summary class="card-summary">
+      <span class="sum-title">${escapeHtml(serviceSummaryText(idx, s.name))}</span>
+      <span class="chev" aria-hidden="true">›</span>
+    </summary>
 
-    .pending-board .pending-card:nth-child(3) .badge{
-      background: rgba(139,92,246,.14);
-      border-color: rgba(139,92,246,.26);
-      color: rgba(221,214,254,.95);
-    }
-    .pending-board .pending-card:nth-child(3) .pending-total{ color: rgba(221,214,254,.95); }
-    @media (prefers-color-scheme: light){
-      .pending-board .pending-card:nth-child(3) .badge{
-        background: rgba(139,92,246,.10);
-        border-color: rgba(139,92,246,.18);
-        color: rgba(109,40,217,.95);
-      }
-      .pending-board .pending-card:nth-child(3) .pending-total{ color: rgba(109,40,217,.95); }
-    }
-
-    @media (max-width: 900px){
-      .pending-board{ grid-template-columns: 1fr; }
-    }
-
-    /* ===== 접기/펼치기(details) 스타일 ===== */
-    details.card{
-      padding:0; /* 기존 .card padding override */
-    }
-    details.card > summary{
-      list-style:none;
-      cursor:pointer;
-      padding:12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      user-select:none;
-    }
-    details.card > summary::-webkit-details-marker{ display:none; }
-    .sum-title{
-      font-weight:900;
-      letter-spacing:-0.01em;
-      color:var(--text);
-    }
-    .chev{
-      width:28px;
-      height:28px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border-radius:10px;
-      border:1px solid var(--line);
-      background:var(--chip);
-      color:var(--text);
-      font-size:18px;
-      line-height:1;
-      transition: transform .15s ease, background .15s ease, border-color .15s ease;
-      transform: rotate(0deg);
-    }
-    details.card[open] > summary .chev{
-      transform: rotate(90deg); /* › 가 아래 방향처럼 보이게 */
-    }
-    details.card > summary:hover .chev{
-      border-color: rgba(94,234,212,.28);
-      background: rgba(94,234,212,.10);
-    }
-    @media (prefers-color-scheme: light){
-      details.card > summary:hover .chev{
-        border-color: rgba(14,165,233,.22);
-        background: rgba(14,165,233,.08);
-      }
-    }
-    .card-body{
-      padding:12px;
-      border-top:1px solid var(--line);
-    }
-  </style>
-</head>
-
-<body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>AI Field Homepage 관리자</h1>
-        <div class="sub">
-          1. 비밀번호(토큰) 입력 <br>
-          2. <b>불러오기</b> 클릭 (에러 떠도 계속 시도 - 회사 네트워크 오류) <br>
-          3. 변경 사항 수정 <br>
-          4. <b>저장</b> 클릭 (홈페이지 적용까지 다소 시간 소요)
-        </div>
+    <div class="card-body">
+      <div class="card-hd" style="margin-bottom:10px;">
+        <div class="card-title">편집</div>
+        <button class="btn" data-act="delSvc">서비스 삭제</button>
       </div>
-      <div class="pill" id="repoPill">repo: -</div>
-    </header>
 
-    <!-- 1) 로그인/불러오기 -->
-    <section class="panel">
-      <div class="panel-hd">
+      <div class="grid2">
         <div>
-          <h2 class="panel-title">1) 로그인</h2>
+          <label>name</label>
+          <input type="text" data-k="name" value="${escapeHtml(s.name || "")}" />
         </div>
-        <span class="pill" id="tokenState">토큰 필요</span>
-      </div>
-      <div class="panel-bd">
-        <div class="row">
-          <div class="field">
-            <label for="ghToken">GitHub Token (Fine-grained PAT)</label>
-            <input id="ghToken" type="password" placeholder="github_pat_..." autocomplete="off" />
-          </div>
-          <div style="min-width:120px;">
-            <label>&nbsp;</label>
-            <button class="btn primary" id="btnLoad">불러오기</button>
-          </div>
-        </div>
-        <div id="msg" class="msg"></div>
-      </div>
-    </section>
-
-    <!-- 2) 편집 -->
-    <section class="panel hidden" id="editor">
-      <div class="panel-hd">
         <div>
-          <h2 class="panel-title">2) 수정</h2>
-          <div class="small">services / notice를 수정합니다.</div>
+          <label>domain</label>
+          <input type="text" data-k="domain" value="${escapeHtml(s.domain || "")}" placeholder="예: chatgpt.com" />
         </div>
       </div>
 
-      <div class="panel-bd">
-        <h3 style="margin:0 0 6px;font-size:14px;">서비스 목록</h3>
-        <div class="small">
-          PDF는 업로드 파일명과 무관하게, <b><span class="mono">저장 시 files/{서비스명}.pdf</span></b>로 자동 저장됩니다.
-          (서비스명은 위 <b>name</b> 기준)
+      <div class="grid2">
+        <div>
+          <label>url</label>
+          <input type="text" data-k="url" value="${escapeHtml(s.url || "")}" placeholder="https://..." />
         </div>
-
-        <div id="svcList"></div>
-        <button class="btn" id="btnAddSvc" style="margin-top:10px;">+ 서비스 추가</button>
-
-        <!-- ✅ Prompt 섹션: 서비스 ↔ 공지 사이 -->
-        <div class="divider"></div>
-        <h3 style="margin:0 0 6px;font-size:14px;">Prompt</h3>
-        <div class="small">Prompt Guide는 고정 파일이며, 삭제 없이 <b>교체만</b> 가능합니다.</div>
-
-        <div class="card" id="promptPdfCard">
-          <div class="card-hd">
-            <div class="card-title">Prompt Guide (고정)</div>
-            <div class="row">
-              <button class="btn" id="btnPromptPdfReplace">PDF 교체</button>
-            </div>
-          </div>
-
-          <div class="small">
-            업로드 파일명과 무관하게, <b><span class="mono">저장 시 files/Prompt.pdf</span></b>로 자동 저장됩니다. (삭제 기능 없음)
-          </div>
-          <div class="small">상태: <b id="promptPdfStatus">-</b></div>
-
-          <input id="promptPdfInput" type="file" accept="application/pdf" class="hidden" />
+        <div class="check">
+          <input type="checkbox" data-k="disabled" ${s.disabled ? "checked" : ""} />
+          <span>disabled</span>
         </div>
-
-        <div class="divider"></div>
-
-        <h3 style="margin:0 0 6px;font-size:14px;">공지</h3>
-        <div class="grid2">
-          <div>
-            <label for="noticeId">noticeId (기준일)</label>
-            <input id="noticeId" type="text" placeholder="예: 2026-01-30" />
-          </div>
-        </div>
-        <div id="noticeList"></div>
-        <button class="btn" id="btnAddNotice" style="margin-top:10px;">+ 공지 추가</button>
-
-        <div class="divider"></div>
-
-        <h3 style="margin:0 0 6px;font-size:14px;">변경사항</h3>
-
-        <div class="pending-board">
-          <!-- PDF -->
-          <div class="pending-card">
-            <div class="pending-top">
-              <div class="pending-title">
-                <span class="badge">PDF</span>
-                <span>소개 파일</span>
-              </div>
-              <div class="pending-total" id="p_pdf_total">0</div>
-            </div>
-            <div class="pending-sub">
-              <span class="kv">첨부 <b id="p_pdf_attach">0</b></span>
-              <span class="kv">교체 <b id="p_pdf_replace">0</b></span>
-              <span class="kv">삭제 <b id="p_pdf_delete">0</b></span>
-            </div>
-          </div>
-
-          <!-- 서비스 -->
-          <div class="pending-card">
-            <div class="pending-top">
-              <div class="pending-title">
-                <span class="badge">서비스</span>
-                <span>카드/정보</span>
-              </div>
-              <div class="pending-total" id="p_svc_total">0</div>
-            </div>
-            <div class="pending-sub">
-              <span class="kv">추가 <b id="p_svc_add">0</b></span>
-              <span class="kv">수정 <b id="p_svc_mod">0</b></span>
-              <span class="kv">삭제 <b id="p_svc_del">0</b></span>
-            </div>
-          </div>
-
-          <!-- 공지 -->
-          <div class="pending-card">
-            <div class="pending-top">
-              <div class="pending-title">
-                <span class="badge">공지</span>
-                <span>목록/기준일</span>
-              </div>
-              <div class="pending-total" id="p_nt_total">0</div>
-            </div>
-            <div class="pending-sub">
-              <span class="kv">추가 <b id="p_nt_add">0</b></span>
-              <span class="kv">수정 <b id="p_nt_mod">0</b></span>
-              <span class="kv">삭제 <b id="p_nt_del">0</b></span>
-            </div>
-          </div>
-        </div>
-
-        <div style="display:none"><b id="pendingSummary">-</b></div>
-
-        <div class="grid2" style="margin-top:12px;">
-          <div>
-            <label for="commitMsg">커밋 메시지</label>
-            <input id="commitMsg" type="text" value="Update content.json via admin" />
-          </div>
-        </div>
-        <button class="btn primary" id="btnSave" style="margin-top:10px;">저장</button>
-        <div id="saveMsg" class="msg"></div>
       </div>
-    </section>
-  </div>
 
-  <!-- ✅ 캐시 이슈 있으면 v= 값을 바꾸세요 -->
-  <script src="./admin.js?v=1" defer></script>
-</body>
-</html>
+      <div style="margin-top:10px;">
+        <label>note (줄바꿈 유지)</label>
+        <textarea data-k="note">${escapeHtml(s.note || "")}</textarea>
+      </div>
+
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;min-width:240px;font-size:12px;color:var(--muted);">
+          소개 PDF: <span data-k="pdfState">확인중…</span>
+        </div>
+        <input type="file" accept="application/pdf" data-k="pdfInput" style="display:none" />
+        <button class="btn" data-act="attachPdf">PDF 첨부</button>
+        <button class="btn danger" data-act="delPdf">PDF 삭제</button>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function noticeCardTemplate(it, idx) {
+  const card = document.createElement("details");
+  card.className = "card";
+  card.dataset.idx = String(idx);
+  card.dataset.uid = String(it._uid || "");
+  card.open = false;
+
+  card.innerHTML = `
+    <summary class="card-summary">
+      <span class="sum-title">${escapeHtml(noticeSummaryText(idx, it.title))}</span>
+      <span class="chev" aria-hidden="true">›</span>
+    </summary>
+
+    <div class="card-body">
+      <div class="card-hd" style="margin-bottom:10px;">
+        <div class="card-title">편집</div>
+        <button class="btn" data-act="delNotice">공지 삭제</button>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>title</label>
+          <input type="text" data-k="title" value="${escapeHtml(it.title || "")}" />
+        </div>
+        <div>
+          <label>sub</label>
+          <input type="text" data-k="sub" value="${escapeHtml(it.sub || "")}" />
+        </div>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+// ===== 렌더 =====
+function renderAll() {
+  requireEl("editor").classList.remove("hidden");
+
+  const svcList = requireEl("svcList");
+  svcList.innerHTML = "";
+  (loadedData.services || []).forEach((s, i) => svcList.appendChild(serviceCardTemplate(s, i)));
+
+  requireEl("noticeId").value = loadedData.notice?.noticeId || "";
+  const ntList = requireEl("noticeList");
+  ntList.innerHTML = "";
+  (loadedData.notice?.items || []).forEach((it, i) => ntList.appendChild(noticeCardTemplate(it, i)));
+
+  refreshAllCardsPdfUI();
+  refreshPromptPdfUI();
+  updatePendingSummary();
+}
+
+// ===== 폼 스냅샷 =====
+function snapshotFromFormWithUids() {
+  const services = [];
+  const svcCards = requireEl("svcList").querySelectorAll(".card");
+  svcCards.forEach((card) => {
+    const uid = card.dataset.uid || makeUid();
+    const get = (k) => card.querySelector(`[data-k="${k}"]`);
+    services.push({
+      _uid: uid,
+      name: get("name")?.value?.trim() || "",
+      url: get("url")?.value?.trim() || "",
+      domain: get("domain")?.value?.trim() || "",
+      note: get("note")?.value ?? "",
+      disabled: !!get("disabled")?.checked,
+    });
+  });
+
+  const noticeId = requireEl("noticeId").value.trim();
+  const items = [];
+  const ntCards = requireEl("noticeList").querySelectorAll(".card");
+  ntCards.forEach((card) => {
+    const get = (k) => card.querySelector(`[data-k="${k}"]`);
+    const uid = card.dataset.uid || makeUid();
+    items.push({
+      _uid: uid,
+      title: get("title")?.value?.trim() || "",
+      sub: get("sub")?.value?.trim() || "",
+    });
+  });
+
+  return { services, notice: { noticeId, items } };
+}
+
+function stripInternalFields(dataWithUids) {
+  return {
+    services: (dataWithUids.services || []).map((s) => ({
+      name: s.name || "",
+      url: s.url || "",
+      domain: s.domain || "",
+      note: s.note ?? "",
+      ...(s.disabled ? { disabled: true } : {}),
+    })),
+    notice: {
+      noticeId: dataWithUids.notice?.noticeId || "",
+      items: (dataWithUids.notice?.items || []).map((it) => ({
+        title: it.title || "",
+        sub: it.sub || "",
+      })),
+    },
+  };
+}
+
+// ===== 로드 =====
+async function loadContentJson(token) {
+  const res = await fetch(REST_GET_CONTENT(FILE_PATH), { headers: ghRestHeaders(token) });
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    throw new Error(`불러오기 실패(content.json): ${res.status} ${res.statusText}\n${t}`);
+  }
+  const json = await res.json();
+  loadedSha = json?.sha || null;
+
+  const text = b64ToUtf8(String(json?.content || "").replace(/\n/g, ""));
+  const parsed = JSON.parse(text);
+
+  const services = ensureServiceUids(Array.isArray(parsed.services) ? parsed.services : []);
+  const notice = parsed.notice || { noticeId: "", items: [] };
+  notice.items = ensureNoticeItemUids(Array.isArray(notice.items) ? notice.items : []);
+
+  loadedData = { services, notice };
+
+  // 원본 스냅샷
+  originalSvcByUid = new Map();
+  services.forEach((s) => {
+    originalSvcByUid.set(String(s._uid), {
+      name: s.name || "",
+      url: s.url || "",
+      domain: s.domain || "",
+      note: s.note ?? "",
+      disabled: !!s.disabled,
+    });
+  });
+
+  originalNoticeId = notice.noticeId || "";
+  originalNoticeByUid = new Map();
+  (notice.items || []).forEach((it) => {
+    originalNoticeByUid.set(String(it._uid), { title: it.title || "", sub: it.sub || "" });
+  });
+
+  stagedPdfOps.clear();
+  stagedPromptPdfOp = null;
+
+  return true;
+}
+
+async function loadFilesDirIndex(token) {
+  filesIndex = new Set();
+  filesIndexLoaded = false;
+
+  const res = await fetch(REST_GET_CONTENT(FILES_DIR), { headers: ghRestHeaders(token) });
+  if (res.status === 404) {
+    filesIndexLoaded = true;
+    return true;
+  }
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    throw new Error(`불러오기 실패(files/): ${res.status} ${res.statusText}\n${t}`);
+  }
+
+  const arr = await res.json();
+  if (Array.isArray(arr)) {
+    arr.forEach((it) => {
+      if (it?.type === "file" && typeof it?.name === "string" && /\.pdf$/i.test(it.name)) {
+        filesIndex.add(it.name);
+      }
+    });
+  }
+  filesIndexLoaded = true;
+  return true;
+}
+
+// ===== Prompt PDF =====
+function refreshPromptPdfUI() {
+  const statusEl = document.getElementById("promptPdfStatus");
+  const btn = document.getElementById("btnPromptPdfReplace");
+  if (!statusEl && !btn) return;
+
+  const tokenOk = !!norm($("ghToken")?.value);
+  const exists = filesIndexLoaded && filesIndex.has(PROMPT_PDF_NAME);
+
+  if (btn) {
+    btn.disabled = !tokenOk || !filesIndexLoaded;
+    btn.textContent = "PDF 교체";
+  }
+
+  if (!statusEl) return;
+  if (!filesIndexLoaded) {
+    statusEl.textContent = "확인중…";
+    return;
+  }
+  if (stagedPromptPdfOp?.type === "upsert") {
+    statusEl.textContent = exists ? "저장 대기(교체)" : "저장 대기(업로드)";
+    return;
+  }
+  statusEl.textContent = exists ? `현재 파일: ${PROMPT_PDF_NAME}` : "현재 파일 없음";
+}
+
+function wirePromptPdfControls() {
+  const btn = document.getElementById("btnPromptPdfReplace");
+  const input = document.getElementById("promptPdfInput");
+  if (!btn || !input) return;
+
+  btn.addEventListener("click", () => {
+    const tokenOk = !!norm($("ghToken")?.value);
+    if (!tokenOk) return setMsg("토큰을 입력하세요.", "err");
+    if (!filesIndexLoaded) return setMsg("files/ 목록을 불러오는 중입니다. 잠시 후 다시 시도하세요.", "err");
+    input.click();
+  });
+
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+
+    try {
+      setMsg(`Prompt PDF 읽는 중(저장 대기): ${file.name} → ${PROMPT_PDF_NAME}`, "");
+      const b64 = await fileToB64(file);
+
+      stagedPromptPdfOp = { type: "upsert", b64, size: file.size, origName: file.name };
+      refreshPromptPdfUI();
+      updatePendingSummary();
+      setMsg(`Prompt PDF 저장 대기: ${PROMPT_PDF_NAME} (저장 필요)`, "ok");
+    } catch (e) {
+      console.error(e);
+      setMsg(String(e.message || e), "err");
+    }
+  });
+}
+
+// ===== PDF UI(서비스별) =====
+function getPdfUiState(uid, serviceName) {
+  const name = norm(serviceName);
+  const fileName = pdfNameForService(name);
+  const repoHas = !!fileName && filesIndex.has(fileName);
+  const staged = stagedPdfOps.get(uid) || null;
+  return { name, fileName, repoHas, staged };
+}
+
+function refreshAllCardsPdfUI() {
+  const cards = document.querySelectorAll("#svcList .card");
+  cards.forEach((card) => refreshCardPdfUI(card));
+}
+
+function refreshCardPdfUI(card) {
+  const uid = card.dataset.uid;
+  const name = card.querySelector('input[data-k="name"]')?.value || "";
+  const tokenOk = !!norm($("ghToken")?.value);
+
+  const stateEl = card.querySelector('[data-k="pdfState"]');
+  const btnAttach = card.querySelector('button[data-act="attachPdf"]');
+  const btnDel = card.querySelector('button[data-act="delPdf"]');
+  if (!stateEl || !btnAttach || !btnDel) return;
+
+  if (!norm(name)) {
+    stateEl.textContent = "name을 입력하면 PDF를 첨부할 수 있어요.";
+    btnAttach.textContent = "PDF 첨부";
+    btnAttach.disabled = true;
+    btnDel.style.display = "none";
+    return;
+  }
+
+  if (!filesIndexLoaded) {
+    stateEl.textContent = "확인중…";
+    btnAttach.disabled = true;
+    btnDel.style.display = "none";
+    return;
+  }
+
+  const { fileName, repoHas, staged } = getPdfUiState(uid, name);
+
+  if (staged?.type === "upsert") btnAttach.textContent = "PDF 다시 선택(저장 대기)";
+  else btnAttach.textContent = repoHas ? "PDF 교체(덮어쓰기)" : "PDF 첨부";
+
+  btnAttach.disabled = !tokenOk;
+
+  if (staged?.type === "delete") {
+    stateEl.textContent = repoHas ? `삭제 예정: ${fileName}` : `삭제 예정(원본 없음): ${fileName}`;
+    btnDel.style.display = "";
+    btnDel.textContent = "삭제 취소";
+    btnDel.disabled = !tokenOk;
+    return;
+  }
+
+  if (staged?.type === "upsert") {
+    stateEl.textContent = repoHas ? `저장 대기(교체): ${fileName}` : `저장 대기(첨부): ${fileName}`;
+    btnDel.style.display = "";
+    btnDel.textContent = "PDF 삭제";
+    btnDel.disabled = !tokenOk;
+    return;
+  }
+
+  if (repoHas) {
+    stateEl.textContent = `연결됨: ${fileName}`;
+    btnDel.style.display = "";
+    btnDel.textContent = "PDF 삭제";
+    btnDel.disabled = !tokenOk;
+  } else {
+    stateEl.textContent = `없음: ${fileName}`;
+    btnDel.style.display = "none";
+  }
+}
+
+// ===== 커밋 파일 변경 =====
+function buildFileChangesForCommit(dataWithUids) {
+  const cleanData = stripInternalFields(dataWithUids);
+  const contentJsonB64 = utf8ToB64(JSON.stringify(cleanData, null, 2));
+
+  const additions = [{ path: FILE_PATH, contents: contentJsonB64 }];
+  const deletionPaths = new Set();
+  const additionPaths = new Set([FILE_PATH]);
+
+  const curSvcByUid = new Map((dataWithUids.services || []).map((s) => [String(s._uid), s]));
+  const curNameSet = new Set();
+  (dataWithUids.services || []).forEach((s) => { if (norm(s.name)) curNameSet.add(norm(s.name)); });
+
+  for (const [uid, op] of stagedPdfOps.entries()) {
+    const svc = curSvcByUid.get(String(uid));
+    const svcName = norm(svc?.name);
+    const fileName = pdfNameForService(svcName);
+    const path = fileName ? `${FILES_DIR}/${fileName}` : "";
+
+    if (op?.type === "upsert") {
+      if (!path) continue;
+      additions.push({ path, contents: op.b64 });
+      additionPaths.add(path);
+      continue;
+    }
+    if (op?.type === "delete") {
+      if (!path) continue;
+      if (filesIndex.has(fileName)) deletionPaths.add(path);
+      continue;
+    }
+  }
+
+  // Prompt upsert
+  if (stagedPromptPdfOp?.type === "upsert") {
+    additions.push({ path: PROMPT_PDF_PATH, contents: stagedPromptPdfOp.b64 });
+    additionPaths.add(PROMPT_PDF_PATH);
+  }
+
+  // 삭제된 서비스의 옛 PDF 삭제(보수적)
+  for (const [uid, orig] of originalSvcByUid.entries()) {
+    if (curSvcByUid.has(String(uid))) continue;
+
+    const oldName = norm(orig?.name);
+    if (!oldName) continue;
+    if (curNameSet.has(oldName)) continue;
+
+    const oldFile = `${oldName}.pdf`;
+    if (!filesIndex.has(oldFile)) continue;
+
+    deletionPaths.add(`${FILES_DIR}/${oldFile}`);
+  }
+
+  for (const p of Array.from(deletionPaths)) {
+    if (additionPaths.has(p)) deletionPaths.delete(p);
+  }
+
+  const deletions = Array.from(deletionPaths).map((p) => ({ path: p }));
+  return { additions, deletions };
+}
+
+// ===== 변경현황 =====
+function isServiceChanged(orig, cur) {
+  const a = (v) => norm(v);
+  return (
+    a(orig.name) !== a(cur.name) ||
+    a(orig.url) !== a(cur.url) ||
+    a(orig.domain) !== a(cur.domain) ||
+    String(orig.note ?? "") !== String(cur.note ?? "") ||
+    !!orig.disabled !== !!cur.disabled
+  );
+}
+function isNoticeChanged(orig, cur) {
+  const a = (v) => norm(v);
+  return a(orig.title) !== a(cur.title) || a(orig.sub) !== a(cur.sub);
+}
+
+function updatePendingSummary() {
+  const setNum = (id, n) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(n);
+  };
+
+  const legacy = document.getElementById("pendingSummary");
+  const editor = document.getElementById("editor");
+  if (!editor || editor.classList.contains("hidden") || !loadedData) {
+    setNum("p_pdf_total", 0); setNum("p_pdf_attach", 0); setNum("p_pdf_replace", 0); setNum("p_pdf_delete", 0);
+    setNum("p_svc_total", 0); setNum("p_svc_add", 0); setNum("p_svc_mod", 0); setNum("p_svc_del", 0);
+    setNum("p_nt_total", 0);  setNum("p_nt_add", 0);  setNum("p_nt_mod", 0);  setNum("p_nt_del", 0);
+    if (legacy) legacy.textContent = "-";
+    return;
+  }
+
+  const snap = snapshotFromFormWithUids();
+
+  // PDF
+  let pdfAttach = 0, pdfReplace = 0, pdfDelete = 0;
+  const curSvcByUid = new Map((snap.services || []).map((s) => [String(s._uid), s]));
+  for (const [uid, op] of stagedPdfOps.entries()) {
+    const svc = curSvcByUid.get(String(uid));
+    const svcName = norm(svc?.name);
+    const fileName = pdfNameForService(svcName);
+
+    if (op?.type === "upsert") {
+      if (fileName && filesIndex.has(fileName)) pdfReplace += 1;
+      else pdfAttach += 1;
+    } else if (op?.type === "delete") {
+      pdfDelete += 1;
+    }
+  }
+  if (stagedPromptPdfOp?.type === "upsert") {
+    if (filesIndex.has(PROMPT_PDF_NAME)) pdfReplace += 1;
+    else pdfAttach += 1;
+  }
+  const pdfTotal = pdfAttach + pdfReplace + pdfDelete;
+
+  // 서비스
+  let svcAdd = 0, svcMod = 0, svcDel = 0;
+  for (const [uid, cur] of curSvcByUid.entries()) {
+    const orig = originalSvcByUid.get(String(uid));
+    if (!orig) svcAdd += 1;
+    else if (isServiceChanged(orig, cur)) svcMod += 1;
+  }
+  for (const uid of originalSvcByUid.keys()) {
+    if (!curSvcByUid.has(String(uid))) svcDel += 1;
+  }
+  const svcTotal = svcAdd + svcMod + svcDel;
+
+  // 공지
+  const curNtByUid = new Map(((snap.notice?.items) || []).map((it) => [String(it._uid), it]));
+  let ntAdd = 0, ntMod = 0, ntDel = 0;
+
+  for (const [uid, cur] of curNtByUid.entries()) {
+    const orig = originalNoticeByUid.get(String(uid));
+    if (!orig) ntAdd += 1;
+    else if (isNoticeChanged(orig, cur)) ntMod += 1;
+  }
+  for (const uid of originalNoticeByUid.keys()) {
+    if (!curNtByUid.has(String(uid))) ntDel += 1;
+  }
+  if (norm(snap.notice?.noticeId) !== norm(originalNoticeId)) ntMod += 1;
+  const ntTotal = ntAdd + ntMod + ntDel;
+
+  setNum("p_pdf_total", pdfTotal);
+  setNum("p_pdf_attach", pdfAttach);
+  setNum("p_pdf_replace", pdfReplace);
+  setNum("p_pdf_delete", pdfDelete);
+
+  setNum("p_svc_total", svcTotal);
+  setNum("p_svc_add", svcAdd);
+  setNum("p_svc_mod", svcMod);
+  setNum("p_svc_del", svcDel);
+
+  setNum("p_nt_total", ntTotal);
+  setNum("p_nt_add", ntAdd);
+  setNum("p_nt_mod", ntMod);
+  setNum("p_nt_del", ntDel);
+
+  if (legacy) {
+    legacy.textContent =
+      `PDF ${pdfTotal}(첨부${pdfAttach}/교체${pdfReplace}/삭제${pdfDelete}) · ` +
+      `서비스 ${svcTotal}(추가${svcAdd}/수정${svcMod}/삭제${svcDel}) · ` +
+      `공지 ${ntTotal}(추가${ntAdd}/수정${ntMod}/삭제${ntDel})`;
+  }
+}
+
+// ===== init =====
+document.addEventListener("DOMContentLoaded", () => {
+  const pill = $("repoPill");
+  if (pill) pill.textContent = `repo: ${OWNER}/${REPO} (${BRANCH})`;
+
+  requireEl("ghToken");
+  requireEl("btnLoad");
+  requireEl("btnAddSvc");
+  requireEl("btnAddNotice");
+  requireEl("btnSave");
+
+  wirePromptPdfControls();
+
+  $("ghToken").addEventListener("input", () => {
+    const v = norm($("ghToken").value);
+    $("tokenState").textContent = v ? "입력됨" : "토큰 필요";
+    refreshAllCardsPdfUI();
+    refreshPromptPdfUI();
+    updatePendingSummary();
+  });
+
+  $("btnLoad").addEventListener("click", async () => {
+    setMsg("");
+    setSaveMsg("");
+
+    const token = norm($("ghToken").value);
+    if (!token) return setMsg("토큰을 입력하세요.", "err");
+
+    try {
+      setMsg("불러오는 중...", "");
+      await loadContentJson(token);
+      await loadFilesDirIndex(token);
+      renderAll();
+      setMsg("불러오기 완료. 수정 후 '저장'하면 한 번에 커밋됩니다.", "ok");
+    } catch (e) {
+      console.error(e);
+      setMsg(String(e.message || e), "err");
+    }
+  });
+
+  $("btnAddSvc").addEventListener("click", () => {
+    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] } };
+    if (!requireEl("editor").classList.contains("hidden")) {
+      const snap = snapshotFromFormWithUids();
+      loadedData.services = ensureServiceUids(snap.services);
+      loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+    }
+    loadedData.services.push({ _uid: makeUid(), name: "", url: "", domain: "", note: "", disabled: false });
+    renderAll();
+  });
+
+  $("btnAddNotice").addEventListener("click", () => {
+    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] } };
+    const snap = snapshotFromFormWithUids();
+    loadedData.services = ensureServiceUids(snap.services);
+    loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+    if (!loadedData.notice) loadedData.notice = { noticeId: "", items: [] };
+    loadedData.notice.items.push({ _uid: makeUid(), title: "", sub: "" });
+    renderAll();
+  });
+
+  // 서비스 리스트 click
+  $("svcList").addEventListener("click", async (e) => {
+    const token = norm($("ghToken").value);
+    const card = e.target.closest(".card");
+    if (!card) return;
+
+    const uid = card.dataset.uid;
+    const nameInput = card.querySelector('input[data-k="name"]');
+    const svcName = norm(nameInput?.value);
+
+    const delSvcBtn = e.target.closest("button[data-act='delSvc']");
+    if (delSvcBtn) {
+      const snap = snapshotFromFormWithUids();
+      loadedData.services = ensureServiceUids(snap.services);
+      loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+
+      const idx = loadedData.services.findIndex((s) => String(s._uid) === String(uid));
+      if (idx >= 0) {
+        stagedPdfOps.delete(uid);
+        loadedData.services.splice(idx, 1);
+      }
+      renderAll();
+      return;
+    }
+
+    const attachBtn = e.target.closest("button[data-act='attachPdf']");
+    if (attachBtn) {
+      if (!token) return setMsg("토큰을 입력하세요.", "err");
+      if (!svcName) return setMsg("먼저 서비스 name을 입력하세요.", "err");
+      const input = card.querySelector('input[type="file"][data-k="pdfInput"]');
+      if (!input) return;
+      input.click();
+      return;
+    }
+
+    const delPdfBtn = e.target.closest("button[data-act='delPdf']");
+    if (delPdfBtn) {
+      if (!token) return setMsg("토큰을 입력하세요.", "err");
+      if (!svcName) return setMsg("먼저 서비스 name을 입력하세요.", "err");
+      if (!filesIndexLoaded) return;
+
+      const cur = stagedPdfOps.get(uid);
+
+      if (cur?.type === "delete") {
+        stagedPdfOps.delete(uid);
+        refreshCardPdfUI(card);
+        updatePendingSummary();
+        setMsg(`PDF 삭제 취소됨: ${pdfNameForService(svcName)}`, "ok");
+        return;
+      }
+
+      if (cur?.type === "upsert") {
+        const fileName = pdfNameForService(svcName);
+        if (filesIndex.has(fileName)) {
+          stagedPdfOps.set(uid, { type: "delete" });
+          refreshCardPdfUI(card);
+          updatePendingSummary();
+          setMsg(`PDF 삭제 예정으로 변경됨: ${fileName} (저장 필요)`, "ok");
+        } else {
+          stagedPdfOps.delete(uid);
+          refreshCardPdfUI(card);
+          updatePendingSummary();
+          setMsg(`PDF 첨부 대기 취소됨: ${fileName}`, "ok");
+        }
+        return;
+      }
+
+      const fileName = pdfNameForService(svcName);
+      if (!filesIndex.has(fileName)) return setMsg(`삭제할 PDF가 없습니다: ${fileName}`, "err");
+
+      stagedPdfOps.set(uid, { type: "delete" });
+      refreshCardPdfUI(card);
+      updatePendingSummary();
+      setMsg(`PDF 삭제 예정: ${fileName} (저장 필요)`, "ok");
+    }
+  });
+
+  // 서비스 PDF change
+  $("svcList").addEventListener("change", async (e) => {
+    const input = e.target.closest('input[type="file"][data-k="pdfInput"]');
+    if (!input) return;
+
+    const token = norm($("ghToken").value);
+    const card = input.closest(".card");
+    const uid = card?.dataset?.uid;
+    const svcName = norm(card?.querySelector('input[data-k="name"]')?.value);
+
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    if (!token) return setMsg("토큰을 입력하세요.", "err");
+    if (!svcName) return setMsg("먼저 서비스 name을 입력하세요.", "err");
+
+    try {
+      setMsg(`PDF 읽는 중(저장 대기): ${file.name} → ${svcName}.pdf`, "");
+      const b64 = await fileToB64(file);
+
+      stagedPdfOps.set(uid, { type: "upsert", b64, size: file.size, origName: file.name });
+      refreshCardPdfUI(card);
+      updatePendingSummary();
+
+      const fileName = pdfNameForService(svcName);
+      setMsg(`PDF ${filesIndex.has(fileName) ? "교체" : "첨부"} 저장 대기: ${fileName}`, "ok");
+    } catch (e2) {
+      console.error(e2);
+      setMsg(String(e2.message || e2), "err");
+    }
+  });
+
+  // 서비스 input: 요약/summary 텍스트도 같이 갱신
+  $("svcList").addEventListener("input", (e) => {
+    updatePendingSummary();
+
+    if (e.target.matches('input[data-k="name"]')) {
+      const card = e.target.closest(".card");
+      if (card) {
+        const cards = Array.from(requireEl("svcList").querySelectorAll(".card"));
+        const idx = cards.indexOf(card);
+        const sumTitle = card.querySelector(".sum-title");
+        if (sumTitle) sumTitle.textContent = serviceSummaryText(idx, e.target.value);
+        refreshCardPdfUI(card);
+      }
+    }
+  });
+
+  // 공지 삭제
+  $("noticeList").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-act='delNotice']");
+    if (!btn) return;
+
+    const snap = snapshotFromFormWithUids();
+    loadedData.services = ensureServiceUids(snap.services);
+    loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+
+    const card = btn.closest(".card");
+    const uid = card?.dataset?.uid;
+    if (!uid) return;
+
+    const i = loadedData.notice.items.findIndex((x) => String(x._uid) === String(uid));
+    if (i < 0) return;
+
+    loadedData.notice.items.splice(i, 1);
+    renderAll();
+  });
+
+  // 공지 input: 요약 텍스트 갱신
+  $("noticeList").addEventListener("input", (e) => {
+    updatePendingSummary();
+    if (e.target.matches('input[data-k="title"]')) {
+      const card = e.target.closest(".card");
+      if (card) {
+        const cards = Array.from(requireEl("noticeList").querySelectorAll(".card"));
+        const idx = cards.indexOf(card);
+        const sumTitle = card.querySelector(".sum-title");
+        if (sumTitle) sumTitle.textContent = noticeSummaryText(idx, e.target.value);
+      }
+    }
+  });
+  $("noticeId").addEventListener("input", () => updatePendingSummary());
+
+  // 저장
+  $("btnSave").addEventListener("click", async () => {
+    setSaveMsg("");
+
+    const token = norm($("ghToken").value);
+    if (!token) return setSaveMsg("토큰을 입력하세요.", "err");
+
+    try {
+      const snap = snapshotFromFormWithUids();
+      if (!norm(snap.notice.noticeId)) return setSaveMsg("noticeId(기준일)를 입력하세요.", "err");
+
+      const { additions, deletions } = buildFileChangesForCommit(snap);
+      const headline = norm($("commitMsg")?.value) || "Update via admin";
+      setSaveMsg("저장 중… (한 번의 커밋으로 반영)", "");
+
+      const commit = await createSingleCommit(token, headline, additions, deletions);
+
+      await loadContentJson(token);
+      await loadFilesDirIndex(token);
+      renderAll();
+
+      setSaveMsg(`저장 완료(1커밋): ${commit.oid}`, "ok");
+    } catch (e) {
+      console.error(e);
+      setSaveMsg(String(e.message || e), "err");
+    }
+  });
+});
