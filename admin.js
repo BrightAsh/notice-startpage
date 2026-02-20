@@ -47,6 +47,11 @@ function pdfNameForService(serviceName) {
   return n ? `${n}.pdf` : "";
 }
 
+// ===== deep clone =====
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 // ===== base64 (UTF-8) =====
 function utf8ToB64(str) {
   const bytes = new TextEncoder().encode(String(str));
@@ -176,6 +181,7 @@ async function createSingleCommit(token, headline, additions, deletions) {
 // ===== 상태 =====
 let loadedSha = null;
 let loadedData = null;
+
 let filesIndex = new Set();
 let filesIndexLoaded = false;
 
@@ -185,10 +191,19 @@ const stagedPdfOps = new Map();
 // Prompt PDF 스테이징(교체만)
 let stagedPromptPdfOp = null;
 
-// 원본 스냅샷
+// 원본 스냅샷(변경현황 계산용)
 let originalSvcByUid = new Map();
 let originalNoticeByUid = new Map();
 let originalNoticeId = "";
+
+// baseline(되돌리기용)
+let baselineData = null;
+
+// ===== Reset button state =====
+function setResetButtonState(disabled) {
+  const btn = document.getElementById("btnResetEdits");
+  if (btn) btn.disabled = !!disabled;
+}
 
 // ===== 접기 카드 템플릿 =====
 function serviceSummaryText(idx, name) {
@@ -211,7 +226,6 @@ function serviceCardTemplate(s, idx) {
     <summary class="card-summary">
       <span class="sum-title">${escapeHtml(serviceSummaryText(idx, s.name))}</span>
       <span class="sum-right">
-        <!-- ✅ 작게보기 액션(펼치면 CSS로 숨김) -->
         <span class="sum-actions">
           <button type="button" class="btn sum-btn" data-act="delSvcQuick">서비스 삭제</button>
           <button type="button" class="btn sum-btn" data-act="attachPdfQuick">PDF 첨부</button>
@@ -278,7 +292,6 @@ function noticeCardTemplate(it, idx) {
     <summary class="card-summary">
       <span class="sum-title">${escapeHtml(noticeSummaryText(idx, it.title))}</span>
       <span class="sum-right">
-        <!-- ✅ 작게보기 액션(펼치면 CSS로 숨김) -->
         <span class="sum-actions">
           <button type="button" class="btn sum-btn" data-act="delNoticeQuick">공지 삭제</button>
         </span>
@@ -396,7 +409,10 @@ async function loadContentJson(token) {
 
   loadedData = { services, notice };
 
-  // 원본 스냅샷
+  // baseline 저장(불러오기 직후)
+  baselineData = deepClone(loadedData);
+
+  // 원본 스냅샷(변경현황 기준)
   originalSvcByUid = new Map();
   services.forEach((s) => {
     originalSvcByUid.set(String(s._uid), {
@@ -505,6 +521,38 @@ function wirePromptPdfControls() {
   });
 }
 
+// ===== Reset: baseline 복구 =====
+function resetEditsToBaseline() {
+  if (!baselineData) return;
+
+  stagedPdfOps.clear();
+  stagedPromptPdfOp = null;
+
+  loadedData = deepClone(baselineData);
+
+  // 원본 비교용 스냅샷도 baseline 기준으로 재구성
+  originalSvcByUid = new Map();
+  (loadedData.services || []).forEach((s) => {
+    originalSvcByUid.set(String(s._uid), {
+      name: s.name || "",
+      url: s.url || "",
+      domain: s.domain || "",
+      note: s.note ?? "",
+      disabled: !!s.disabled,
+    });
+  });
+
+  originalNoticeId = loadedData.notice?.noticeId || "";
+  originalNoticeByUid = new Map();
+  (loadedData.notice?.items || []).forEach((it) => {
+    originalNoticeByUid.set(String(it._uid), { title: it.title || "", sub: it.sub || "" });
+  });
+
+  renderAll();
+  setSaveMsg("");
+  setMsg("수정 사항이 초기화되었습니다.", "ok");
+}
+
 // ===== PDF UI(서비스별) =====
 function getPdfUiState(uid, serviceName) {
   const name = norm(serviceName);
@@ -525,12 +573,9 @@ function refreshCardPdfUI(card) {
   const tokenOk = !!norm($("ghToken")?.value);
 
   const stateEl = card.querySelector('.card-body [data-k="pdfState"]');
-
-  // 펼친 화면(기존 버튼)
   const bodyAttach = card.querySelector('.card-body button[data-act="attachPdf"]');
   const bodyDel = card.querySelector('.card-body button[data-act="delPdf"]');
 
-  // 작게보기(summary 버튼)
   const quickSvcDel = card.querySelector('summary button[data-act="delSvcQuick"]');
   const quickAttach = card.querySelector('summary button[data-act="attachPdfQuick"]');
   const quickDel = card.querySelector('summary button[data-act="delPdfQuick"]');
@@ -565,7 +610,6 @@ function refreshCardPdfUI(card) {
 
   const { fileName, repoHas, staged } = getPdfUiState(uid, name);
 
-  // Attach 라벨(펼친 버튼 + 작게 버튼 동일)
   const attachLabel = staged?.type === "upsert"
     ? "PDF 다시 선택(저장 대기)"
     : (repoHas ? "PDF 교체(덮어쓰기)" : "PDF 첨부");
@@ -573,10 +617,9 @@ function refreshCardPdfUI(card) {
   bodyAttach.textContent = attachLabel;
   bodyAttach.disabled = !tokenOk;
 
-  quickAttach.textContent = attachLabel.replace("(덮어쓰기)", "").trim(); // 작게보기는 짧게
+  quickAttach.textContent = attachLabel.replace("(덮어쓰기)", "").trim();
   quickAttach.disabled = !tokenOk;
 
-  // Delete 라벨/상태
   if (staged?.type === "delete") {
     stateEl.textContent = repoHas ? `삭제 예정: ${fileName}` : `삭제 예정(원본 없음): ${fileName}`;
 
@@ -597,14 +640,12 @@ function refreshCardPdfUI(card) {
     bodyDel.textContent = "PDF 삭제";
     bodyDel.disabled = !tokenOk;
 
-    // 업서트 대기 중이라도 “삭제”는 가능(업서트 취소/삭제전환 로직은 클릭 핸들러가 처리)
     quickDel.style.display = repoHas ? "" : "none";
     quickDel.textContent = "PDF 삭제";
     quickDel.disabled = !tokenOk;
     return;
   }
 
-  // staged 없음
   if (repoHas) {
     stateEl.textContent = `연결됨: ${fileName}`;
 
@@ -617,9 +658,7 @@ function refreshCardPdfUI(card) {
     quickDel.disabled = !tokenOk;
   } else {
     stateEl.textContent = `없음: ${fileName}`;
-
     bodyDel.style.display = "none";
-
     quickDel.style.display = "none";
   }
 }
@@ -656,13 +695,11 @@ function buildFileChangesForCommit(dataWithUids) {
     }
   }
 
-  // Prompt upsert
   if (stagedPromptPdfOp?.type === "upsert") {
     additions.push({ path: PROMPT_PDF_PATH, contents: stagedPromptPdfOp.b64 });
     additionPaths.add(PROMPT_PDF_PATH);
   }
 
-  // 삭제된 서비스의 옛 PDF 삭제(보수적)
   for (const [uid, orig] of originalSvcByUid.entries()) {
     if (curSvcByUid.has(String(uid))) continue;
 
@@ -713,6 +750,7 @@ function updatePendingSummary() {
     setNum("p_svc_total", 0); setNum("p_svc_add", 0); setNum("p_svc_mod", 0); setNum("p_svc_del", 0);
     setNum("p_nt_total", 0);  setNum("p_nt_add", 0);  setNum("p_nt_mod", 0);  setNum("p_nt_del", 0);
     if (legacy) legacy.textContent = "-";
+    setResetButtonState(true);
     return;
   }
 
@@ -787,12 +825,23 @@ function updatePendingSummary() {
       `서비스 ${svcTotal}(추가${svcAdd}/수정${svcMod}/삭제${svcDel}) · ` +
       `공지 ${ntTotal}(추가${ntAdd}/수정${ntMod}/삭제${ntDel})`;
   }
+
+  // ✅ 여기! totals 계산이 끝난 뒤에만 쓸 수 있음
+  setResetButtonState((pdfTotal + svcTotal + ntTotal) === 0);
 }
 
 // ===== init =====
 document.addEventListener("DOMContentLoaded", () => {
   const pill = $("repoPill");
   if (pill) pill.textContent = `repo: ${OWNER}/${REPO} (${BRANCH})`;
+
+  const btnReset = document.getElementById("btnResetEdits");
+  if (btnReset) {
+    btnReset.addEventListener("click", (e) => {
+      e.preventDefault();
+      resetEditsToBaseline();
+    });
+  }
 
   requireEl("ghToken");
   requireEl("btnLoad");
@@ -807,7 +856,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $("tokenState").textContent = v ? "입력됨" : "토큰 필요";
     refreshAllCardsPdfUI();
     refreshPromptPdfUI();
-    updatePendingSummary();
+    updatePendingSummary(); // 여기서 reset 버튼 상태도 같이 갱신됨
   });
 
   $("btnLoad").addEventListener("click", async () => {
@@ -852,7 +901,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ✅ 서비스 리스트 click
   $("svcList").addEventListener("click", async (e) => {
-    // summary 버튼 클릭 시 details 토글 방지
     if (e.target.closest("button[data-act]")) {
       e.preventDefault();
       e.stopPropagation();
@@ -866,7 +914,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const nameInput = card.querySelector('input[data-k="name"]');
     const svcName = norm(nameInput?.value);
 
-    // 서비스 삭제(펼친/작게 공통)
     const delSvcBtn = e.target.closest("button[data-act='delSvc'],button[data-act='delSvcQuick']");
     if (delSvcBtn) {
       const snap = snapshotFromFormWithUids();
@@ -882,7 +929,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // PDF 첨부/교체(펼친/작게 공통)
     const attachBtn = e.target.closest("button[data-act='attachPdf'],button[data-act='attachPdfQuick']");
     if (attachBtn) {
       if (!token) return setMsg("토큰을 입력하세요.", "err");
@@ -893,7 +939,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // PDF 삭제/삭제취소(펼친/작게 공통)
     const delPdfBtn = e.target.closest("button[data-act='delPdf'],button[data-act='delPdfQuick']");
     if (delPdfBtn) {
       if (!token) return setMsg("토큰을 입력하세요.", "err");
@@ -968,7 +1013,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ✅ 서비스 input: summary 텍스트 갱신 + PDF 버튼/상태 갱신
+  // ✅ 서비스 input
   $("svcList").addEventListener("input", (e) => {
     updatePendingSummary();
 
@@ -986,7 +1031,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ✅ 공지 click
   $("noticeList").addEventListener("click", (e) => {
-    // summary 버튼 클릭 시 details 토글 방지
     if (e.target.closest("button[data-act]")) {
       e.preventDefault();
       e.stopPropagation();
@@ -1010,7 +1054,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAll();
   });
 
-  // ✅ 공지 input: summary 텍스트 갱신
+  // ✅ 공지 input
   $("noticeList").addEventListener("input", (e) => {
     updatePendingSummary();
     if (e.target.matches('input[data-k="title"]')) {
