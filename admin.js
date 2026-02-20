@@ -5,6 +5,10 @@ const BRANCH = "main";
 const FILE_PATH = "content.json";
 const FILES_DIR = "files";
 
+// Prompt Guide (고정 PDF: 교체만, 삭제 없음)
+const PROMPT_PDF_NAME = "Prompt.pdf";
+const PROMPT_PDF_PATH = `${FILES_DIR}/${PROMPT_PDF_NAME}`;
+
 // ===== DOM helpers =====
 const $ = (id) => document.getElementById(id);
 
@@ -191,14 +195,17 @@ let loadedData = null; // 편집 화면 데이터
 let filesIndex = new Set(); // repo의 files/*.pdf 존재 여부(읽기)
 let filesIndexLoaded = false;
 
-// PDF 스테이징: key = service._uid
+// PDF 스테이징(서비스별): key = service._uid
 // value = { type:'upsert', b64, size, origName } or { type:'delete' }
 const stagedPdfOps = new Map();
 
+// Prompt PDF 스테이징(교체만, 삭제 없음)
+let stagedPromptPdfOp = null; // { type:'upsert', b64, size, origName }
+
 // 로드 시점 기준(변경량 계산용)
-let originalSvcByUid = new Map();      // uid -> {name,url,domain,note,disabled}
-let originalNoticeByUid = new Map();   // uid -> {title,sub}
-let originalNoticeId = "";             // noticeId
+let originalSvcByUid = new Map(); // uid -> {name,url,domain,note,disabled}
+let originalNoticeByUid = new Map(); // uid -> {title,sub}
+let originalNoticeId = ""; // noticeId
 
 // ===== 템플릿 =====
 function serviceCardTemplate(s, idx) {
@@ -292,6 +299,7 @@ function renderAll() {
   (loadedData.notice?.items || []).forEach((it, i) => ntList.appendChild(noticeCardTemplate(it, i)));
 
   refreshAllCardsPdfUI();
+  refreshPromptPdfUI();
   updatePendingSummary();
 }
 
@@ -392,6 +400,7 @@ async function loadContentJson(token) {
 
   // 스테이징 초기화
   stagedPdfOps.clear();
+  stagedPromptPdfOp = null;
 
   return true;
 }
@@ -424,7 +433,77 @@ async function loadFilesDirIndex(token) {
   return true;
 }
 
-// ===== PDF UI 갱신(즉시 반영처럼 보이게) =====
+// ===== Prompt PDF UI/이벤트 =====
+function refreshPromptPdfUI() {
+  const statusEl = document.getElementById("promptPdfStatus");
+  const btn = document.getElementById("btnPromptPdfReplace");
+
+  // Prompt UI를 아직 안 넣었어도 JS가 죽지 않게
+  if (!statusEl && !btn) return;
+
+  const tokenOk = !!norm($("ghToken")?.value);
+  const exists = filesIndexLoaded && filesIndex.has(PROMPT_PDF_NAME);
+
+  if (btn) {
+    btn.disabled = !tokenOk || !filesIndexLoaded;
+    // 라벨은 항상 "교체"로 유지(요청사항)
+    btn.textContent = exists ? "PDF 교체" : "PDF 업로드";
+  }
+
+  if (!statusEl) return;
+
+  if (!filesIndexLoaded) {
+    statusEl.textContent = "확인중…";
+    return;
+  }
+
+  if (stagedPromptPdfOp?.type === "upsert") {
+    statusEl.textContent = exists ? "저장 대기(교체)" : "저장 대기(업로드)";
+    return;
+  }
+
+  statusEl.textContent = exists ? `현재 파일: ${PROMPT_PDF_NAME}` : "현재 파일 없음";
+}
+
+function wirePromptPdfControls() {
+  const btn = document.getElementById("btnPromptPdfReplace");
+  const input = document.getElementById("promptPdfInput");
+  if (!btn || !input) return;
+
+  btn.addEventListener("click", () => {
+    const tokenOk = !!norm($("ghToken")?.value);
+    if (!tokenOk) return setMsg("토큰을 입력하세요.", "err");
+    if (!filesIndexLoaded) return setMsg("files/ 목록을 불러오는 중입니다. 잠시 후 다시 시도하세요.", "err");
+    input.click();
+  });
+
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+
+    try {
+      setMsg(`Prompt PDF 읽는 중(저장 대기): ${file.name} → ${PROMPT_PDF_NAME}`, "");
+      const b64 = await fileToB64(file);
+
+      stagedPromptPdfOp = {
+        type: "upsert",
+        b64,
+        size: file.size,
+        origName: file.name,
+      };
+
+      refreshPromptPdfUI();
+      updatePendingSummary();
+      setMsg(`Prompt PDF 저장 대기: ${PROMPT_PDF_NAME} (저장 필요)`, "ok");
+    } catch (e) {
+      console.error(e);
+      setMsg(String(e.message || e), "err");
+    }
+  });
+}
+
+// ===== PDF UI 갱신(서비스별) =====
 function getPdfUiState(uid, serviceName) {
   const name = norm(serviceName);
   const fileName = pdfNameForService(name);
@@ -521,7 +600,7 @@ function buildFileChangesForCommit(dataWithUids) {
     if (norm(s.name)) curNameSet.add(norm(s.name));
   });
 
-  // 1) staged PDF ops
+  // 1) staged PDF ops (서비스별)
   for (const [uid, op] of stagedPdfOps.entries()) {
     const svc = curSvcByUid.get(String(uid));
     const svcName = norm(svc?.name);
@@ -542,9 +621,13 @@ function buildFileChangesForCommit(dataWithUids) {
     }
   }
 
+  // 1-2) staged Prompt PDF (교체만, 삭제 없음)
+  if (stagedPromptPdfOp?.type === "upsert") {
+    additions.push({ path: PROMPT_PDF_PATH, contents: stagedPromptPdfOp.b64 });
+    additionPaths.add(PROMPT_PDF_PATH);
+  }
+
   // 2) 삭제된 서비스의 옛 PDF 삭제(보수적으로)
-  // - originalSvcByUid에는 로드 시점 서비스들이 모두 있음
-  // - 현재 uid가 없어진 서비스는 삭제된 서비스로 간주
   for (const [uid, orig] of originalSvcByUid.entries()) {
     if (curSvcByUid.has(String(uid))) continue;
 
@@ -567,7 +650,7 @@ function buildFileChangesForCommit(dataWithUids) {
   return { additions, deletions };
 }
 
-// ===== 변경 현황(pendingSummary) =====
+// ===== 변경 현황 계산 =====
 function isServiceChanged(orig, cur) {
   if (!orig) return false;
   const a = (v) => norm(v);
@@ -586,19 +669,17 @@ function isNoticeChanged(orig, cur) {
   return a(orig.title) !== a(cur.title) || a(orig.sub) !== a(cur.sub);
 }
 
+// ===== 변경 현황(pendingSummary + 보드 숫자) =====
 function updatePendingSummary() {
-  // 보드 숫자 갱신용 헬퍼
   const setNum = (id, n) => {
     const el = document.getElementById(id);
     if (el) el.textContent = String(n);
   };
 
-  // (호환용) 숨김 텍스트도 같이 유지
   const legacy = document.getElementById("pendingSummary");
-
   const editor = document.getElementById("editor");
+
   if (!editor || editor.classList.contains("hidden") || !loadedData) {
-    // 초기화
     setNum("p_pdf_total", 0); setNum("p_pdf_attach", 0); setNum("p_pdf_replace", 0); setNum("p_pdf_delete", 0);
     setNum("p_svc_total", 0); setNum("p_svc_add", 0); setNum("p_svc_mod", 0); setNum("p_svc_del", 0);
     setNum("p_nt_total", 0);  setNum("p_nt_add", 0);  setNum("p_nt_mod", 0);  setNum("p_nt_del", 0);
@@ -610,8 +691,8 @@ function updatePendingSummary() {
 
   // ===== PDF(스테이징) =====
   let pdfAttach = 0, pdfReplace = 0, pdfDelete = 0;
-  const curSvcByUid = new Map((snap.services || []).map((s) => [String(s._uid), s]));
 
+  const curSvcByUid = new Map((snap.services || []).map((s) => [String(s._uid), s]));
   for (const [uid, op] of stagedPdfOps.entries()) {
     const svc = curSvcByUid.get(String(uid));
     const svcName = norm(svc?.name);
@@ -624,6 +705,13 @@ function updatePendingSummary() {
       pdfDelete += 1;
     }
   }
+
+  // Prompt PDF도 PDF 카운트에 포함
+  if (stagedPromptPdfOp?.type === "upsert") {
+    if (filesIndex.has(PROMPT_PDF_NAME)) pdfReplace += 1;
+    else pdfAttach += 1;
+  }
+
   const pdfTotal = pdfAttach + pdfReplace + pdfDelete;
 
   // ===== 서비스(원본 vs 현재) =====
@@ -682,7 +770,6 @@ function updatePendingSummary() {
   }
 }
 
-
 // ===== init =====
 document.addEventListener("DOMContentLoaded", () => {
   // repo pill
@@ -696,10 +783,14 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("btnAddNotice");
   requireEl("btnSave");
 
+  // Prompt 컨트롤 연결(없어도 안전)
+  wirePromptPdfControls();
+
   $("ghToken").addEventListener("input", () => {
     const v = norm($("ghToken").value);
     $("tokenState").textContent = v ? "입력됨" : "토큰 필요";
     refreshAllCardsPdfUI();
+    refreshPromptPdfUI();
     updatePendingSummary();
   });
 
