@@ -387,6 +387,22 @@
 
       <div class="panel-bd">
         <h3 style="margin:0 0 6px;font-size:14px;">서비스 목록</h3>
+        <!-- Prompt Guide PDF (고정 / 교체만) -->
+        <div class="card" id="promptPdfCard">
+          <div class="card-hd">
+            <div class="card-title">Prompt Guide (고정)</div>
+            <div class="row">
+              <button class="btn" id="btnPromptPdfReplace">PDF 교체</button>
+            </div>
+          </div>
+        
+          <div class="small">
+            업로드한 파일명과 무관하게, <b><span class="mono">저장 시 files/Prompt.pdf</span></b>로 자동 저장됩니다. (삭제 기능 없음)
+          </div>
+          <div class="small">상태: <b id="promptPdfStatus">-</b></div>
+        
+          <input id="promptPdfInput" type="file" accept="application/pdf" class="hidden" />
+        </div>
         <div class="small">PDF는 업로드한 파일명이 무엇이든, <b><span class="mono">저장 시 자동으로 files/{서비스명}.pdf</span></b>로 저장됩니다. (서비스명은 위 <b>name</b> 기준)</div>
         
         <div id="svcList"></div>
