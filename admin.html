@@ -409,6 +409,26 @@
     details.card[open] > summary .sum-actions{
       display:none;
     }
+
+    /* green action button */
+    .btn.success{
+      background: rgba(52,211,153,.14);
+      border-color: rgba(52,211,153,.35);
+    }
+    .btn.success:hover{
+      background: rgba(52,211,153,.18);
+      border-color: rgba(52,211,153,.55);
+    }
+    .btn.success:focus-visible{
+      outline:none;
+      box-shadow: 0 0 0 4px rgba(52,211,153,.14), var(--shadow2);
+      border-color: rgba(52,211,153,.60);
+    }
+    .btn:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      box-shadow:none;
+    }
   </style>
 </head>
 
@@ -456,6 +476,10 @@
         <div>
           <h2 class="panel-title">2) 수정</h2>
           <div class="small">services / notice를 수정합니다.</div>
+        </div>
+    
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn success" id="btnResetEdits" disabled>수정 사항 초기화</button>
         </div>
       </div>
 
