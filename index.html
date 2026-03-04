@@ -52,9 +52,9 @@
     }
 
     .wrap{
-      max-width: 1200px;
+      max-width: 1320px;
       margin: 0 auto;
-      padding: 22px 18px 32px;
+      padding: 26px 34px 36px;
     }
 
     header{
@@ -142,10 +142,10 @@
 
     main{
       display:grid;
-      grid-template-columns: 1.40fr .60fr;
+      grid-template-columns: 1.32fr .68fr;
       gap: 14px;
     }
-    @media (max-width: 980px){
+        @media (max-width: 980px){
       main{ grid-template-columns: 1fr; }
     }
 
@@ -277,6 +277,8 @@
       flex-direction:column;
       gap: 14px;
       min-width: 0;
+      position: relative;
+      z-index: 1;
     }
 
     /* Guide section */
@@ -411,6 +413,55 @@
       color: var(--muted);
       font-size:12px;
     }
+
+    .news-list{
+      list-style:none;
+      padding:0;
+      margin:0;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .news-item{
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .news-link{ text-decoration:none; color:inherit; display:block; }
+    .news-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .news-title{ font-size:13px; font-weight:800; line-height:1.3; }
+    .news-date{ color: var(--muted); font-size:11px; white-space:nowrap; margin-top:2px; }
+    .news-sub{ margin-top:3px; font-size:12px; color:var(--muted); line-height:1.35; }
+    .news-pager{
+      margin-top: 10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+    }
+    .news-page-list{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:center; flex:1; }
+    .news-page-btn{ appearance:none; border:1px solid var(--line); background:rgba(255,255,255,.03); color:var(--text); border-radius:8px; font-size:12px; padding:5px 8px; cursor:pointer; min-width:30px; }
+    .news-page-btn.active{ background: rgba(94,234,212,.18); border-color: rgba(94,234,212,.35); font-weight:800; }
+    .news-page-btn:disabled{ opacity:.45; cursor:not-allowed; }
+    .btn.mini{ padding:7px 10px; font-size:12px; }
+    .btn.mini:disabled{ opacity:.45; background: rgba(148,163,184,.20); border-color: rgba(148,163,184,.35); color: var(--muted); cursor:not-allowed; }
+
+    .guide-drawer-toggle{ position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 35; border-radius: 14px 0 0 14px; padding: 14px 8px 14px 10px; background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--line); border-right:none; box-shadow: -10px 14px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.08); display:flex; align-items:center; gap:8px; transition: transform .25s ease, opacity .2s ease; }
+    .guide-drawer-toggle .arrow{ font-size:14px; font-weight:900; color: var(--accent); line-height:1; }
+    .guide-drawer-toggle .label{ display:block; text-align:center; font-size:12px; font-weight:800; line-height:1.05; white-space:normal; }
+    .guide-drawer-toggle.hidden{ transform: translate(110%, -50%); opacity:0; pointer-events:none; }
+
+    .guide-drawer-backdrop{ position: fixed; inset: 0; z-index: 28; background: rgba(11,18,32,.22); opacity:0; pointer-events:none; transition: opacity .2s ease; }
+    .guide-drawer-backdrop.show{ opacity:1; pointer-events:auto; }
+
+    .guide-drawer{ position: fixed; right: 0; top: 50%; transform: translate(100%, -50%); width: min(560px, 84vw); max-height: 88vh; overflow: auto; z-index: 30; background: linear-gradient(180deg, var(--panel2), var(--panel)); border:1px solid var(--line); border-right:none; border-radius: 18px 0 0 18px; box-shadow: -24px 20px 50px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.08); transition: transform .32s cubic-bezier(.22,.61,.36,1); backdrop-filter: blur(10px); }
+    .guide-drawer.open{ transform: translate(0, -50%); }
+    .guide-drawer-hd{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:16px 16px 14px; border-bottom:1px solid var(--line); background: rgba(255,255,255,.03); }
+    .guide-drawer .panel-bd{ padding: 16px; }
+    .guide-drawer-close{ padding:7px 10px; font-size:12px; }
+    @media (max-width:980px){ .wrap{padding:20px 18px 28px;} .guide-drawer{ width:min(600px, 96vw); max-height:92vh; } .guide-drawer-toggle{ right:0; padding:12px 7px 12px 9px; gap:6px; } .guide-drawer-toggle .label{ font-size:11px; line-height:1.02; } }
+
 
     .foot{
       margin-top: 16px;
@@ -579,7 +630,7 @@
           <span class="pill" id="nowPill">로딩중…</span>
         </div>
         <div class="sub">
-          좌측은 <b>구독 서비스</b> 바로가기, 우측은 <b>공지 사항</b>과 <b>이용 가이드</b>입니다.
+          좌측은 <b>구독 서비스</b>, 우측은 <b>공지 사항</b>과 <b>AI Update News</b>이며 가이드는 우측 슬라이드로 펼쳐집니다.
         </div>
       </div>
 
@@ -605,7 +656,6 @@
       </section>
 
       <div class="right-stack">
-        <!-- 2) 공지사항 -->
         <section class="panel" aria-labelledby="ntTitle">
           <div class="panel-hd">
             <div>
@@ -625,35 +675,54 @@
           </div>
         </section>
 
-        <!-- 3) 가이드 소개 -->
-        <section class="panel" aria-labelledby="gdTitle">
+        <section class="panel" aria-labelledby="newsTitle">
           <div class="panel-hd">
             <div>
-              <h2 class="panel-title" id="gdTitle">
-                이용 가이드 <span class="badge beta">BETA</span>
-              </h2>
-              <div class="panel-meta">Prompt 가이드 및 AI SaaS 소개 PDF</div>
+              <h2 class="panel-title" id="newsTitle">AI Update News</h2>
+              <div class="panel-meta">최신 업데이트를 날짜순으로 제공합니다.</div>
             </div>
           </div>
-
           <div class="panel-bd">
-            <a class="btn primary block" href="./files/Prompt.pdf" target="_blank" rel="noopener">
-              <span class="btn-ic" aria-hidden="true">
-                <!-- 문서 아이콘 (SVG) -->
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                  <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                  <path d="M8 13h8M8 17h8M8 9h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </span>
-              Prompt 가이드(PDF)
-            </a>
-            <div class="divider-sm"></div>
-            <div class="guide-grid" id="guideGrid"></div>
+            <ul class="news-list" id="newsList"></ul>
+            <div class="news-pager">
+              <button class="btn mini" id="newsPrev">&lt;&lt;</button>
+              <div class="news-page-list" id="newsPages"></div>
+              <button class="btn mini" id="newsNext">&gt;&gt;</button>
+            </div>
           </div>
         </section>
       </div>
     </main>
+
+
+    <button class="btn guide-drawer-toggle" id="guideDrawerToggle"  aria-controls="guideDrawer" aria-expanded="false">
+      <span class="arrow">←</span>
+      <span class="label">AI <br>서<br>비<br>스<br><br>가<br>이<br>드<br><br>보<br>기</span>
+    </button>
+
+    <div class="guide-drawer-backdrop" id="guideDrawerBackdrop" aria-hidden="true"></div>
+
+    <aside class="guide-drawer" id="guideDrawer" aria-hidden="true">
+      <div class="guide-drawer-hd">
+        <h3 class="panel-title" style="margin:0;">AI 서비스 가이드 보기</h3>
+
+        <button class="btn guide-drawer-close" id="guideDrawerClose">닫기 ✕</button>
+      </div>
+      <div class="panel-bd">
+        <a class="btn primary block" href="./files/Prompt.pdf" target="_blank" rel="noopener">
+          <span class="btn-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M8 13h8M8 17h8M8 9h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Prompt 가이드(PDF)
+        </a>
+        <div class="divider-sm"></div>
+        <div class="guide-grid" id="drawerGuideGrid"></div>
+      </div>
+    </aside>
 
     <div class="foot">
       <div>마지막 렌더링: <span class="mono" id="renderAt">-</span></div>
@@ -669,6 +738,7 @@
      */
     let SERVICES = [];
     let NOTICE = { noticeId: "", items: [] };
+    let NEWS = [];
 
     function noteText(note){
       if (Array.isArray(note)) return note.join("\n");
@@ -681,6 +751,7 @@
       const data = await res.json();
       SERVICES = data.services || [];
       NOTICE = data.notice || { noticeId: "", items: [] };
+      NEWS = Array.isArray(data.news) ? data.news : [];
     }
 
     // 공지 숨김 로컬스토리지 키
@@ -699,6 +770,19 @@
     const noticeList = $("#noticeList");
     const hideToday = $("#hideToday");
     const resetLocal = $("#resetLocal");
+    const newsList = $("#newsList");
+    const newsPrev = $("#newsPrev");
+    const newsNext = $("#newsNext");
+    const newsPages = $("#newsPages");
+    const guideDrawer = $("#guideDrawer");
+    const guideDrawerToggle = $("#guideDrawerToggle");
+    const guideDrawerClose = $("#guideDrawerClose");
+    const guideDrawerBackdrop = $("#guideDrawerBackdrop");
+
+    const NEWS_PAGE_SIZE = 5;
+    const NEWS_PAGE_GROUP_SIZE = 5;
+    let newsPage = 1;
+    let newsPageGroupStart = 1;
 
     function fmtNow(){
       const d = new Date();
@@ -757,7 +841,7 @@
     }
 
     async function renderGuide(){
-      const grid = $("#guideGrid");
+      const grid = $("#drawerGuideGrid");
       if(!grid) return;
 
       grid.innerHTML = "";
@@ -915,6 +999,81 @@
       body.style.opacity = "1";
     }
 
+
+    function normalizedNewsItems(){
+      return (NEWS || []).map((it) => ({
+        title: String(it?.title || "").trim(),
+        sub: String(it?.sub || "").trim(),
+        date: String(it?.date || "").trim(),
+        file: String(it?.file || "").trim(),
+      })).filter((it) => it.title && it.date).sort((a, b) => b.date.localeCompare(a.date));
+    }
+
+    function renderNews(){
+      const items = normalizedNewsItems();
+      const totalPages = Math.max(1, Math.ceil(items.length / NEWS_PAGE_SIZE));
+      newsPage = Math.min(Math.max(1, newsPage), totalPages);
+
+      const start = (newsPage - 1) * NEWS_PAGE_SIZE;
+      const pageItems = items.slice(start, start + NEWS_PAGE_SIZE);
+
+      newsList.innerHTML = "";
+      for(const it of pageItems){
+        const li = document.createElement("li");
+        li.className = "news-item";
+
+        const content = document.createElement(it.file ? "a" : "div");
+        content.className = it.file ? "news-link" : "";
+        if(it.file){
+          content.href = `./News/${encodeURIComponent(it.file)}`;
+          content.target = "_blank";
+          content.rel = "noopener";
+        }
+
+        const head = document.createElement("div");
+        head.className = "news-head";
+
+        const t = document.createElement("div");
+        t.className = "news-title";
+        t.textContent = it.title;
+
+        const d = document.createElement("div");
+        d.className = "news-date";
+        d.textContent = it.date;
+
+        const sub = document.createElement("div");
+        sub.className = "news-sub";
+        sub.textContent = it.sub || "";
+
+        head.appendChild(t);
+        head.appendChild(d);
+        content.appendChild(head);
+        content.appendChild(sub);
+        li.appendChild(content);
+        newsList.appendChild(li);
+      }
+
+      const maxGroupStart = Math.max(1, Math.floor((totalPages - 1) / NEWS_PAGE_GROUP_SIZE) * NEWS_PAGE_GROUP_SIZE + 1);
+      if (newsPage < newsPageGroupStart || newsPage > (newsPageGroupStart + NEWS_PAGE_GROUP_SIZE - 1)) {
+        newsPageGroupStart = Math.floor((newsPage - 1) / NEWS_PAGE_GROUP_SIZE) * NEWS_PAGE_GROUP_SIZE + 1;
+      }
+      newsPageGroupStart = Math.min(Math.max(1, newsPageGroupStart), maxGroupStart);
+
+      newsPages.innerHTML = "";
+      const groupEnd = Math.min(newsPageGroupStart + NEWS_PAGE_GROUP_SIZE - 1, totalPages);
+      for(let p = newsPageGroupStart; p <= groupEnd; p += 1){
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "news-page-btn" + (p === newsPage ? " active" : "");
+        b.textContent = String(p);
+        b.dataset.page = String(p);
+        newsPages.appendChild(b);
+      }
+
+      newsPrev.disabled = newsPageGroupStart <= 1;
+      newsNext.disabled = newsPageGroupStart >= maxGroupStart;
+    }
+
     function renderHeader(){
       $("#nowPill").textContent = fmtNow();
       $("#renderAt").textContent = fmtNow();
@@ -933,6 +1092,49 @@
       alert("이 PC의 공지 상태를 초기화했습니다.");
     });
 
+    newsPrev.addEventListener("click", () => {
+      newsPageGroupStart = Math.max(1, newsPageGroupStart - NEWS_PAGE_GROUP_SIZE);
+      newsPage = newsPageGroupStart;
+      renderNews();
+    });
+
+    newsNext.addEventListener("click", () => {
+      newsPageGroupStart += NEWS_PAGE_GROUP_SIZE;
+      newsPage = newsPageGroupStart;
+
+      renderNews();
+    });
+
+    newsPages.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-page]");
+      if (!btn) return;
+      newsPage = Number(btn.dataset.page || "1");
+      renderNews();
+    });
+
+    function setGuideDrawer(open){
+      guideDrawer.classList.toggle("open", !!open);
+      guideDrawer.setAttribute("aria-hidden", open ? "false" : "true");
+      guideDrawerToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      guideDrawerToggle.classList.toggle("hidden", !!open);
+      guideDrawerBackdrop.classList.toggle("show", !!open);
+    }
+
+    guideDrawerToggle.addEventListener("click", () => setGuideDrawer(true));
+    guideDrawerClose.addEventListener("click", () => setGuideDrawer(false));
+    guideDrawerBackdrop.addEventListener("click", () => setGuideDrawer(false));
+
+    document.addEventListener("click", (e) => {
+      if (!guideDrawer.classList.contains("open")) return;
+      const insideDrawer = guideDrawer.contains(e.target);
+      const onToggle = guideDrawerToggle.contains(e.target);
+      if (!insideDrawer && !onToggle) setGuideDrawer(false);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") setGuideDrawer(false);
+    });
+
     // Init (content.json 로드 후 렌더)
     (async function init(){
       renderHeader();
@@ -945,11 +1147,13 @@
         if(badge) badge.textContent = "기준일: - (content.json 오류)";
         SERVICES = [];
         NOTICE = { noticeId: "", items: [] };
+        NEWS = [];
       }
 
       renderServices();
       renderNotice();
       await renderGuide();
+      renderNews();
 
       setInterval(() => {
         $("#nowPill").textContent = fmtNow();

@@ -1,6 +1,6 @@
 # Notice Page (Test)
 
-사내 AI SaaS 구독 리스트 / 공지사항 / 이용 가이드(PDF)를 한 곳에서 확인하는 GitHub Pages 기반 시작페이지
+사내 AI SaaS 구독 리스트 / 공지사항 / AI Update News / 이용 가이드(PDF)를 한 곳에서 확인하는 GitHub Pages 기반 시작페이지
 관리자 페이지에서 `content.json`과 `Files`폴더를 수정·업로드
 
 - Test: https://brightash.github.io/notice-startpage/
@@ -12,7 +12,8 @@
 
 - **구독 리스트(서비스 카드)** 표시
 - **공지사항** 표시
-- **이용 가이드(PDF)** 제공  
+- **AI Update News** 표시(날짜 내림차순, 페이지네이션)
+- **이용 가이드(PDF)** 제공(우측 슬라이드 패널)
   - Prompt Guide (고정)
   - 서비스별 가이드(PDF) 자동 연결: `./files/{서비스명}.pdf`가 있으면 열기, 없으면 비활성/준비중 처리
 
@@ -23,6 +24,7 @@
 - 로그인: **GitHub Fine-grained PAT** 사용(Contents: Read/Write)
 - 구독 리스트(services) 추가/삭제/수정
 - 공지사항(notice) 추가/삭제/수정
+- AI Update News(news) 추가/삭제/수정
 - 가이드 PDF 첨부/교체/삭제  
   - 업로드 파일명과 상관없이 저장 시 `files/{서비스명}.pdf`로 자동 저장
 
@@ -42,4 +44,5 @@
 - `content.json` : 서비스 목록/공지 데이터
 - `admin.html`, `admin.js` : 관리자 페이지(편집/업로드/저장)
 - `files/*.pdf` : 서비스별 이용 가이드 PDF
+- `News/*.html` : AI Update News 상세 페이지
 - `asset/logo.png` : 로고/파비콘
