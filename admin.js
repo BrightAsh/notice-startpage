@@ -4,6 +4,7 @@ const REPO = "notice-startpage";
 const BRANCH = "main";
 const FILE_PATH = "content.json";
 const FILES_DIR = "files";
+const NEWS_DIR = "News";
 
 // Prompt Guide (고정 PDF: 교체만, 삭제 없음)
 const PROMPT_PDF_NAME = "Prompt.pdf";
@@ -45,6 +46,145 @@ function norm(s) { return String(s ?? "").trim(); }
 function pdfNameForService(serviceName) {
   const n = norm(serviceName);
   return n ? `${n}.pdf` : "";
+}
+function slugifyForFile(s) {
+  return String(s || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 40);
+}
+function normalizeNewsFileName(fileName, dateText, titleText, autoCreate = true) {
+  const raw = norm(fileName).replace(/^\/+/, "").replaceAll("\\", "/");
+  let base = raw.split("/").pop() || "";
+  if (!base && autoCreate) {
+    const d = norm(dateText) || new Date().toISOString().slice(0, 10);
+    const t = slugifyForFile(titleText) || "news";
+    base = `${d}-${t}.html`;
+  }
+  if (!base) return "";
+  if (!/\.html?$/i.test(base)) base += ".html";
+  return base;
+}
+function collectReservedNewsFileNames(excludeUid = "") {
+  const reserved = new Set();
+  const skipUid = String(excludeUid || "");
+
+  for (const name of newsFilesIndex) reserved.add(String(name));
+
+  (loadedData?.news || []).forEach((it) => {
+    if (String(it?._uid || "") === skipUid) return;
+    const fn = normalizeNewsFileName(it?.file, it?.date, it?.title, false);
+    if (fn) reserved.add(fn);
+  });
+
+  for (const [uid, op] of stagedNewsFileOps.entries()) {
+    if (String(uid) === skipUid) continue;
+    if (op?.type === "upsert" && norm(op?.fileName)) {
+      reserved.add(String(op.fileName));
+    }
+  }
+
+  return reserved;
+}
+
+function suggestUniqueNewsFileName(dateText, titleText, excludeUid = "") {
+  const base = normalizeNewsFileName("", dateText, titleText, true);
+  if (!base) return "";
+
+  const reserved = collectReservedNewsFileNames(excludeUid);
+  if (!reserved.has(base)) return base;
+
+  const m = base.match(/^(.*?)(\.html?)$/i);
+  const stem = m ? m[1] : base;
+  const ext = m ? m[2] : ".html";
+  for (let i = 2; i < 1000; i += 1) {
+    const cand = `${stem}-${i}${ext}`;
+    if (!reserved.has(cand)) return cand;
+  }
+  return `${stem}-${Date.now()}${ext}`;
+}
+
+function markdownToHtml(text) {
+  const src = String(text || "").replace(/\r\n?/g, "\n");
+  const lines = src.split("\n");
+  const out = [];
+  let inList = false;
+  let inCode = false;
+  for (const line of lines) {
+    if (line.trim().startsWith("```")) {
+      if (!inCode) { out.push("<pre><code>"); inCode = true; }
+      else { out.push("</code></pre>"); inCode = false; }
+      continue;
+    }
+    if (inCode) { out.push(escapeHtml(line) + "\n"); continue; }
+
+    const h = line.match(/^(#{1,3})\s+(.+)$/);
+    if (h) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      const lv = h[1].length;
+      out.push(`<h${lv}>${escapeHtml(h[2])}</h${lv}>`);
+      continue;
+    }
+
+    const li = line.match(/^[-*]\s+(.+)$/);
+    if (li) {
+      if (!inList) { out.push("<ul>"); inList = true; }
+      out.push(`<li>${escapeHtml(li[1])}</li>`);
+      continue;
+    }
+
+    if (inList) { out.push("</ul>"); inList = false; }
+    if (!line.trim()) { out.push(""); continue; }
+    out.push(`<p>${escapeHtml(line)}</p>`);
+  }
+  if (inList) out.push("</ul>");
+  if (inCode) out.push("</code></pre>");
+  return out.join("\n");
+}
+
+function buildNewsHtmlDocument({ title, sub, date, bodyHtml }) {
+  const safeTitle = escapeHtml(title || "AI Update News");
+  const safeSub = escapeHtml(sub || "");
+  const safeDate = escapeHtml(date || "");
+  return `<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${safeTitle}</title>
+  <style>
+    :root{--bg:#f5f7fb;--panel:#ffffff;--text:#0f172a;--muted:#64748b;--line:#dbe3ef;--accent:#0ea5e9;}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Noto Sans KR,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:900px;margin:0 auto;padding:32px 20px 40px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 20px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+    h1{margin:0 0 6px;font-size:28px;line-height:1.2}
+    .meta{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:13px;margin-bottom:16px}
+    .badge{padding:4px 9px;border-radius:999px;border:1px solid #bfe8f8;background:#eef9ff;color:#0369a1;font-weight:700}
+    .sub{font-size:15px;color:#334155;line-height:1.55;margin-bottom:18px}
+    .content p,.content li{font-size:15px;line-height:1.7;color:#1e293b}
+    .content h1,.content h2,.content h3{margin-top:1.2em;margin-bottom:.45em}
+    .content pre{padding:12px;background:#0f172a;color:#e2e8f0;border-radius:10px;overflow:auto}
+    .content ul{padding-left:20px}
+    a.back{display:inline-block;margin-top:18px;color:var(--accent);text-decoration:none;font-weight:700}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <article class="card">
+      <h1>${safeTitle}</h1>
+      <div class="meta"><span class="badge">AI Update</span><span>${safeDate}</span></div>
+      <div class="sub">${safeSub}</div>
+      <section class="content">
+${bodyHtml || "<p>내용이 없습니다.</p>"}
+      </section>
+      <a class="back" href="../index.html">← 홈으로 돌아가기</a>
+    </article>
+  </div>
+</body>
+</html>`;
 }
 
 // ===== deep clone =====
@@ -89,6 +229,10 @@ function ensureServiceUids(services) {
   return services;
 }
 function ensureNoticeItemUids(items) {
+  (items || []).forEach((it) => { if (!it._uid) it._uid = makeUid(); });
+  return items;
+}
+function ensureNewsItemUids(items) {
   (items || []).forEach((it) => { if (!it._uid) it._uid = makeUid(); });
   return items;
 }
@@ -184,9 +328,12 @@ let loadedData = null;
 
 let filesIndex = new Set();
 let filesIndexLoaded = false;
+let newsFilesIndex = new Set();
+let newsFilesIndexLoaded = false;
 
 // 서비스별 PDF 스테이징
 const stagedPdfOps = new Map();
+const stagedNewsFileOps = new Map();
 
 // Prompt PDF 스테이징(교체만)
 let stagedPromptPdfOp = null;
@@ -195,6 +342,7 @@ let stagedPromptPdfOp = null;
 let originalSvcByUid = new Map();
 let originalNoticeByUid = new Map();
 let originalNoticeId = "";
+let originalNewsByUid = new Map();
 
 // baseline(되돌리기용)
 let baselineData = null;
@@ -213,6 +361,10 @@ function serviceSummaryText(idx, name) {
 function noticeSummaryText(idx, title) {
   const t = norm(title);
   return t ? `공지 #${idx + 1} · ${t}` : `공지 #${idx + 1}`;
+}
+function newsSummaryText(idx, title) {
+  const t = norm(title);
+  return t ? `뉴스 #${idx + 1} · ${t}` : `뉴스 #${idx + 1}`;
 }
 
 function serviceCardTemplate(s, idx) {
@@ -315,6 +467,77 @@ function noticeCardTemplate(it, idx) {
           <input type="text" data-k="sub" value="${escapeHtml(it.sub || "")}" />
         </div>
       </div>
+
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;min-width:260px;font-size:12px;color:var(--muted);">
+          뉴스 HTML 파일: <span data-k="newsBodyState">확인중…</span>
+        </div>
+        <input type="file" accept=".html,text/html" data-k="newsBodyInput" style="display:none" />
+        <button class="btn" data-act="attachNewsBody">파일 첨부</button>
+        <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
+      </div>
+      <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리됩니다. 파일명은 기본적으로 <span class="mono">날짜-제목.html</span> 규칙을 사용하며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
+    </div>
+  `;
+  return card;
+}
+
+function newsCardTemplate(it, idx) {
+  const card = document.createElement("details");
+  card.className = "card";
+  card.dataset.idx = String(idx);
+  card.dataset.uid = String(it._uid || "");
+  card.open = false;
+
+  card.innerHTML = `
+    <summary class="card-summary">
+      <span class="sum-title">${escapeHtml(newsSummaryText(idx, it.title))}</span>
+      <span class="sum-right">
+        <span class="sum-actions">
+          <button type="button" class="btn sum-btn" data-act="attachNewsBody">파일 첨부</button>
+          <button type="button" class="btn sum-btn" data-act="delNewsBody">파일 삭제</button>
+          <button type="button" class="btn sum-btn" data-act="delNewsQuick">뉴스 삭제</button>
+        </span>
+        <span class="chev" aria-hidden="true">›</span>
+      </span>
+    </summary>
+
+    <div class="card-body">
+      <div class="card-hd" style="margin-bottom:10px;">
+        <div class="card-title">편집</div>
+        <button class="btn" data-act="delNews">뉴스 삭제</button>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>date (YYYY-MM-DD)</label>
+          <input type="text" data-k="date" value="${escapeHtml(it.date || "")}" placeholder="예: 2026-02-01" />
+        </div>
+        <div>
+          <label>file (News 폴더 내 HTML)</label>
+          <input type="text" data-k="file" value="${escapeHtml(it.file || "")}" placeholder="예: 2026-02-01.html" />
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label>title</label>
+          <input type="text" data-k="title" value="${escapeHtml(it.title || "")}" />
+        </div>
+        <div>
+          <label>sub</label>
+          <input type="text" data-k="sub" value="${escapeHtml(it.sub || "")}" />
+        </div>
+      </div>
+
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;min-width:260px;font-size:12px;color:var(--muted);">
+          뉴스 HTML 파일: <span data-k="newsBodyState">확인중…</span>
+        </div>
+        <input type="file" accept=".html,text/html" data-k="newsBodyInput" style="display:none" />
+        <button class="btn" data-act="attachNewsBody">파일 첨부</button>
+        <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
+      </div>
+      <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리되며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
     </div>
   `;
   return card;
@@ -333,7 +556,12 @@ function renderAll() {
   ntList.innerHTML = "";
   (loadedData.notice?.items || []).forEach((it, i) => ntList.appendChild(noticeCardTemplate(it, i)));
 
+  const newsList = requireEl("newsList");
+  newsList.innerHTML = "";
+  (loadedData.news || []).forEach((it, i) => newsList.appendChild(newsCardTemplate(it, i)));
+
   refreshAllCardsPdfUI();
+  refreshAllNewsBodyUI();
   refreshPromptPdfUI();
   updatePendingSummary();
 }
@@ -368,7 +596,21 @@ function snapshotFromFormWithUids() {
     });
   });
 
-  return { services, notice: { noticeId, items } };
+  const news = [];
+  const newsCards = requireEl("newsList").querySelectorAll(".card");
+  newsCards.forEach((card) => {
+    const get = (k) => card.querySelector(`[data-k="${k}"]`);
+    const uid = card.dataset.uid || makeUid();
+    news.push({
+      _uid: uid,
+      title: get("title")?.value?.trim() || "",
+      sub: get("sub")?.value?.trim() || "",
+      date: get("date")?.value?.trim() || "",
+      file: get("file")?.value?.trim() || "",
+    });
+  });
+
+  return { services, notice: { noticeId, items }, news };
 }
 
 function stripInternalFields(dataWithUids) {
@@ -387,6 +629,12 @@ function stripInternalFields(dataWithUids) {
         sub: it.sub || "",
       })),
     },
+    news: (dataWithUids.news || []).map((it) => ({
+      title: it.title || "",
+      sub: it.sub || "",
+      date: it.date || "",
+      file: it.file || "",
+    })),
   };
 }
 
@@ -406,8 +654,9 @@ async function loadContentJson(token) {
   const services = ensureServiceUids(Array.isArray(parsed.services) ? parsed.services : []);
   const notice = parsed.notice || { noticeId: "", items: [] };
   notice.items = ensureNoticeItemUids(Array.isArray(notice.items) ? notice.items : []);
+  const news = ensureNewsItemUids(Array.isArray(parsed.news) ? parsed.news : []);
 
-  loadedData = { services, notice };
+  loadedData = { services, notice, news };
 
   // baseline 저장(불러오기 직후)
   baselineData = deepClone(loadedData);
@@ -430,7 +679,18 @@ async function loadContentJson(token) {
     originalNoticeByUid.set(String(it._uid), { title: it.title || "", sub: it.sub || "" });
   });
 
+  originalNewsByUid = new Map();
+  (news || []).forEach((it) => {
+    originalNewsByUid.set(String(it._uid), {
+      title: it.title || "",
+      sub: it.sub || "",
+      date: it.date || "",
+      file: it.file || "",
+    });
+  });
+
   stagedPdfOps.clear();
+  stagedNewsFileOps.clear();
   stagedPromptPdfOp = null;
 
   return true;
@@ -462,6 +722,33 @@ async function loadFilesDirIndex(token) {
   return true;
 }
 
+async function loadNewsDirIndex(token) {
+  newsFilesIndex = new Set();
+  newsFilesIndexLoaded = false;
+
+  const res = await fetch(REST_GET_CONTENT(NEWS_DIR), { headers: ghRestHeaders(token) });
+  if (res.status === 404) {
+    newsFilesIndexLoaded = true;
+    return true;
+  }
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    throw new Error(`불러오기 실패(News/): ${res.status} ${res.statusText}
+${t}`);
+  }
+
+  const arr = await res.json();
+  if (Array.isArray(arr)) {
+    arr.forEach((it) => {
+      if (it?.type === "file" && typeof it?.name === "string" && /\.html?$/i.test(it.name)) {
+        newsFilesIndex.add(it.name);
+      }
+    });
+  }
+  newsFilesIndexLoaded = true;
+  return true;
+}
+
 // ===== Prompt PDF =====
 function refreshPromptPdfUI() {
   const statusEl = document.getElementById("promptPdfStatus");
@@ -481,6 +768,7 @@ function refreshPromptPdfUI() {
     statusEl.textContent = "확인중…";
     return;
   }
+
   if (stagedPromptPdfOp?.type === "upsert") {
     statusEl.textContent = exists ? "저장 대기(교체)" : "저장 대기(업로드)";
     return;
@@ -526,6 +814,7 @@ function resetEditsToBaseline() {
   if (!baselineData) return;
 
   stagedPdfOps.clear();
+  stagedNewsFileOps.clear();
   stagedPromptPdfOp = null;
 
   loadedData = deepClone(baselineData);
@@ -546,6 +835,16 @@ function resetEditsToBaseline() {
   originalNoticeByUid = new Map();
   (loadedData.notice?.items || []).forEach((it) => {
     originalNoticeByUid.set(String(it._uid), { title: it.title || "", sub: it.sub || "" });
+  });
+
+  originalNewsByUid = new Map();
+  (loadedData.news || []).forEach((it) => {
+    originalNewsByUid.set(String(it._uid), {
+      title: it.title || "",
+      sub: it.sub || "",
+      date: it.date || "",
+      file: it.file || "",
+    });
   });
 
   renderAll();
@@ -663,6 +962,115 @@ function refreshCardPdfUI(card) {
   }
 }
 
+function refreshAllNewsBodyUI() {
+  const cards = document.querySelectorAll("#newsList .card");
+  cards.forEach((card) => refreshNewsBodyUI(card));
+}
+
+function getNewsBodyUiState(uid, dateText, titleText, fileText) {
+  const fileName = norm(fileText) || suggestUniqueNewsFileName(dateText, titleText, uid);
+  const repoHas = !!fileName && newsFilesIndex.has(fileName);
+  const staged = stagedNewsFileOps.get(uid) || null;
+  return { fileName, repoHas, staged };
+}
+
+function refreshNewsBodyUI(card) {
+  const uid = card.dataset.uid;
+  const tokenOk = !!norm($("ghToken")?.value);
+  const date = card.querySelector('input[data-k="date"]')?.value || "";
+  const title = card.querySelector('input[data-k="title"]')?.value || "";
+  const fileInputText = card.querySelector('input[data-k="file"]');
+  const fileText = fileInputText?.value || "";
+
+  const stateEl = card.querySelector('[data-k="newsBodyState"]');
+  const bodyAttach = card.querySelector('.card-body button[data-act="attachNewsBody"]');
+  const bodyDel = card.querySelector('.card-body button[data-act="delNewsBody"]');
+  const quickAttach = card.querySelector('summary button[data-act="attachNewsBody"]');
+  const quickDel = card.querySelector('summary button[data-act="delNewsBody"]');
+  const quickNewsDel = card.querySelector('summary button[data-act="delNewsQuick"]');
+
+  if (!stateEl || !bodyAttach || !bodyDel || !quickAttach || !quickDel || !quickNewsDel) return;
+
+  quickNewsDel.disabled = !tokenOk;
+
+  const { fileName, repoHas, staged } = getNewsBodyUiState(uid, date, title, fileText);
+  if (fileInputText && fileInputText.value !== fileName) fileInputText.value = fileName;
+
+  if (!fileName) {
+    stateEl.textContent = "date/title 또는 file을 입력하면 파일을 첨부할 수 있어요.";
+
+    bodyAttach.textContent = "파일 첨부";
+    bodyAttach.disabled = true;
+    bodyDel.style.display = "none";
+
+    quickAttach.textContent = "파일 첨부";
+    quickAttach.disabled = true;
+    quickDel.style.display = "none";
+    return;
+  }
+
+  if (!newsFilesIndexLoaded) {
+    stateEl.textContent = "확인중…";
+    bodyAttach.disabled = true;
+    bodyDel.style.display = "none";
+    quickAttach.disabled = true;
+    quickDel.style.display = "none";
+    return;
+  }
+
+  const attachLabel = staged?.type === "upsert"
+    ? "파일 다시 선택(저장 대기)"
+    : (repoHas ? "파일 교체(덮어쓰기)" : "파일 첨부");
+
+  bodyAttach.textContent = attachLabel;
+  bodyAttach.disabled = !tokenOk;
+  quickAttach.textContent = attachLabel.replace("(덮어쓰기)", "").trim();
+  quickAttach.disabled = !tokenOk;
+
+  if (staged?.type === "delete") {
+    stateEl.textContent = repoHas ? `삭제 예정: ${fileName}` : `삭제 예정(원본 없음): ${fileName}`;
+
+    bodyDel.style.display = "";
+    bodyDel.textContent = "삭제 취소";
+    bodyDel.disabled = !tokenOk;
+
+    quickDel.style.display = "";
+    quickDel.textContent = "삭제 취소";
+    quickDel.disabled = !tokenOk;
+    return;
+  }
+
+  if (staged?.type === "upsert") {
+    stateEl.textContent = repoHas ? `저장 대기(교체): ${fileName}` : `저장 대기(첨부): ${fileName}`;
+
+    bodyDel.style.display = "";
+    bodyDel.textContent = "파일 삭제";
+    bodyDel.disabled = !tokenOk;
+
+    quickDel.style.display = repoHas ? "" : "none";
+    quickDel.textContent = "파일 삭제";
+    quickDel.disabled = !tokenOk;
+    return;
+  }
+
+  if (repoHas) {
+    stateEl.textContent = `연결됨: ${fileName}`;
+
+    bodyDel.style.display = "";
+    bodyDel.textContent = "파일 삭제";
+    bodyDel.disabled = !tokenOk;
+
+    quickDel.style.display = "";
+    quickDel.textContent = "파일 삭제";
+    quickDel.disabled = !tokenOk;
+  } else {
+    stateEl.textContent = `없음: ${fileName}`;
+    bodyDel.style.display = "none";
+    quickDel.style.display = "none";
+  }
+}
+
+
 // ===== 커밋 파일 변경 =====
 function buildFileChangesForCommit(dataWithUids) {
   const cleanData = stripInternalFields(dataWithUids);
@@ -675,6 +1083,13 @@ function buildFileChangesForCommit(dataWithUids) {
   const curSvcByUid = new Map((dataWithUids.services || []).map((s) => [String(s._uid), s]));
   const curNameSet = new Set();
   (dataWithUids.services || []).forEach((s) => { if (norm(s.name)) curNameSet.add(norm(s.name)); });
+
+  const curNewsByUid = new Map((dataWithUids.news || []).map((it) => [String(it._uid), it]));
+  const curNewsFileSet = new Set();
+  (dataWithUids.news || []).forEach((it) => {
+    const fn = normalizeNewsFileName(it.file, it.date, it.title, false);
+    if (fn) curNewsFileSet.add(fn);
+  });
 
   for (const [uid, op] of stagedPdfOps.entries()) {
     const svc = curSvcByUid.get(String(uid));
@@ -695,6 +1110,25 @@ function buildFileChangesForCommit(dataWithUids) {
     }
   }
 
+  for (const [uid, op] of stagedNewsFileOps.entries()) {
+    const it = curNewsByUid.get(String(uid));
+    if (!it) continue;
+    const fileName = normalizeNewsFileName(it?.file, it?.date, it?.title, false);
+    if (!fileName) continue;
+    const path = `${NEWS_DIR}/${fileName}`;
+
+    if (op?.type === "upsert") {
+      additions.push({ path, contents: op.b64 });
+      additionPaths.add(path);
+      continue;
+    }
+    if (op?.type === "delete") {
+      if (newsFilesIndex.has(fileName)) deletionPaths.add(path);
+      continue;
+    }
+  }
+
+
   if (stagedPromptPdfOp?.type === "upsert") {
     additions.push({ path: PROMPT_PDF_PATH, contents: stagedPromptPdfOp.b64 });
     additionPaths.add(PROMPT_PDF_PATH);
@@ -711,6 +1145,17 @@ function buildFileChangesForCommit(dataWithUids) {
     if (!filesIndex.has(oldFile)) continue;
 
     deletionPaths.add(`${FILES_DIR}/${oldFile}`);
+  }
+
+  for (const [uid, orig] of originalNewsByUid.entries()) {
+    if (curNewsByUid.has(String(uid))) continue;
+
+    const oldFile = normalizeNewsFileName(orig?.file, orig?.date, orig?.title, false);
+    if (!oldFile) continue;
+    if (curNewsFileSet.has(oldFile)) continue;
+    if (!newsFilesIndex.has(oldFile)) continue;
+
+    deletionPaths.add(`${NEWS_DIR}/${oldFile}`);
   }
 
   for (const p of Array.from(deletionPaths)) {
@@ -736,6 +1181,15 @@ function isNoticeChanged(orig, cur) {
   const a = (v) => norm(v);
   return a(orig.title) !== a(cur.title) || a(orig.sub) !== a(cur.sub);
 }
+function isNewsChanged(orig, cur) {
+  const a = (v) => norm(v);
+  return (
+    a(orig.title) !== a(cur.title) ||
+    a(orig.sub) !== a(cur.sub) ||
+    a(orig.date) !== a(cur.date) ||
+    a(orig.file) !== a(cur.file)
+  );
+}
 
 function updatePendingSummary() {
   const setNum = (id, n) => {
@@ -749,6 +1203,7 @@ function updatePendingSummary() {
     setNum("p_pdf_total", 0); setNum("p_pdf_attach", 0); setNum("p_pdf_replace", 0); setNum("p_pdf_delete", 0);
     setNum("p_svc_total", 0); setNum("p_svc_add", 0); setNum("p_svc_mod", 0); setNum("p_svc_del", 0);
     setNum("p_nt_total", 0);  setNum("p_nt_add", 0);  setNum("p_nt_mod", 0);  setNum("p_nt_del", 0);
+    setNum("p_news_total", 0); setNum("p_news_add", 0); setNum("p_news_mod", 0); setNum("p_news_del", 0);
     if (legacy) legacy.textContent = "-";
     setResetButtonState(true);
     return;
@@ -819,15 +1274,40 @@ function updatePendingSummary() {
   setNum("p_nt_mod", ntMod);
   setNum("p_nt_del", ntDel);
 
+  const curNewsByUid = new Map((snap.news || []).map((it) => [String(it._uid), it]));
+  let newsAdd = 0, newsMod = 0, newsDel = 0;
+  for (const [uid, cur] of curNewsByUid.entries()) {
+    const orig = originalNewsByUid.get(String(uid));
+    if (!orig) newsAdd += 1;
+    else if (isNewsChanged(orig, cur)) newsMod += 1;
+  }
+  for (const uid of originalNewsByUid.keys()) {
+    if (!curNewsByUid.has(String(uid))) newsDel += 1;
+  }
+  for (const [uid, op] of stagedNewsFileOps.entries()) {
+    if (op?.type !== "upsert" && op?.type !== "delete") continue;
+    const cur = curNewsByUid.get(String(uid));
+    const orig = originalNewsByUid.get(String(uid));
+    if (!orig || !cur) continue;
+    if (!isNewsChanged(orig, cur)) newsMod += 1;
+  }
+
+  const newsTotal = newsAdd + newsMod + newsDel;
+
+  setNum("p_news_total", newsTotal);
+  setNum("p_news_add", newsAdd);
+  setNum("p_news_mod", newsMod);
+  setNum("p_news_del", newsDel);
+
   if (legacy) {
     legacy.textContent =
       `PDF ${pdfTotal}(첨부${pdfAttach}/교체${pdfReplace}/삭제${pdfDelete}) · ` +
       `서비스 ${svcTotal}(추가${svcAdd}/수정${svcMod}/삭제${svcDel}) · ` +
-      `공지 ${ntTotal}(추가${ntAdd}/수정${ntMod}/삭제${ntDel})`;
+      `공지 ${ntTotal}(추가${ntAdd}/수정${ntMod}/삭제${ntDel}) · ` +
+      `뉴스 ${newsTotal}(추가${newsAdd}/수정${newsMod}/삭제${newsDel})`;
   }
 
-  // ✅ 여기! totals 계산이 끝난 뒤에만 쓸 수 있음
-  setResetButtonState((pdfTotal + svcTotal + ntTotal) === 0);
+  setResetButtonState((pdfTotal + svcTotal + ntTotal + newsTotal) === 0);
 }
 
 // ===== init =====
@@ -847,6 +1327,7 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("btnLoad");
   requireEl("btnAddSvc");
   requireEl("btnAddNotice");
+  requireEl("btnAddNews");
   requireEl("btnSave");
 
   wirePromptPdfControls();
@@ -855,6 +1336,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const v = norm($("ghToken").value);
     $("tokenState").textContent = v ? "입력됨" : "토큰 필요";
     refreshAllCardsPdfUI();
+    refreshAllNewsBodyUI();
     refreshPromptPdfUI();
     updatePendingSummary(); // 여기서 reset 버튼 상태도 같이 갱신됨
   });
@@ -870,6 +1352,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setMsg("불러오는 중...", "");
       await loadContentJson(token);
       await loadFilesDirIndex(token);
+      await loadNewsDirIndex(token);
       renderAll();
       setMsg("불러오기 완료. 수정 후 '저장'하면 한 번에 커밋됩니다.", "ok");
     } catch (e) {
@@ -879,23 +1362,35 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $("btnAddSvc").addEventListener("click", () => {
-    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] } };
+    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [] };
     if (!requireEl("editor").classList.contains("hidden")) {
       const snap = snapshotFromFormWithUids();
       loadedData.services = ensureServiceUids(snap.services);
       loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+      loadedData.news = ensureNewsItemUids(snap.news || []);
     }
     loadedData.services.push({ _uid: makeUid(), name: "", url: "", domain: "", note: "", disabled: false });
     renderAll();
   });
 
   $("btnAddNotice").addEventListener("click", () => {
-    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] } };
+    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [] };
     const snap = snapshotFromFormWithUids();
     loadedData.services = ensureServiceUids(snap.services);
     loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+    loadedData.news = ensureNewsItemUids(snap.news || []);
     if (!loadedData.notice) loadedData.notice = { noticeId: "", items: [] };
     loadedData.notice.items.push({ _uid: makeUid(), title: "", sub: "" });
+    renderAll();
+  });
+
+  $("btnAddNews").addEventListener("click", () => {
+    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [] };
+    const snap = snapshotFromFormWithUids();
+    loadedData.services = ensureServiceUids(snap.services);
+    loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+    loadedData.news = ensureNewsItemUids(snap.news || []);
+    loadedData.news.push({ _uid: makeUid(), title: "", sub: "", date: "", file: "" });
     renderAll();
   });
 
@@ -919,6 +1414,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const snap = snapshotFromFormWithUids();
       loadedData.services = ensureServiceUids(snap.services);
       loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+      loadedData.news = ensureNewsItemUids(snap.news || []);
 
       const idx = loadedData.services.findIndex((s) => String(s._uid) === String(uid));
       if (idx >= 0) {
@@ -1042,6 +1538,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const snap = snapshotFromFormWithUids();
     loadedData.services = ensureServiceUids(snap.services);
     loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+      loadedData.news = ensureNewsItemUids(snap.news || []);
 
     const card = btn.closest(".card");
     const uid = card?.dataset?.uid;
@@ -1067,6 +1564,125 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   });
+  $("newsList").addEventListener("click", (e) => {
+    if (e.target.closest("button[data-act]")) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    const card = e.target.closest(".card");
+    const uid = card?.dataset?.uid;
+    if (!card || !uid) return;
+
+    const token = norm($("ghToken").value);
+
+    const delBtn = e.target.closest("button[data-act='delNews'],button[data-act='delNewsQuick']");
+    if (delBtn) {
+      const snap = snapshotFromFormWithUids();
+      loadedData.services = ensureServiceUids(snap.services);
+      loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+      loadedData.news = ensureNewsItemUids(snap.news || []);
+
+      const i = loadedData.news.findIndex((x) => String(x._uid) === String(uid));
+      if (i < 0) return;
+
+      stagedNewsFileOps.delete(uid);
+      loadedData.news.splice(i, 1);
+      renderAll();
+      return;
+    }
+
+    const attachBodyBtn = e.target.closest("button[data-act='attachNewsBody']");
+    if (attachBodyBtn) {
+      if (!token) return setMsg("토큰을 입력하세요.", "err");
+      const input = card.querySelector('input[type="file"][data-k="newsBodyInput"]');
+      if (!input) return;
+      input.click();
+      return;
+    }
+
+    const delBodyBtn = e.target.closest("button[data-act='delNewsBody']");
+    if (delBodyBtn) {
+      if (!token) return setMsg("토큰을 입력하세요.", "err");
+      const date = card.querySelector('input[data-k="date"]')?.value || "";
+      const title = card.querySelector('input[data-k="title"]')?.value || "";
+      const fileVal = card.querySelector('input[data-k="file"]')?.value || "";
+      const fileName = normalizeNewsFileName(fileVal, date, title);
+
+      const cur = stagedNewsFileOps.get(uid);
+      if (cur?.type === "delete") {
+        stagedNewsFileOps.delete(uid);
+        refreshNewsBodyUI(card);
+        updatePendingSummary();
+        setMsg(`뉴스 파일 삭제 취소: ${fileName}`, "ok");
+        return;
+      }
+
+      if (cur?.type === "upsert") {
+        if (newsFilesIndex.has(fileName)) stagedNewsFileOps.set(uid, { type: "delete" });
+        else stagedNewsFileOps.delete(uid);
+        refreshNewsBodyUI(card);
+        updatePendingSummary();
+        setMsg(`뉴스 파일 상태 변경: ${fileName}`, "ok");
+        return;
+      }
+
+      if (!newsFilesIndex.has(fileName)) return setMsg(`삭제할 뉴스 파일이 없습니다: ${fileName}`, "err");
+      stagedNewsFileOps.set(uid, { type: "delete" });
+      refreshNewsBodyUI(card);
+      updatePendingSummary();
+      setMsg(`뉴스 파일 삭제 예정: ${fileName} (저장 필요)`, "ok");
+    }
+  });
+
+  $("newsList").addEventListener("input", (e) => {
+    updatePendingSummary();
+    const card = e.target.closest(".card");
+    if (!card) return;
+    if (e.target.matches('input[data-k="title"]')) {
+      const cards = Array.from(requireEl("newsList").querySelectorAll(".card"));
+      const idx = cards.indexOf(card);
+      const sumTitle = card.querySelector(".sum-title");
+      if (sumTitle) sumTitle.textContent = newsSummaryText(idx, e.target.value);
+    }
+    if (e.target.matches('input[data-k="title"],input[data-k="date"],input[data-k="file"]')) {
+      refreshNewsBodyUI(card);
+    }
+  });
+
+
+  $("newsList").addEventListener("change", async (e) => {
+    const input = e.target.closest('input[type="file"][data-k="newsBodyInput"]');
+    if (!input) return;
+
+    const token = norm($("ghToken").value);
+    const card = input.closest(".card");
+    const uid = card?.dataset?.uid;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file || !uid) return;
+    if (!token) return setMsg("토큰을 입력하세요.", "err");
+
+    try {
+      const date = card.querySelector('input[data-k="date"]')?.value || "";
+      const title = card.querySelector('input[data-k="title"]')?.value || "";
+      const fileInputText = card.querySelector('input[data-k="file"]');
+      const fileName = suggestUniqueNewsFileName(date, title, uid);
+      if (fileInputText) fileInputText.value = fileName;
+
+      const htmlText = await file.text();
+      const b64 = utf8ToB64(htmlText);
+
+      stagedNewsFileOps.set(uid, { type: "upsert", b64, size: file.size, fileName, origName: file.name });
+      refreshNewsBodyUI(card);
+      updatePendingSummary();
+      setMsg(`뉴스 파일 저장 대기: ${NEWS_DIR}/${fileName} (저장 필요)`, "ok");
+    } catch (err) {
+      console.error(err);
+      setMsg(String(err.message || err), "err");
+    }
+  });
+
   $("noticeId").addEventListener("input", () => updatePendingSummary());
 
   // ✅ 저장
@@ -1079,6 +1695,11 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const snap = snapshotFromFormWithUids();
       if (!norm(snap.notice.noticeId)) return setSaveMsg("noticeId(기준일)를 입력하세요.", "err");
+      for (const item of (snap.news || [])) {
+        if (!norm(item.title) || !norm(item.date)) {
+          return setSaveMsg("뉴스 항목은 title/date를 모두 입력하세요.", "err");
+        }
+      }
 
       const { additions, deletions } = buildFileChangesForCommit(snap);
       const headline = norm($("commitMsg")?.value) || "Update via admin";
@@ -1088,6 +1709,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       await loadContentJson(token);
       await loadFilesDirIndex(token);
+      await loadNewsDirIndex(token);
       renderAll();
 
       setSaveMsg(`저장 완료(1커밋): ${commit.oid}`, "ok");
