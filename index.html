@@ -55,6 +55,7 @@
       max-width: 1320px;
       margin: 0 auto;
       padding: 26px 34px 36px;
+
     }
 
     header{
@@ -143,6 +144,7 @@
     main{
       display:grid;
       grid-template-columns: 1.32fr .68fr;
+
       gap: 14px;
     }
         @media (max-width: 980px){
@@ -459,6 +461,7 @@
     .guide-drawer-close{ padding:7px 10px; font-size:12px; }
     @media (max-width:980px){ .wrap{padding:20px 18px 28px;} .guide-drawer{ width:min(600px, 96vw); max-height:92vh; } .guide-drawer-toggle{ right:10px; padding:9px 12px; } }
 
+
     .foot{
       margin-top: 16px;
       color: var(--muted);
@@ -700,6 +703,7 @@
     <aside class="guide-drawer" id="guideDrawer" aria-hidden="true">
       <div class="guide-drawer-hd">
         <h3 class="panel-title" style="margin:0;">AI 서비스 가이드 보기</h3>
+
         <button class="btn guide-drawer-close" id="guideDrawerClose">닫기 ✕</button>
       </div>
       <div class="panel-bd">
@@ -777,6 +781,7 @@
     const NEWS_PAGE_GROUP_SIZE = 5;
     let newsPage = 1;
     let newsPageGroupStart = 1;
+
 
     function fmtNow(){
       const d = new Date();
@@ -1056,6 +1061,7 @@
       newsPages.innerHTML = "";
       const groupEnd = Math.min(newsPageGroupStart + NEWS_PAGE_GROUP_SIZE - 1, totalPages);
       for(let p = newsPageGroupStart; p <= groupEnd; p += 1){
+
         const b = document.createElement("button");
         b.type = "button";
         b.className = "news-page-btn" + (p === newsPage ? " active" : "");
@@ -1066,6 +1072,7 @@
 
       newsPrev.disabled = newsPageGroupStart <= 1;
       newsNext.disabled = newsPageGroupStart >= maxGroupStart;
+
     }
 
     function renderHeader(){
@@ -1089,12 +1096,13 @@
     newsPrev.addEventListener("click", () => {
       newsPageGroupStart = Math.max(1, newsPageGroupStart - NEWS_PAGE_GROUP_SIZE);
       newsPage = newsPageGroupStart;
+
       renderNews();
     });
 
     newsNext.addEventListener("click", () => {
       newsPageGroupStart += NEWS_PAGE_GROUP_SIZE;
-      newsPage = newsPageGroupStart;
+
       renderNews();
     });
 
@@ -1110,6 +1118,7 @@
       guideDrawer.setAttribute("aria-hidden", open ? "false" : "true");
       guideDrawerToggle.setAttribute("aria-expanded", open ? "true" : "false");
       guideDrawerBackdrop.classList.toggle("show", !!open);
+
     }
 
     guideDrawerToggle.addEventListener("click", () => setGuideDrawer(true));
@@ -1126,6 +1135,7 @@
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") setGuideDrawer(false);
     });
+
 
     // Init (content.json 로드 후 렌더)
     (async function init(){
