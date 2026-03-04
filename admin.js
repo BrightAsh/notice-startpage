@@ -68,6 +68,46 @@ function normalizeNewsFileName(fileName, dateText, titleText, autoCreate = true)
   if (!/\.html?$/i.test(base)) base += ".html";
   return base;
 }
+
+function collectReservedNewsFileNames(excludeUid = "") {
+  const reserved = new Set();
+  const skipUid = String(excludeUid || "");
+
+  for (const name of newsFilesIndex) reserved.add(String(name));
+
+  (loadedData?.news || []).forEach((it) => {
+    if (String(it?._uid || "") === skipUid) return;
+    const fn = normalizeNewsFileName(it?.file, it?.date, it?.title, false);
+    if (fn) reserved.add(fn);
+  });
+
+  for (const [uid, op] of stagedNewsFileOps.entries()) {
+    if (String(uid) === skipUid) continue;
+    if (op?.type === "upsert" && norm(op?.fileName)) {
+      reserved.add(String(op.fileName));
+    }
+  }
+
+  return reserved;
+}
+
+function suggestUniqueNewsFileName(dateText, titleText, excludeUid = "") {
+  const base = normalizeNewsFileName("", dateText, titleText, true);
+  if (!base) return "";
+
+  const reserved = collectReservedNewsFileNames(excludeUid);
+  if (!reserved.has(base)) return base;
+
+  const m = base.match(/^(.*?)(\.html?)$/i);
+  const stem = m ? m[1] : base;
+  const ext = m ? m[2] : ".html";
+  for (let i = 2; i < 1000; i += 1) {
+    const cand = `${stem}-${i}${ext}`;
+    if (!reserved.has(cand)) return cand;
+  }
+  return `${stem}-${Date.now()}${ext}`;
+}
+
 function markdownToHtml(text) {
   const src = String(text || "").replace(/\r\n?/g, "\n");
   const lines = src.split("\n");
@@ -437,7 +477,7 @@ function noticeCardTemplate(it, idx) {
         <button class="btn" data-act="attachNewsBody">파일 첨부</button>
         <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
       </div>
-      <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리되며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
+      <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리됩니다. 파일명은 기본적으로 <span class="mono">날짜-제목.html</span> 규칙을 사용하며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
 
     </div>
   `;
@@ -501,7 +541,6 @@ function newsCardTemplate(it, idx) {
         <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
       </div>
       <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리되며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
-
     </div>
   `;
   return card;
@@ -932,7 +971,8 @@ function refreshAllNewsBodyUI() {
 }
 
 function getNewsBodyUiState(uid, dateText, titleText, fileText) {
-  const fileName = normalizeNewsFileName(fileText, dateText, titleText);
+
+  const fileName = norm(fileText) || suggestUniqueNewsFileName(dateText, titleText, uid);
   const repoHas = !!fileName && newsFilesIndex.has(fileName);
   const staged = stagedNewsFileOps.get(uid) || null;
   return { fileName, repoHas, staged };
@@ -956,7 +996,6 @@ function refreshNewsBodyUI(card) {
   if (!stateEl || !bodyAttach || !bodyDel || !quickAttach || !quickDel || !quickNewsDel) return;
 
   quickNewsDel.disabled = !tokenOk;
-
 
   const { fileName, repoHas, staged } = getNewsBodyUiState(uid, date, title, fileText);
   if (fileInputText && fileInputText.value !== fileName) fileInputText.value = fileName;
@@ -1255,6 +1294,7 @@ function updatePendingSummary() {
     if (!orig || !cur) continue;
     if (!isNewsChanged(orig, cur)) newsMod += 1;
   }
+  
   const newsTotal = newsAdd + newsMod + newsDel;
 
   setNum("p_news_total", newsTotal);
@@ -1578,7 +1618,6 @@ document.addEventListener("DOMContentLoaded", () => {
         refreshNewsBodyUI(card);
         updatePendingSummary();
         setMsg(`뉴스 파일 삭제 취소: ${fileName}`, "ok");
-
         return;
       }
 
@@ -1597,7 +1636,6 @@ document.addEventListener("DOMContentLoaded", () => {
       updatePendingSummary();
       setMsg(`뉴스 파일 삭제 예정: ${fileName} (저장 필요)`, "ok");
     }
-
   });
 
   $("newsList").addEventListener("input", (e) => {
@@ -1632,13 +1670,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const date = card.querySelector('input[data-k="date"]')?.value || "";
       const title = card.querySelector('input[data-k="title"]')?.value || "";
       const fileInputText = card.querySelector('input[data-k="file"]');
-      const explicitFile = fileInputText?.value || "";
-      const fileName = normalizeNewsFileName(explicitFile || file.name, date, title);
+      const fileName = suggestUniqueNewsFileName(date, title, uid);
+
       if (fileInputText) fileInputText.value = fileName;
 
       const htmlText = await file.text();
       const b64 = utf8ToB64(htmlText);
-
 
       stagedNewsFileOps.set(uid, { type: "upsert", b64, size: file.size, fileName, origName: file.name });
       refreshNewsBodyUI(card);
@@ -1647,7 +1684,6 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error(err);
       setMsg(String(err.message || err), "err");
-
     }
   });
 
