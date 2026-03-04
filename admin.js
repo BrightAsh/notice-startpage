@@ -431,13 +431,14 @@ function noticeCardTemplate(it, idx) {
 
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <div style="flex:1;min-width:260px;font-size:12px;color:var(--muted);">
-          본문 HTML: <span data-k="newsBodyState">확인중…</span>
+          뉴스 HTML 파일: <span data-k="newsBodyState">확인중…</span>
         </div>
-        <input type="file" accept=".md,.txt,text/markdown,text/plain" data-k="newsBodyInput" style="display:none" />
-        <button class="btn" data-act="attachNewsBody">본문 파일 첨부</button>
-        <button class="btn danger" data-act="delNewsBody">본문 삭제</button>
+        <input type="file" accept=".html,text/html" data-k="newsBodyInput" style="display:none" />
+        <button class="btn" data-act="attachNewsBody">파일 첨부</button>
+        <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
       </div>
-      <div class="small" style="margin-top:8px;">업로드 파일(.md/.txt)은 저장 시 기본 템플릿 HTML로 변환되어 <span class="mono">News/{file}</span>로 반영됩니다.</div>
+      <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리되며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
+
     </div>
   `;
   return card;
@@ -455,6 +456,9 @@ function newsCardTemplate(it, idx) {
       <span class="sum-title">${escapeHtml(newsSummaryText(idx, it.title))}</span>
       <span class="sum-right">
         <span class="sum-actions">
+          <button type="button" class="btn sum-btn" data-act="attachNewsBody">파일 첨부</button>
+          <button type="button" class="btn sum-btn" data-act="delNewsBody">파일 삭제</button>
+
           <button type="button" class="btn sum-btn" data-act="delNewsQuick">뉴스 삭제</button>
         </span>
         <span class="chev" aria-hidden="true">›</span>
@@ -490,62 +494,14 @@ function newsCardTemplate(it, idx) {
 
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <div style="flex:1;min-width:260px;font-size:12px;color:var(--muted);">
-          본문 HTML: <span data-k="newsBodyState">확인중…</span>
+          뉴스 HTML 파일: <span data-k="newsBodyState">확인중…</span>
         </div>
-        <input type="file" accept=".md,.txt,text/markdown,text/plain" data-k="newsBodyInput" style="display:none" />
-        <button class="btn" data-act="attachNewsBody">본문 파일 첨부</button>
-        <button class="btn danger" data-act="delNewsBody">본문 삭제</button>
+        <input type="file" accept=".html,text/html" data-k="newsBodyInput" style="display:none" />
+        <button class="btn" data-act="attachNewsBody">파일 첨부</button>
+        <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
       </div>
-      <div class="small" style="margin-top:8px;">업로드 파일(.md/.txt)은 저장 시 기본 템플릿 HTML로 변환되어 <span class="mono">News/{file}</span>로 반영됩니다.</div>
-    </div>
-  `;
-  return card;
-}
+      <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리되며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
 
-function newsCardTemplate(it, idx) {
-  const card = document.createElement("details");
-  card.className = "card";
-  card.dataset.idx = String(idx);
-  card.dataset.uid = String(it._uid || "");
-  card.open = false;
-
-  card.innerHTML = `
-    <summary class="card-summary">
-      <span class="sum-title">${escapeHtml(newsSummaryText(idx, it.title))}</span>
-      <span class="sum-right">
-        <span class="sum-actions">
-          <button type="button" class="btn sum-btn" data-act="delNewsQuick">뉴스 삭제</button>
-        </span>
-        <span class="chev" aria-hidden="true">›</span>
-      </span>
-    </summary>
-
-    <div class="card-body">
-      <div class="card-hd" style="margin-bottom:10px;">
-        <div class="card-title">편집</div>
-        <button class="btn" data-act="delNews">뉴스 삭제</button>
-      </div>
-
-      <div class="grid2">
-        <div>
-          <label>date (YYYY-MM-DD)</label>
-          <input type="text" data-k="date" value="${escapeHtml(it.date || "")}" placeholder="예: 2026-02-01" />
-        </div>
-        <div>
-          <label>file (News 폴더 내 HTML)</label>
-          <input type="text" data-k="file" value="${escapeHtml(it.file || "")}" placeholder="예: 2026-02-01.html" />
-        </div>
-      </div>
-      <div class="grid2">
-        <div>
-          <label>title</label>
-          <input type="text" data-k="title" value="${escapeHtml(it.title || "")}" />
-        </div>
-        <div>
-          <label>sub</label>
-          <input type="text" data-k="sub" value="${escapeHtml(it.sub || "")}" />
-        </div>
-      </div>
     </div>
   `;
   return card;
@@ -991,45 +947,91 @@ function refreshNewsBodyUI(card) {
   const fileText = fileInputText?.value || "";
 
   const stateEl = card.querySelector('[data-k="newsBodyState"]');
-  const attachBtn = card.querySelector('button[data-act="attachNewsBody"]');
-  const delBtn = card.querySelector('button[data-act="delNewsBody"]');
-  if (!stateEl || !attachBtn || !delBtn) return;
+  const bodyAttach = card.querySelector('.card-body button[data-act="attachNewsBody"]');
+  const bodyDel = card.querySelector('.card-body button[data-act="delNewsBody"]');
+  const quickAttach = card.querySelector('summary button[data-act="attachNewsBody"]');
+  const quickDel = card.querySelector('summary button[data-act="delNewsBody"]');
+  const quickNewsDel = card.querySelector('summary button[data-act="delNewsQuick"]');
+
+  if (!stateEl || !bodyAttach || !bodyDel || !quickAttach || !quickDel || !quickNewsDel) return;
+
+  quickNewsDel.disabled = !tokenOk;
+
 
   const { fileName, repoHas, staged } = getNewsBodyUiState(uid, date, title, fileText);
   if (fileInputText && fileInputText.value !== fileName) fileInputText.value = fileName;
 
+  if (!fileName) {
+    stateEl.textContent = "date/title 또는 file을 입력하면 파일을 첨부할 수 있어요.";
+
+    bodyAttach.textContent = "파일 첨부";
+    bodyAttach.disabled = true;
+    bodyDel.style.display = "none";
+
+    quickAttach.textContent = "파일 첨부";
+    quickAttach.disabled = true;
+    quickDel.style.display = "none";
+    return;
+  }
+
   if (!newsFilesIndexLoaded) {
     stateEl.textContent = "확인중…";
-    attachBtn.disabled = true;
-    delBtn.style.display = "none";
+    bodyAttach.disabled = true;
+    bodyDel.style.display = "none";
+    quickAttach.disabled = true;
+    quickDel.style.display = "none";
     return;
   }
 
-  attachBtn.disabled = !tokenOk;
-  attachBtn.textContent = staged?.type === "upsert" ? "본문 다시 선택(저장 대기)" : "본문 파일 첨부";
+  const attachLabel = staged?.type === "upsert"
+    ? "파일 다시 선택(저장 대기)"
+    : (repoHas ? "파일 교체(덮어쓰기)" : "파일 첨부");
+
+  bodyAttach.textContent = attachLabel;
+  bodyAttach.disabled = !tokenOk;
+  quickAttach.textContent = attachLabel.replace("(덮어쓰기)", "").trim();
+  quickAttach.disabled = !tokenOk;
+
+  if (staged?.type === "delete") {
+    stateEl.textContent = repoHas ? `삭제 예정: ${fileName}` : `삭제 예정(원본 없음): ${fileName}`;
+
+    bodyDel.style.display = "";
+    bodyDel.textContent = "삭제 취소";
+    bodyDel.disabled = !tokenOk;
+
+    quickDel.style.display = "";
+    quickDel.textContent = "삭제 취소";
+    quickDel.disabled = !tokenOk;
+    return;
+  }
 
   if (staged?.type === "upsert") {
-    stateEl.textContent = repoHas ? `저장 대기(교체): ${fileName}` : `저장 대기(생성): ${fileName}`;
-    delBtn.style.display = "";
-    delBtn.textContent = "본문 삭제";
-    delBtn.disabled = !tokenOk;
-    return;
-  }
-  if (staged?.type === "delete") {
-    stateEl.textContent = `삭제 예정: ${fileName}`;
-    delBtn.style.display = "";
-    delBtn.textContent = "삭제 취소";
-    delBtn.disabled = !tokenOk;
+    stateEl.textContent = repoHas ? `저장 대기(교체): ${fileName}` : `저장 대기(첨부): ${fileName}`;
+
+    bodyDel.style.display = "";
+    bodyDel.textContent = "파일 삭제";
+    bodyDel.disabled = !tokenOk;
+
+    quickDel.style.display = repoHas ? "" : "none";
+    quickDel.textContent = "파일 삭제";
+    quickDel.disabled = !tokenOk;
     return;
   }
 
-  stateEl.textContent = repoHas ? `연결됨: ${fileName}` : `없음: ${fileName}`;
   if (repoHas) {
-    delBtn.style.display = "";
-    delBtn.textContent = "본문 삭제";
-    delBtn.disabled = !tokenOk;
+    stateEl.textContent = `연결됨: ${fileName}`;
+
+    bodyDel.style.display = "";
+    bodyDel.textContent = "파일 삭제";
+    bodyDel.disabled = !tokenOk;
+
+    quickDel.style.display = "";
+    quickDel.textContent = "파일 삭제";
+    quickDel.disabled = !tokenOk;
   } else {
-    delBtn.style.display = "none";
+    stateEl.textContent = `없음: ${fileName}`;
+    bodyDel.style.display = "none";
+    quickDel.style.display = "none";
   }
 }
 
@@ -1253,8 +1255,6 @@ function updatePendingSummary() {
     if (!orig || !cur) continue;
     if (!isNewsChanged(orig, cur)) newsMod += 1;
   }
-
-
   const newsTotal = newsAdd + newsMod + newsDel;
 
   setNum("p_news_total", newsTotal);
@@ -1577,7 +1577,8 @@ document.addEventListener("DOMContentLoaded", () => {
         stagedNewsFileOps.delete(uid);
         refreshNewsBodyUI(card);
         updatePendingSummary();
-        setMsg(`뉴스 본문 삭제 취소: ${fileName}`, "ok");
+        setMsg(`뉴스 파일 삭제 취소: ${fileName}`, "ok");
+
         return;
       }
 
@@ -1586,15 +1587,15 @@ document.addEventListener("DOMContentLoaded", () => {
         else stagedNewsFileOps.delete(uid);
         refreshNewsBodyUI(card);
         updatePendingSummary();
-        setMsg(`뉴스 본문 상태 변경: ${fileName}`, "ok");
+        setMsg(`뉴스 파일 상태 변경: ${fileName}`, "ok");
         return;
       }
 
-      if (!newsFilesIndex.has(fileName)) return setMsg(`삭제할 뉴스 HTML이 없습니다: ${fileName}`, "err");
+      if (!newsFilesIndex.has(fileName)) return setMsg(`삭제할 뉴스 파일이 없습니다: ${fileName}`, "err");
       stagedNewsFileOps.set(uid, { type: "delete" });
       refreshNewsBodyUI(card);
       updatePendingSummary();
-      setMsg(`뉴스 본문 삭제 예정: ${fileName} (저장 필요)`, "ok");
+      setMsg(`뉴스 파일 삭제 예정: ${fileName} (저장 필요)`, "ok");
     }
 
   });
@@ -1630,20 +1631,19 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const date = card.querySelector('input[data-k="date"]')?.value || "";
       const title = card.querySelector('input[data-k="title"]')?.value || "";
-      const sub = card.querySelector('input[data-k="sub"]')?.value || "";
       const fileInputText = card.querySelector('input[data-k="file"]');
-      const fileName = normalizeNewsFileName(fileInputText?.value || "", date, title);
+      const explicitFile = fileInputText?.value || "";
+      const fileName = normalizeNewsFileName(explicitFile || file.name, date, title);
       if (fileInputText) fileInputText.value = fileName;
 
-      const text = await file.text();
-      const bodyHtml = markdownToHtml(text);
-      const fullHtml = buildNewsHtmlDocument({ title, sub, date, bodyHtml });
-      const b64 = utf8ToB64(fullHtml);
+      const htmlText = await file.text();
+      const b64 = utf8ToB64(htmlText);
+
 
       stagedNewsFileOps.set(uid, { type: "upsert", b64, size: file.size, fileName, origName: file.name });
       refreshNewsBodyUI(card);
       updatePendingSummary();
-      setMsg(`뉴스 본문 저장 대기: ${NEWS_DIR}/${fileName} (저장 필요)`, "ok");
+      setMsg(`뉴스 파일 저장 대기: ${NEWS_DIR}/${fileName} (저장 필요)`, "ok");
     } catch (err) {
       console.error(err);
       setMsg(String(err.message || err), "err");
