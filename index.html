@@ -446,9 +446,9 @@
     .news-page-btn:disabled{ opacity:.45; cursor:not-allowed; }
     .btn.mini{ padding:7px 10px; font-size:12px; }
 
-    .guide-drawer-toggle{ position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 35; border-radius: 14px 0 0 14px; padding: 16px 10px; background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--line); border-right:none; box-shadow: -10px 14px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.08); writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: .02em; }
+    .guide-drawer-toggle{ position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 35; border-radius: 14px 0 0 14px; padding: 16px 10px; background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--line); border-right:none; box-shadow: -10px 14px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.08); writing-mode: vertical-rl; text-orientation: upright; letter-spacing: .02em; }
 
-    .guide-drawer-toggle .arrow{ font-size:14px; font-weight:900; color: var(--accent); }
+    .guide-drawer-toggle .arrow{display: block; margin-bottom: 8px; font-size:14px; font-weight:900; color: var(--accent);}
 
     .guide-drawer-backdrop{ position: fixed; inset: 0; z-index: 28; background: rgba(11,18,32,.22); opacity:0; pointer-events:none; transition: opacity .2s ease; }
     .guide-drawer-backdrop.show{ opacity:1; pointer-events:auto; }
@@ -693,8 +693,8 @@
     </main>
 
 
-    <button class="btn guide-drawer-toggle" id="guideDrawerToggle" aria-controls="guideDrawer" aria-expanded="false">
-      <span class="arrow">←</span> AI 서비스 가이드 보기
+    <button class="btn guide-drawer-toggle" id="guideDrawerToggle"  aria-controls="guideDrawer" aria-expanded="false">
+      <span class="arrow">←</span>AI 서비스 가이드 보기
     </button>
 
     <div class="guide-drawer-backdrop" id="guideDrawerBackdrop" aria-hidden="true"></div>
