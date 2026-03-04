@@ -447,6 +447,7 @@
     .btn.mini{ padding:7px 10px; font-size:12px; }
 
     .guide-drawer-toggle{ position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 35; border-radius: 14px 0 0 14px; padding: 16px 10px; background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--line); border-right:none; box-shadow: -10px 14px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.08); writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: .02em; }
+
     .guide-drawer-toggle .arrow{ font-size:14px; font-weight:900; color: var(--accent); }
 
     .guide-drawer-backdrop{ position: fixed; inset: 0; z-index: 28; background: rgba(11,18,32,.22); opacity:0; pointer-events:none; transition: opacity .2s ease; }
@@ -458,6 +459,7 @@
     .guide-drawer .panel-bd{ padding: 16px; }
     .guide-drawer-close{ padding:7px 10px; font-size:12px; }
     @media (max-width:980px){ .wrap{padding:20px 18px 28px;} .guide-drawer{ width:min(600px, 96vw); max-height:92vh; } .guide-drawer-toggle{ right:0; padding:14px 9px; } }
+
 
     .foot{
       margin-top: 16px;
@@ -700,6 +702,7 @@
     <aside class="guide-drawer" id="guideDrawer" aria-hidden="true">
       <div class="guide-drawer-hd">
         <h3 class="panel-title" style="margin:0;">AI 서비스 가이드 보기</h3>
+
         <button class="btn guide-drawer-close" id="guideDrawerClose">닫기 ✕</button>
       </div>
       <div class="panel-bd">
@@ -1095,6 +1098,7 @@
     newsNext.addEventListener("click", () => {
       newsPageGroupStart += NEWS_PAGE_GROUP_SIZE;
       newsPage = newsPageGroupStart;
+
       renderNews();
     });
 
