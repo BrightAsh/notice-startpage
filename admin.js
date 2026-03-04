@@ -502,6 +502,55 @@ function newsCardTemplate(it, idx) {
   return card;
 }
 
+function newsCardTemplate(it, idx) {
+  const card = document.createElement("details");
+  card.className = "card";
+  card.dataset.idx = String(idx);
+  card.dataset.uid = String(it._uid || "");
+  card.open = false;
+
+  card.innerHTML = `
+    <summary class="card-summary">
+      <span class="sum-title">${escapeHtml(newsSummaryText(idx, it.title))}</span>
+      <span class="sum-right">
+        <span class="sum-actions">
+          <button type="button" class="btn sum-btn" data-act="delNewsQuick">뉴스 삭제</button>
+        </span>
+        <span class="chev" aria-hidden="true">›</span>
+      </span>
+    </summary>
+
+    <div class="card-body">
+      <div class="card-hd" style="margin-bottom:10px;">
+        <div class="card-title">편집</div>
+        <button class="btn" data-act="delNews">뉴스 삭제</button>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>date (YYYY-MM-DD)</label>
+          <input type="text" data-k="date" value="${escapeHtml(it.date || "")}" placeholder="예: 2026-02-01" />
+        </div>
+        <div>
+          <label>file (News 폴더 내 HTML)</label>
+          <input type="text" data-k="file" value="${escapeHtml(it.file || "")}" placeholder="예: 2026-02-01.html" />
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label>title</label>
+          <input type="text" data-k="title" value="${escapeHtml(it.title || "")}" />
+        </div>
+        <div>
+          <label>sub</label>
+          <input type="text" data-k="sub" value="${escapeHtml(it.sub || "")}" />
+        </div>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
 // ===== 렌더 =====
 function renderAll() {
   requireEl("editor").classList.remove("hidden");
@@ -1205,6 +1254,7 @@ function updatePendingSummary() {
     if (!isNewsChanged(orig, cur)) newsMod += 1;
   }
 
+
   const newsTotal = newsAdd + newsMod + newsDel;
 
   setNum("p_news_total", newsTotal);
@@ -1546,6 +1596,7 @@ document.addEventListener("DOMContentLoaded", () => {
       updatePendingSummary();
       setMsg(`뉴스 본문 삭제 예정: ${fileName} (저장 필요)`, "ok");
     }
+
   });
 
   $("newsList").addEventListener("input", (e) => {
@@ -1596,6 +1647,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error(err);
       setMsg(String(err.message || err), "err");
+
     }
   });
 
