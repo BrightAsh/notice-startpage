@@ -68,6 +68,7 @@ function normalizeNewsFileName(fileName, dateText, titleText, autoCreate = true)
   if (!/\.html?$/i.test(base)) base += ".html";
   return base;
 }
+
 function collectReservedNewsFileNames(excludeUid = "") {
   const reserved = new Set();
   const skipUid = String(excludeUid || "");
@@ -477,6 +478,7 @@ function noticeCardTemplate(it, idx) {
         <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
       </div>
       <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리됩니다. 파일명은 기본적으로 <span class="mono">날짜-제목.html</span> 규칙을 사용하며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
+
     </div>
   `;
   return card;
@@ -496,6 +498,7 @@ function newsCardTemplate(it, idx) {
         <span class="sum-actions">
           <button type="button" class="btn sum-btn" data-act="attachNewsBody">파일 첨부</button>
           <button type="button" class="btn sum-btn" data-act="delNewsBody">파일 삭제</button>
+
           <button type="button" class="btn sum-btn" data-act="delNewsQuick">뉴스 삭제</button>
         </span>
         <span class="chev" aria-hidden="true">›</span>
@@ -968,6 +971,7 @@ function refreshAllNewsBodyUI() {
 }
 
 function getNewsBodyUiState(uid, dateText, titleText, fileText) {
+
   const fileName = norm(fileText) || suggestUniqueNewsFileName(dateText, titleText, uid);
   const repoHas = !!fileName && newsFilesIndex.has(fileName);
   const staged = stagedNewsFileOps.get(uid) || null;
@@ -1069,7 +1073,6 @@ function refreshNewsBodyUI(card) {
     quickDel.style.display = "none";
   }
 }
-
 
 // ===== 커밋 파일 변경 =====
 function buildFileChangesForCommit(dataWithUids) {
@@ -1291,7 +1294,7 @@ function updatePendingSummary() {
     if (!orig || !cur) continue;
     if (!isNewsChanged(orig, cur)) newsMod += 1;
   }
-
+  
   const newsTotal = newsAdd + newsMod + newsDel;
 
   setNum("p_news_total", newsTotal);
@@ -1668,6 +1671,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const title = card.querySelector('input[data-k="title"]')?.value || "";
       const fileInputText = card.querySelector('input[data-k="file"]');
       const fileName = suggestUniqueNewsFileName(date, title, uid);
+
       if (fileInputText) fileInputText.value = fileName;
 
       const htmlText = await file.text();
