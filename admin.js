@@ -92,6 +92,10 @@ function ensureNoticeItemUids(items) {
   (items || []).forEach((it) => { if (!it._uid) it._uid = makeUid(); });
   return items;
 }
+function ensureNewsItemUids(items) {
+  (items || []).forEach((it) => { if (!it._uid) it._uid = makeUid(); });
+  return items;
+}
 
 // ===== GitHub REST =====
 function ghRestHeaders(token) {
@@ -195,6 +199,7 @@ let stagedPromptPdfOp = null;
 let originalSvcByUid = new Map();
 let originalNoticeByUid = new Map();
 let originalNoticeId = "";
+let originalNewsByUid = new Map();
 
 // baseline(되돌리기용)
 let baselineData = null;
@@ -213,6 +218,10 @@ function serviceSummaryText(idx, name) {
 function noticeSummaryText(idx, title) {
   const t = norm(title);
   return t ? `공지 #${idx + 1} · ${t}` : `공지 #${idx + 1}`;
+}
+function newsSummaryText(idx, title) {
+  const t = norm(title);
+  return t ? `뉴스 #${idx + 1} · ${t}` : `뉴스 #${idx + 1}`;
 }
 
 function serviceCardTemplate(s, idx) {
@@ -320,6 +329,55 @@ function noticeCardTemplate(it, idx) {
   return card;
 }
 
+function newsCardTemplate(it, idx) {
+  const card = document.createElement("details");
+  card.className = "card";
+  card.dataset.idx = String(idx);
+  card.dataset.uid = String(it._uid || "");
+  card.open = false;
+
+  card.innerHTML = `
+    <summary class="card-summary">
+      <span class="sum-title">${escapeHtml(newsSummaryText(idx, it.title))}</span>
+      <span class="sum-right">
+        <span class="sum-actions">
+          <button type="button" class="btn sum-btn" data-act="delNewsQuick">뉴스 삭제</button>
+        </span>
+        <span class="chev" aria-hidden="true">›</span>
+      </span>
+    </summary>
+
+    <div class="card-body">
+      <div class="card-hd" style="margin-bottom:10px;">
+        <div class="card-title">편집</div>
+        <button class="btn" data-act="delNews">뉴스 삭제</button>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>date (YYYY-MM-DD)</label>
+          <input type="text" data-k="date" value="${escapeHtml(it.date || "")}" placeholder="예: 2026-02-01" />
+        </div>
+        <div>
+          <label>file (News 폴더 내 HTML)</label>
+          <input type="text" data-k="file" value="${escapeHtml(it.file || "")}" placeholder="예: 2026-02-01.html" />
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label>title</label>
+          <input type="text" data-k="title" value="${escapeHtml(it.title || "")}" />
+        </div>
+        <div>
+          <label>sub</label>
+          <input type="text" data-k="sub" value="${escapeHtml(it.sub || "")}" />
+        </div>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
 // ===== 렌더 =====
 function renderAll() {
   requireEl("editor").classList.remove("hidden");
@@ -332,6 +390,10 @@ function renderAll() {
   const ntList = requireEl("noticeList");
   ntList.innerHTML = "";
   (loadedData.notice?.items || []).forEach((it, i) => ntList.appendChild(noticeCardTemplate(it, i)));
+
+  const newsList = requireEl("newsList");
+  newsList.innerHTML = "";
+  (loadedData.news || []).forEach((it, i) => newsList.appendChild(newsCardTemplate(it, i)));
 
   refreshAllCardsPdfUI();
   refreshPromptPdfUI();
@@ -368,7 +430,21 @@ function snapshotFromFormWithUids() {
     });
   });
 
-  return { services, notice: { noticeId, items } };
+  const news = [];
+  const newsCards = requireEl("newsList").querySelectorAll(".card");
+  newsCards.forEach((card) => {
+    const get = (k) => card.querySelector(`[data-k="${k}"]`);
+    const uid = card.dataset.uid || makeUid();
+    news.push({
+      _uid: uid,
+      title: get("title")?.value?.trim() || "",
+      sub: get("sub")?.value?.trim() || "",
+      date: get("date")?.value?.trim() || "",
+      file: get("file")?.value?.trim() || "",
+    });
+  });
+
+  return { services, notice: { noticeId, items }, news };
 }
 
 function stripInternalFields(dataWithUids) {
@@ -387,6 +463,12 @@ function stripInternalFields(dataWithUids) {
         sub: it.sub || "",
       })),
     },
+    news: (dataWithUids.news || []).map((it) => ({
+      title: it.title || "",
+      sub: it.sub || "",
+      date: it.date || "",
+      file: it.file || "",
+    })),
   };
 }
 
@@ -406,8 +488,9 @@ async function loadContentJson(token) {
   const services = ensureServiceUids(Array.isArray(parsed.services) ? parsed.services : []);
   const notice = parsed.notice || { noticeId: "", items: [] };
   notice.items = ensureNoticeItemUids(Array.isArray(notice.items) ? notice.items : []);
+  const news = ensureNewsItemUids(Array.isArray(parsed.news) ? parsed.news : []);
 
-  loadedData = { services, notice };
+  loadedData = { services, notice, news };
 
   // baseline 저장(불러오기 직후)
   baselineData = deepClone(loadedData);
@@ -428,6 +511,16 @@ async function loadContentJson(token) {
   originalNoticeByUid = new Map();
   (notice.items || []).forEach((it) => {
     originalNoticeByUid.set(String(it._uid), { title: it.title || "", sub: it.sub || "" });
+  });
+
+  originalNewsByUid = new Map();
+  (news || []).forEach((it) => {
+    originalNewsByUid.set(String(it._uid), {
+      title: it.title || "",
+      sub: it.sub || "",
+      date: it.date || "",
+      file: it.file || "",
+    });
   });
 
   stagedPdfOps.clear();
@@ -546,6 +639,16 @@ function resetEditsToBaseline() {
   originalNoticeByUid = new Map();
   (loadedData.notice?.items || []).forEach((it) => {
     originalNoticeByUid.set(String(it._uid), { title: it.title || "", sub: it.sub || "" });
+  });
+
+  originalNewsByUid = new Map();
+  (loadedData.news || []).forEach((it) => {
+    originalNewsByUid.set(String(it._uid), {
+      title: it.title || "",
+      sub: it.sub || "",
+      date: it.date || "",
+      file: it.file || "",
+    });
   });
 
   renderAll();
@@ -736,6 +839,15 @@ function isNoticeChanged(orig, cur) {
   const a = (v) => norm(v);
   return a(orig.title) !== a(cur.title) || a(orig.sub) !== a(cur.sub);
 }
+function isNewsChanged(orig, cur) {
+  const a = (v) => norm(v);
+  return (
+    a(orig.title) !== a(cur.title) ||
+    a(orig.sub) !== a(cur.sub) ||
+    a(orig.date) !== a(cur.date) ||
+    a(orig.file) !== a(cur.file)
+  );
+}
 
 function updatePendingSummary() {
   const setNum = (id, n) => {
@@ -749,6 +861,7 @@ function updatePendingSummary() {
     setNum("p_pdf_total", 0); setNum("p_pdf_attach", 0); setNum("p_pdf_replace", 0); setNum("p_pdf_delete", 0);
     setNum("p_svc_total", 0); setNum("p_svc_add", 0); setNum("p_svc_mod", 0); setNum("p_svc_del", 0);
     setNum("p_nt_total", 0);  setNum("p_nt_add", 0);  setNum("p_nt_mod", 0);  setNum("p_nt_del", 0);
+    setNum("p_news_total", 0); setNum("p_news_add", 0); setNum("p_news_mod", 0); setNum("p_news_del", 0);
     if (legacy) legacy.textContent = "-";
     setResetButtonState(true);
     return;
@@ -819,15 +932,32 @@ function updatePendingSummary() {
   setNum("p_nt_mod", ntMod);
   setNum("p_nt_del", ntDel);
 
+  const curNewsByUid = new Map((snap.news || []).map((it) => [String(it._uid), it]));
+  let newsAdd = 0, newsMod = 0, newsDel = 0;
+  for (const [uid, cur] of curNewsByUid.entries()) {
+    const orig = originalNewsByUid.get(String(uid));
+    if (!orig) newsAdd += 1;
+    else if (isNewsChanged(orig, cur)) newsMod += 1;
+  }
+  for (const uid of originalNewsByUid.keys()) {
+    if (!curNewsByUid.has(String(uid))) newsDel += 1;
+  }
+  const newsTotal = newsAdd + newsMod + newsDel;
+
+  setNum("p_news_total", newsTotal);
+  setNum("p_news_add", newsAdd);
+  setNum("p_news_mod", newsMod);
+  setNum("p_news_del", newsDel);
+
   if (legacy) {
     legacy.textContent =
       `PDF ${pdfTotal}(첨부${pdfAttach}/교체${pdfReplace}/삭제${pdfDelete}) · ` +
       `서비스 ${svcTotal}(추가${svcAdd}/수정${svcMod}/삭제${svcDel}) · ` +
-      `공지 ${ntTotal}(추가${ntAdd}/수정${ntMod}/삭제${ntDel})`;
+      `공지 ${ntTotal}(추가${ntAdd}/수정${ntMod}/삭제${ntDel}) · ` +
+      `뉴스 ${newsTotal}(추가${newsAdd}/수정${newsMod}/삭제${newsDel})`;
   }
 
-  // ✅ 여기! totals 계산이 끝난 뒤에만 쓸 수 있음
-  setResetButtonState((pdfTotal + svcTotal + ntTotal) === 0);
+  setResetButtonState((pdfTotal + svcTotal + ntTotal + newsTotal) === 0);
 }
 
 // ===== init =====
@@ -847,6 +977,7 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("btnLoad");
   requireEl("btnAddSvc");
   requireEl("btnAddNotice");
+  requireEl("btnAddNews");
   requireEl("btnSave");
 
   wirePromptPdfControls();
@@ -879,23 +1010,35 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $("btnAddSvc").addEventListener("click", () => {
-    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] } };
+    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [] };
     if (!requireEl("editor").classList.contains("hidden")) {
       const snap = snapshotFromFormWithUids();
       loadedData.services = ensureServiceUids(snap.services);
       loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+      loadedData.news = ensureNewsItemUids(snap.news || []);
     }
     loadedData.services.push({ _uid: makeUid(), name: "", url: "", domain: "", note: "", disabled: false });
     renderAll();
   });
 
   $("btnAddNotice").addEventListener("click", () => {
-    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] } };
+    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [] };
     const snap = snapshotFromFormWithUids();
     loadedData.services = ensureServiceUids(snap.services);
     loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+    loadedData.news = ensureNewsItemUids(snap.news || []);
     if (!loadedData.notice) loadedData.notice = { noticeId: "", items: [] };
     loadedData.notice.items.push({ _uid: makeUid(), title: "", sub: "" });
+    renderAll();
+  });
+
+  $("btnAddNews").addEventListener("click", () => {
+    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [] };
+    const snap = snapshotFromFormWithUids();
+    loadedData.services = ensureServiceUids(snap.services);
+    loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+    loadedData.news = ensureNewsItemUids(snap.news || []);
+    loadedData.news.push({ _uid: makeUid(), title: "", sub: "", date: "", file: "" });
     renderAll();
   });
 
@@ -919,6 +1062,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const snap = snapshotFromFormWithUids();
       loadedData.services = ensureServiceUids(snap.services);
       loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+      loadedData.news = ensureNewsItemUids(snap.news || []);
 
       const idx = loadedData.services.findIndex((s) => String(s._uid) === String(uid));
       if (idx >= 0) {
@@ -1042,6 +1186,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const snap = snapshotFromFormWithUids();
     loadedData.services = ensureServiceUids(snap.services);
     loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+      loadedData.news = ensureNewsItemUids(snap.news || []);
 
     const card = btn.closest(".card");
     const uid = card?.dataset?.uid;
@@ -1067,6 +1212,44 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   });
+  $("newsList").addEventListener("click", (e) => {
+    if (e.target.closest("button[data-act]")) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    const btn = e.target.closest("button[data-act='delNews'],button[data-act='delNewsQuick']");
+    if (!btn) return;
+
+    const snap = snapshotFromFormWithUids();
+    loadedData.services = ensureServiceUids(snap.services);
+    loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+    loadedData.news = ensureNewsItemUids(snap.news || []);
+
+    const card = btn.closest(".card");
+    const uid = card?.dataset?.uid;
+    if (!uid) return;
+
+    const i = loadedData.news.findIndex((x) => String(x._uid) === String(uid));
+    if (i < 0) return;
+
+    loadedData.news.splice(i, 1);
+    renderAll();
+  });
+
+  $("newsList").addEventListener("input", (e) => {
+    updatePendingSummary();
+    if (e.target.matches('input[data-k="title"]')) {
+      const card = e.target.closest(".card");
+      if (card) {
+        const cards = Array.from(requireEl("newsList").querySelectorAll(".card"));
+        const idx = cards.indexOf(card);
+        const sumTitle = card.querySelector(".sum-title");
+        if (sumTitle) sumTitle.textContent = newsSummaryText(idx, e.target.value);
+      }
+    }
+  });
+
   $("noticeId").addEventListener("input", () => updatePendingSummary());
 
   // ✅ 저장
@@ -1079,6 +1262,11 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const snap = snapshotFromFormWithUids();
       if (!norm(snap.notice.noticeId)) return setSaveMsg("noticeId(기준일)를 입력하세요.", "err");
+      for (const item of (snap.news || [])) {
+        if (!norm(item.title) || !norm(item.date)) {
+          return setSaveMsg("뉴스 항목은 title/date를 모두 입력하세요.", "err");
+        }
+      }
 
       const { additions, deletions } = buildFileChangesForCommit(snap);
       const headline = norm($("commitMsg")?.value) || "Update via admin";
