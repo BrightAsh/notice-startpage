@@ -209,7 +209,7 @@
     /* --- Pending Summary Board --- */
     .pending-board{
       display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap:12px;
       margin-top:10px;
     }
@@ -528,6 +528,13 @@
 
         <div class="divider"></div>
 
+        <h3 style="margin:0 0 6px;font-size:14px;">AI Update News</h3>
+        <div class="small">News 폴더에 있는 HTML 파일명(file)과 표시용 제목/설명을 함께 관리합니다.</div>
+        <div id="newsList"></div>
+        <button class="btn" id="btnAddNews" style="margin-top:10px;">+ 뉴스 추가</button>
+
+        <div class="divider"></div>
+
         <h3 style="margin:0 0 6px;font-size:14px;">변경사항</h3>
 
         <div class="pending-board">
@@ -578,6 +585,22 @@
               <span class="kv">삭제 <b id="p_nt_del">0</b></span>
             </div>
           </div>
+
+          <!-- 뉴스 -->
+          <div class="pending-card">
+            <div class="pending-top">
+              <div class="pending-title">
+                <span class="badge">뉴스</span>
+                <span>AI Update</span>
+              </div>
+              <div class="pending-total" id="p_news_total">0</div>
+            </div>
+            <div class="pending-sub">
+              <span class="kv">추가 <b id="p_news_add">0</b></span>
+              <span class="kv">수정 <b id="p_news_mod">0</b></span>
+              <span class="kv">삭제 <b id="p_news_del">0</b></span>
+            </div>
+          </div>
         </div>
 
         <div style="display:none"><b id="pendingSummary">-</b></div>
@@ -595,6 +618,6 @@
   </div>
 
   <!-- ✅ 캐시 이슈 있으면 v= 값을 바꾸세요 -->
-  <script src="./admin.js?v=1" defer></script>
+  <script src="./admin.js?v=2" defer></script>
 </body>
 </html>
