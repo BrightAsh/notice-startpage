@@ -438,6 +438,7 @@ function noticeCardTemplate(it, idx) {
         <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
       </div>
       <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리되며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
+
     </div>
   `;
   return card;
@@ -457,6 +458,7 @@ function newsCardTemplate(it, idx) {
         <span class="sum-actions">
           <button type="button" class="btn sum-btn" data-act="attachNewsBody">파일 첨부</button>
           <button type="button" class="btn sum-btn" data-act="delNewsBody">파일 삭제</button>
+
           <button type="button" class="btn sum-btn" data-act="delNewsQuick">뉴스 삭제</button>
         </span>
         <span class="chev" aria-hidden="true">›</span>
@@ -499,6 +501,7 @@ function newsCardTemplate(it, idx) {
         <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
       </div>
       <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리되며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
+
     </div>
   `;
   return card;
@@ -954,6 +957,7 @@ function refreshNewsBodyUI(card) {
 
   quickNewsDel.disabled = !tokenOk;
 
+
   const { fileName, repoHas, staged } = getNewsBodyUiState(uid, date, title, fileText);
   if (fileInputText && fileInputText.value !== fileName) fileInputText.value = fileName;
 
@@ -1030,7 +1034,6 @@ function refreshNewsBodyUI(card) {
     quickDel.style.display = "none";
   }
 }
-
 
 // ===== 커밋 파일 변경 =====
 function buildFileChangesForCommit(dataWithUids) {
@@ -1252,7 +1255,6 @@ function updatePendingSummary() {
     if (!orig || !cur) continue;
     if (!isNewsChanged(orig, cur)) newsMod += 1;
   }
-
   const newsTotal = newsAdd + newsMod + newsDel;
 
   setNum("p_news_total", newsTotal);
@@ -1576,6 +1578,7 @@ document.addEventListener("DOMContentLoaded", () => {
         refreshNewsBodyUI(card);
         updatePendingSummary();
         setMsg(`뉴스 파일 삭제 취소: ${fileName}`, "ok");
+
         return;
       }
 
@@ -1594,6 +1597,7 @@ document.addEventListener("DOMContentLoaded", () => {
       updatePendingSummary();
       setMsg(`뉴스 파일 삭제 예정: ${fileName} (저장 필요)`, "ok");
     }
+
   });
 
   $("newsList").addEventListener("input", (e) => {
@@ -1635,6 +1639,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const htmlText = await file.text();
       const b64 = utf8ToB64(htmlText);
 
+
       stagedNewsFileOps.set(uid, { type: "upsert", b64, size: file.size, fileName, origName: file.name });
       refreshNewsBodyUI(card);
       updatePendingSummary();
@@ -1642,6 +1647,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error(err);
       setMsg(String(err.message || err), "err");
+
     }
   });
 
