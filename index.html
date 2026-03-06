@@ -122,7 +122,7 @@
       border: 1px solid var(--line);
       background: var(--panel);
       color: var(--text);
-      padding: 10px 12px;
+      padding: 8px 10px;
       border-radius: 12px;
       cursor:pointer;
       font-weight: 700;
@@ -426,9 +426,21 @@
       border: 1px solid var(--line);
       background: rgba(255,255,255,.03);
       border-radius: 12px;
-      padding: 10px;
+      padding: 0;
     }
     .news-link{ text-decoration:none; color:inherit; display:block; }
+    .news-open{
+      appearance:none;
+      border:0;
+      width:100%;
+      text-align:left;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      padding: 10px;
+      border-radius: 12px;
+    }
+    .news-open:hover{ background: rgba(255,255,255,.04); }
     .news-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
     .news-title{ font-size:13px; font-weight:800; line-height:1.3; }
     .news-date{ color: var(--muted); font-size:11px; white-space:nowrap; margin-top:2px; }
@@ -619,6 +631,68 @@
       letter-spacing: .02em;
     }
 
+    .news-modal-backdrop{
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(11,18,32,.56);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .news-modal-backdrop.show{
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .news-modal{
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -46%);
+      width: min(640px, 86vw);
+      border: 1px solid rgba(255,255,255,.28);
+      border-radius: 18px;
+      overflow: hidden;
+      z-index: 41;
+      background: linear-gradient(135deg, rgba(219,234,254,.30) 0%, rgba(254,249,195,.24) 52%, rgba(220,252,231,.28) 100%);
+      box-shadow: 0 28px 60px rgba(15,23,42,.36), inset 0 1px 0 rgba(255,255,255,.33);
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .news-modal.show{
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%);
+    }
+    .news-modal-hd{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.2);
+      background: linear-gradient(180deg, rgba(148,163,184,.24), rgba(148,163,184,.12));
+    }
+    .news-modal-frame{ width:100%; height: 260px; border:0; background:#fff; display:block; }
+    .news-modal-nav{
+      height: 36px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 2px 10px 6px;
+      border-top: 1px solid rgba(255,255,255,.22);
+      background: linear-gradient(180deg, rgba(148,163,184,.08), rgba(148,163,184,.14));
+    }
+    .news-nav-btn{
+      appearance:none; border:1px solid rgba(255,255,255,.34); background:rgba(255,255,255,.16); color:var(--text);
+      width:28px; height:24px; border-radius:9px; font-weight:900; cursor:pointer;
+      box-shadow: 0 6px 14px rgba(0,0,0,.18);
+    }
+    .news-nav-btn:hover{ background: rgba(255,255,255,.24); }
+    .news-nav-btn.hidden{ display:none; }
+
   </style>
 </head>
 
@@ -705,6 +779,19 @@
 
     <div class="guide-drawer-backdrop" id="guideDrawerBackdrop" aria-hidden="true"></div>
 
+    <div class="news-modal-backdrop" id="newsModalBackdrop" aria-hidden="true"></div>
+    <section class="news-modal" id="newsModal" aria-hidden="true" aria-label="AI Update News 상세">
+      <div class="news-modal-hd">
+        <div aria-hidden="true"></div>
+        <button class="btn mini" id="newsModalClose" type="button">닫기 ✕</button>
+      </div>
+      <iframe class="news-modal-frame" id="newsModalFrame" title="AI Update News 상세" loading="lazy"></iframe>
+      <div class="news-modal-nav">
+        <button class="news-nav-btn" id="newsModalPrev" type="button" aria-label="이전 뉴스">&lt;</button>
+        <button class="news-nav-btn" id="newsModalNext" type="button" aria-label="이후 뉴스">&gt;</button>
+      </div>
+    </section>
+
     <aside class="guide-drawer" id="guideDrawer" aria-hidden="true">
       <div class="guide-drawer-hd">
         <h3 class="panel-title" style="margin:0;">AI 서비스 가이드 보기</h3>
@@ -781,11 +868,18 @@
     const guideDrawerToggle = $("#guideDrawerToggle");
     const guideDrawerClose = $("#guideDrawerClose");
     const guideDrawerBackdrop = $("#guideDrawerBackdrop");
+    const newsModal = $("#newsModal");
+    const newsModalBackdrop = $("#newsModalBackdrop");
+    const newsModalClose = $("#newsModalClose");
+    const newsModalFrame = $("#newsModalFrame");
+    const newsModalPrev = $("#newsModalPrev");
+    const newsModalNext = $("#newsModalNext");
 
     const NEWS_PAGE_SIZE = 5;
     const NEWS_PAGE_GROUP_SIZE = 5;
     let newsPage = 1;
     let newsPageGroupStart = 1;
+    let modalNewsIndex = -1;
 
     function fmtNow(){
       const d = new Date();
@@ -1025,12 +1119,11 @@
         const li = document.createElement("li");
         li.className = "news-item";
 
-        const content = document.createElement(it.file ? "a" : "div");
-        content.className = it.file ? "news-link" : "";
+        const content = document.createElement(it.file ? "button" : "div");
+        content.className = it.file ? "news-open" : "";
         if(it.file){
-          content.href = `./News/${encodeURIComponent(it.file)}`;
-          content.target = "_blank";
-          content.rel = "noopener";
+          content.type = "button";
+          content.dataset.newsFile = it.file;
         }
 
         const head = document.createElement("div");
@@ -1077,6 +1170,44 @@
       newsNext.disabled = newsPageGroupStart >= maxGroupStart;
     }
 
+
+    function setModalNavState(idx, items){
+      const hasPrev = idx > 0;
+      const hasNext = idx >= 0 && idx < (items.length - 1);
+      newsModalPrev.classList.toggle("hidden", !hasPrev);
+      newsModalNext.classList.toggle("hidden", !hasNext);
+    }
+
+    function fitNewsModalHeight(){
+      if(!newsModal.classList.contains("show")) return;
+      const doc = newsModalFrame.contentDocument;
+      if(!doc) return;
+      const b = doc.body;
+      const h = Math.max(b ? b.scrollHeight : 0, doc.documentElement ? doc.documentElement.scrollHeight : 0);
+      const frameH = Math.min(Math.max(190, h + 8), Math.round(window.innerHeight * 0.58));
+      newsModalFrame.style.height = `${frameH}px`;
+    }
+
+    function setNewsModal(open, opts = {}){
+      const isOpen = !!open;
+      newsModal.classList.toggle("show", isOpen);
+      newsModalBackdrop.classList.toggle("show", isOpen);
+      newsModal.setAttribute("aria-hidden", isOpen ? "false" : "true");
+      newsModalBackdrop.setAttribute("aria-hidden", isOpen ? "false" : "true");
+
+      if(isOpen){
+        modalNewsIndex = Number.isInteger(opts.index) ? opts.index : modalNewsIndex;
+        newsModalFrame.style.height = "220px";
+        newsModalFrame.src = opts.src || "about:blank";
+        setModalNavState(modalNewsIndex, normalizedNewsItems());
+      }else{
+        modalNewsIndex = -1;
+        newsModalFrame.src = "about:blank";
+        newsModalFrame.style.height = "220px";
+        setModalNavState(-1, []);
+      }
+    }
+
     function renderHeader(){
       $("#nowPill").textContent = fmtNow();
       $("#renderAt").textContent = fmtNow();
@@ -1115,6 +1246,42 @@
       renderNews();
     });
 
+    newsList.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-news-file]");
+      if(!btn) return;
+      const file = String(btn.dataset.newsFile || "").trim();
+      if(!file) return;
+      const items = normalizedNewsItems();
+      const idx = items.findIndex((it) => it.file === file);
+      setNewsModal(true, {
+        index: idx,
+        src: `./News/${encodeURIComponent(file)}`,
+      });
+    });
+
+    newsModalPrev.addEventListener("click", () => {
+      const items = normalizedNewsItems();
+      if(modalNewsIndex <= 0) return;
+      const nextIdx = modalNewsIndex - 1;
+      const it = items[nextIdx];
+      if(!it || !it.file) return;
+      setNewsModal(true, { index: nextIdx, src: `./News/${encodeURIComponent(it.file)}` });
+    });
+
+    newsModalNext.addEventListener("click", () => {
+      const items = normalizedNewsItems();
+      if(modalNewsIndex < 0 || modalNewsIndex >= items.length - 1) return;
+      const nextIdx = modalNewsIndex + 1;
+      const it = items[nextIdx];
+      if(!it || !it.file) return;
+      setNewsModal(true, { index: nextIdx, src: `./News/${encodeURIComponent(it.file)}` });
+    });
+
+    newsModalClose.addEventListener("click", () => setNewsModal(false));
+    newsModalBackdrop.addEventListener("click", () => setNewsModal(false));
+    newsModalFrame.addEventListener("load", fitNewsModalHeight);
+    window.addEventListener("resize", fitNewsModalHeight);
+
     function setGuideDrawer(open){
       guideDrawer.classList.toggle("open", !!open);
       guideDrawer.setAttribute("aria-hidden", open ? "false" : "true");
@@ -1136,7 +1303,9 @@
     });
 
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") setGuideDrawer(false);
+      if (e.key !== "Escape") return;
+      setGuideDrawer(false);
+      setNewsModal(false);
     });
 
     // Init (content.json 로드 후 렌더)
@@ -1158,6 +1327,7 @@
       renderNotice();
       await renderGuide();
       renderNews();
+      setModalNavState(-1, []);
 
       setInterval(() => {
         $("#nowPill").textContent = fmtNow();
@@ -1166,7 +1336,5 @@
   </script>
 </body>
 </html>
-
-
 
 
