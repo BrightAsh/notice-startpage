@@ -93,244 +93,28 @@
   },
   "news": [
     {
-      "title": "AI Update News #1",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-31",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #2",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-30",
-      "file": "2026-03-30-ai-update-news-2.html"
-    },
-    {
-      "title": "AI Update News #3",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-29",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #4",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-28",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #5",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-27",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #6",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-26",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #7",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-25",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #8",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-24",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #9",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-23",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #10",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-22",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #11",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-21",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #12",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-20",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #13",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-19",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #14",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-18",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #15",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-17",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #16",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-16",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #17",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-15",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #18",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-14",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #19",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-13",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #20",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-12",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #21",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-11",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #22",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-10",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #23",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-09",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #24",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-08",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #25",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-07",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #26",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-06",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #27",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-05",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #28",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-04",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #29",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-03",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #30",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-03-02",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #31",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
+      "title": "[Gemini] Gemini 3.1 Pro 출시 및 생태계 통합",
+      "sub": "Chrome 통합·에이전트 검색·기업용 40% 비용 절감",
       "date": "2026-03-01",
-      "file": "2026-01-31.html"
+      "file": "2026-03-01-gemini-3-1-pro.html"
     },
     {
-      "title": "AI Update News #32",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-02-28",
-      "file": "2026-01-31.html"
+      "title": "[Claude] 메모리 가져오기(Import Memory) 기능 출시",
+      "sub": "타 챗봇 개인화 맥락을 60초 내 마이그레이션",
+      "date": "2026-03-01",
+      "file": "2026-03-01-claude-import-memory.html"
     },
     {
-      "title": "AI Update News #33",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-02-27",
-      "file": "2026-01-31.html"
+      "title": "[Perplexity] Perplexity Computer 출시 및 Galaxy S26 통합",
+      "sub": "19개 모델 조율 기반의 에이전트 중심 플랫폼 공개",
+      "date": "2026-03-01",
+      "file": "2026-03-01-perplexity-computer.html"
     },
     {
-      "title": "AI Update News #34",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-02-26",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #35",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-02-25",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #36",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-02-24",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #37",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-02-23",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #38",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-02-22",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #39",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-02-21",
-      "file": "2026-01-31.html"
-    },
-    {
-      "title": "AI Update News #40",
-      "sub": "주요 기능 개선 및 운영 공지 요약입니다.",
-      "date": "2026-02-20",
-      "file": "2026-01-31.html"
+      "title": "[Canva] Leonardo.Ai Creative Engine API 출시 및 리브랜딩",
+      "sub": "생성형 AI 워크플로우를 엔터프라이즈 API로 확장",
+      "date": "2026-03-01",
+      "file": "2026-03-01-canva-leonardo-api.html"
     }
   ]
 }
