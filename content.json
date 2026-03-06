@@ -96,25 +96,7 @@
       "title": "[Gemini] Gemini 3.1 Pro 출시 및 생태계 통합",
       "sub": "Chrome 통합·에이전트 검색·기업용 40% 비용 절감",
       "date": "2026-03-01",
-      "file": "2026-03-01-gemini-3-1-pro.html"
-    },
-    {
-      "title": "[Claude] 메모리 가져오기(Import Memory) 기능 출시",
-      "sub": "타 챗봇 개인화 맥락을 60초 내 마이그레이션",
-      "date": "2026-03-01",
-      "file": "2026-03-01-claude-import-memory.html"
-    },
-    {
-      "title": "[Perplexity] Perplexity Computer 출시 및 Galaxy S26 통합",
-      "sub": "19개 모델 조율 기반의 에이전트 중심 플랫폼 공개",
-      "date": "2026-03-01",
-      "file": "2026-03-01-perplexity-computer.html"
-    },
-    {
-      "title": "[Canva] Leonardo.Ai Creative Engine API 출시 및 리브랜딩",
-      "sub": "생성형 AI 워크플로우를 엔터프라이즈 API로 확장",
-      "date": "2026-03-01",
-      "file": "2026-03-01-canva-leonardo-api.html"
+      "file": "2026-03-01-gemini-gemini-31-pro-출시-및-생태계-통합.html"
     }
   ]
 }
