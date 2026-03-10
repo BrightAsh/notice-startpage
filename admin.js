@@ -1457,8 +1457,6 @@ function isDuplicateCatalogColor(list, idx, color) {
 function updateNewsSvcRowPreview(row, name, color, duplicate) {
   if (!row) return;
   const badge = row.querySelector('.news-svc-badge');
-  const swatch = row.querySelector('.news-svc-preview');
-  const note = row.querySelector('.news-svc-note');
   const textColor = serviceBadgeTextColor(color);
 
   if (badge) {
@@ -1467,9 +1465,7 @@ function updateNewsSvcRowPreview(row, name, color, duplicate) {
     badge.style.color = textColor;
     badge.textContent = name || "미지정";
   }
-  if (swatch) swatch.style.background = color;
   row.classList.toggle('dup', !!duplicate);
-  if (note) note.textContent = duplicate ? "이미 사용 중인 색상입니다. 다른 색상을 선택하세요." : "색상 선택기에서 원하는 색을 바로 선택하세요.";
 }
 
 function renderNewsServiceCatalogModal() {
@@ -1487,13 +1483,9 @@ function renderNewsServiceCatalogModal() {
 
     row.innerHTML = `
       <input type="text" data-k="name" data-idx="${idx}" value="${escapeHtml(it.name || "")}" placeholder="서비스명" />
-      <div class="news-svc-color-inline">
-        <input type="text" data-k="colorText" data-idx="${idx}" value="${escapeHtml(color)}" placeholder="#RRGGBB" />
-        <input type="color" data-k="colorPicker" data-idx="${idx}" value="${escapeHtml(color)}" title="색상 선택" />
-      </div>
-      <div class="news-svc-note"></div>
-      <div class="row" style="justify-content:flex-end;gap:6px;flex-wrap:wrap;">
-        <div class="news-svc-preview"></div>
+      <input type="text" data-k="colorText" data-idx="${idx}" value="${escapeHtml(color)}" placeholder="#RRGGBB" />
+      <input type="color" data-k="colorPicker" data-idx="${idx}" value="${escapeHtml(color)}" title="색상 선택" />
+      <div class="row" style="justify-content:flex-end;gap:6px;">
         <span class="news-svc-badge">${escapeHtml(it.name || "미지정")}</span>
         <button type="button" class="btn danger" data-act="delNewsSvc" data-idx="${idx}">삭제</button>
       </div>
@@ -1673,7 +1665,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const txt = row.querySelector('input[data-k="colorText"]');
       if (txt) txt.value = color;
       updateNewsSvcRowPreview(row, norm(cur.name), color, false);
-      setMsg("색상을 적용했습니다.", "ok");
     }
   });
 
