@@ -1646,6 +1646,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (e.target.matches('input[data-k="colorText"]')) {
       const color = normalizeHexColor(e.target.value, cur.color || "#94a3b8");
+      if (isDuplicateCatalogColor(list, idx, color)) {
+        e.target.value = normalizeHexColor(cur.color || "#94a3b8");
+        const picker = row.querySelector('input[data-k="colorPicker"]');
+        if (picker) picker.value = normalizeHexColor(cur.color || "#94a3b8");
+        setMsg("이미 사용 중인 색상은 선택할 수 없습니다.", "err");
+        updateNewsSvcRowPreview(row, norm(cur.name), normalizeHexColor(cur.color || "#94a3b8"), true);
+        return;
+      }
       const picker = row.querySelector('input[data-k="colorPicker"]');
       if (picker) picker.value = color;
       const duplicate = isDuplicateCatalogColor(list, idx, color);
