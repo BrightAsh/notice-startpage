@@ -1448,45 +1448,6 @@ function serviceBadgeTextColor(hex) {
   return yiq >= 150 ? "#0b1220" : "#f8fafc";
 }
 
-function hexToHsl(hex) {
-  const c = normalizeHexColor(hex, "#94a3b8").slice(1);
-  let r = parseInt(c.slice(0, 2), 16) / 255;
-  let g = parseInt(c.slice(2, 4), 16) / 255;
-  let b = parseInt(c.slice(4, 6), 16) / 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0;
-  const l = (max + min) / 2;
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      default: h = (r - g) / d + 4;
-    }
-    h *= 60;
-  }
-  return { h: Math.round(h), s: Math.round(s * 100), l: Math.round(l * 100) };
-}
-
-function hslToHex(h, s = 70, l = 55) {
-  const hh = ((Number(h) % 360) + 360) % 360;
-  const ss = Math.max(0, Math.min(100, Number(s))) / 100;
-  const ll = Math.max(0, Math.min(100, Number(l))) / 100;
-  const c = (1 - Math.abs(2 * ll - 1)) * ss;
-  const x = c * (1 - Math.abs((hh / 60) % 2 - 1));
-  const m = ll - c / 2;
-  let r = 0, g = 0, b = 0;
-  if (hh < 60) [r, g, b] = [c, x, 0];
-  else if (hh < 120) [r, g, b] = [x, c, 0];
-  else if (hh < 180) [r, g, b] = [0, c, x];
-  else if (hh < 240) [r, g, b] = [0, x, c];
-  else if (hh < 300) [r, g, b] = [x, 0, c];
-  else [r, g, b] = [c, 0, x];
-  const toHex = (v) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-}
-
 function isDuplicateCatalogColor(list, idx, color) {
   const target = normalizeHexColor(color, "");
   if (!target) return false;
@@ -1498,7 +1459,6 @@ function updateNewsSvcRowPreview(row, name, color, duplicate) {
   const badge = row.querySelector('.news-svc-badge');
   const swatch = row.querySelector('.news-svc-preview');
   const note = row.querySelector('.news-svc-note');
-  const applyBtn = row.querySelector('.news-svc-apply');
   const textColor = serviceBadgeTextColor(color);
 
   if (badge) {
@@ -1509,8 +1469,7 @@ function updateNewsSvcRowPreview(row, name, color, duplicate) {
   }
   if (swatch) swatch.style.background = color;
   row.classList.toggle('dup', !!duplicate);
-  if (note) note.textContent = duplicate ? "이미 사용 중인 색상입니다. 다른 색상을 선택하세요." : "색상 슬라이더를 드래그한 뒤 [색상 반영]을 눌러 적용하세요.";
-  if (applyBtn) applyBtn.disabled = !!duplicate;
+  if (note) note.textContent = duplicate ? "이미 사용 중인 색상입니다. 다른 색상을 선택하세요." : "색상 선택기에서 원하는 색을 바로 선택하세요.";
 }
 
 function renderNewsServiceCatalogModal() {
@@ -1524,25 +1483,17 @@ function renderNewsServiceCatalogModal() {
     const row = document.createElement('div');
     row.className = 'news-svc-row';
     const color = normalizeHexColor(it.color);
-    const hsl = hexToHsl(color);
     const duplicate = isDuplicateCatalogColor(list, idx, color);
 
     row.innerHTML = `
       <input type="text" data-k="name" data-idx="${idx}" value="${escapeHtml(it.name || "")}" placeholder="서비스명" />
       <div class="news-svc-color-inline">
         <input type="text" data-k="colorText" data-idx="${idx}" value="${escapeHtml(color)}" placeholder="#RRGGBB" />
-        <input type="color" data-k="colorPicker" data-idx="${idx}" value="${escapeHtml(color)}" title="기존 색상 선택" />
+        <input type="color" data-k="colorPicker" data-idx="${idx}" value="${escapeHtml(color)}" title="색상 선택" />
       </div>
-      <div class="news-svc-controls">
-        <div class="cap"><span>색상(H)</span><span data-k="hVal">${hsl.h}</span></div>
-        <input type="range" min="0" max="360" step="1" data-k="hue" data-idx="${idx}" value="${hsl.h}" />
-        <div class="cap"><span>밝기(L)</span><span data-k="lVal">${hsl.l}</span></div>
-        <input type="range" min="20" max="80" step="1" data-k="light" data-idx="${idx}" value="${hsl.l}" />
-        <div class="news-svc-note"></div>
-      </div>
+      <div class="news-svc-note"></div>
       <div class="row" style="justify-content:flex-end;gap:6px;flex-wrap:wrap;">
         <div class="news-svc-preview"></div>
-        <button type="button" class="btn news-svc-apply" data-act="applyNewsSvcColor" data-idx="${idx}">색상 반영</button>
         <span class="news-svc-badge">${escapeHtml(it.name || "미지정")}</span>
         <button type="button" class="btn danger" data-act="delNewsSvc" data-idx="${idx}">삭제</button>
       </div>
@@ -1701,36 +1652,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (e.target.matches('input[data-k="hue"],input[data-k="light"]')) {
-      const hue = Number(row.querySelector('input[data-k="hue"]')?.value || 0);
-      const light = Number(row.querySelector('input[data-k="light"]')?.value || 55);
-      const cand = hslToHex(hue, 70, light);
-      const txt = row.querySelector('input[data-k="colorText"]');
-      const picker = row.querySelector('input[data-k="colorPicker"]');
-      if (txt) txt.value = cand;
-      if (picker) picker.value = cand;
-      const hv = row.querySelector('[data-k="hVal"]');
-      const lv = row.querySelector('[data-k="lVal"]');
-      if (hv) hv.textContent = String(hue);
-      if (lv) lv.textContent = String(light);
-      const duplicate = isDuplicateCatalogColor(list, idx, cand);
-      updateNewsSvcRowPreview(row, norm(cur.name), cand, duplicate);
-      return;
-    }
-
     if (e.target.matches('input[data-k="colorText"]')) {
       const color = normalizeHexColor(e.target.value, cur.color || "#94a3b8");
-      const hsl = hexToHsl(color);
       const picker = row.querySelector('input[data-k="colorPicker"]');
-      const hue = row.querySelector('input[data-k="hue"]');
-      const light = row.querySelector('input[data-k="light"]');
-      const hv = row.querySelector('[data-k="hVal"]');
-      const lv = row.querySelector('[data-k="lVal"]');
       if (picker) picker.value = color;
-      if (hue) hue.value = String(hsl.h);
-      if (light) light.value = String(hsl.l);
-      if (hv) hv.textContent = String(hsl.h);
-      if (lv) lv.textContent = String(hsl.l);
       const duplicate = isDuplicateCatalogColor(list, idx, color);
       updateNewsSvcRowPreview(row, norm(cur.name), color, duplicate);
       return;
@@ -1746,18 +1671,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       cur.color = color;
       const txt = row.querySelector('input[data-k="colorText"]');
-      const hsl = hexToHsl(color);
-      const hue = row.querySelector('input[data-k="hue"]');
-      const light = row.querySelector('input[data-k="light"]');
-      const hv = row.querySelector('[data-k="hVal"]');
-      const lv = row.querySelector('[data-k="lVal"]');
       if (txt) txt.value = color;
-      if (hue) hue.value = String(hsl.h);
-      if (light) light.value = String(hsl.l);
-      if (hv) hv.textContent = String(hsl.h);
-      if (lv) lv.textContent = String(hsl.l);
       updateNewsSvcRowPreview(row, norm(cur.name), color, false);
-      setMsg("색상 선택기로 즉시 반영했습니다.", "ok");
+      setMsg("색상을 적용했습니다.", "ok");
     }
   });
 
@@ -1765,27 +1681,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!loadedData) return;
     const list = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
     loadedData.newsServiceCatalog = list;
-
-    const applyBtn = e.target.closest('button[data-act="applyNewsSvcColor"]');
-    if (applyBtn) {
-      const idx = Number(applyBtn.dataset.idx || -1);
-      if (!Number.isInteger(idx) || idx < 0) return;
-      const row = applyBtn.closest('.news-svc-row');
-      const cur = list[idx];
-      if (!row || !cur) return;
-      const txt = row.querySelector('input[data-k="colorText"]');
-      const color = normalizeHexColor(txt?.value, cur.color || "#94a3b8");
-      if (isDuplicateCatalogColor(list, idx, color)) {
-        updateNewsSvcRowPreview(row, norm(cur.name), color, true);
-        setMsg("이미 사용 중인 색상은 선택할 수 없습니다.", "err");
-        return;
-      }
-      cur.color = color;
-      if (txt) txt.value = color;
-      updateNewsSvcRowPreview(row, norm(cur.name), color, false);
-      setMsg("선택한 색상을 반영했습니다.", "ok");
-      return;
-    }
 
     const delBtn = e.target.closest('button[data-act="delNewsSvc"]');
     if (!delBtn) return;
