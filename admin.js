@@ -1448,6 +1448,26 @@ function serviceBadgeTextColor(hex) {
   return yiq >= 150 ? "#0b1220" : "#f8fafc";
 }
 
+function isDuplicateCatalogColor(list, idx, color) {
+  const target = normalizeHexColor(color, "");
+  if (!target) return false;
+  return list.some((it, i) => i !== idx && normalizeHexColor(it?.color, "") === target);
+}
+
+function updateNewsSvcRowPreview(row, name, color, duplicate) {
+  if (!row) return;
+  const badge = row.querySelector('.news-svc-badge');
+  const textColor = serviceBadgeTextColor(color);
+
+  if (badge) {
+    badge.style.background = color;
+    badge.style.borderColor = color;
+    badge.style.color = textColor;
+    badge.textContent = name || "미지정";
+  }
+  row.classList.toggle('dup', !!duplicate);
+}
+
 function renderNewsServiceCatalogModal() {
   const box = document.getElementById('newsSvcList');
   if (!box || !loadedData) return;
@@ -1459,17 +1479,19 @@ function renderNewsServiceCatalogModal() {
     const row = document.createElement('div');
     row.className = 'news-svc-row';
     const color = normalizeHexColor(it.color);
-    const textColor = serviceBadgeTextColor(color);
+    const duplicate = isDuplicateCatalogColor(list, idx, color);
+
     row.innerHTML = `
       <input type="text" data-k="name" data-idx="${idx}" value="${escapeHtml(it.name || "")}" placeholder="서비스명" />
       <input type="text" data-k="colorText" data-idx="${idx}" value="${escapeHtml(color)}" placeholder="#RRGGBB" />
       <input type="color" data-k="colorPicker" data-idx="${idx}" value="${escapeHtml(color)}" title="색상 선택" />
       <div class="row" style="justify-content:flex-end;gap:6px;">
-        <span class="news-svc-badge" style="background:${escapeHtml(color)};color:${escapeHtml(textColor)};border-color:${escapeHtml(color)};">${escapeHtml(it.name || "미지정")}</span>
+        <span class="news-svc-badge">${escapeHtml(it.name || "미지정")}</span>
         <button type="button" class="btn danger" data-act="delNewsSvc" data-idx="${idx}">삭제</button>
       </div>
     `;
     box.appendChild(row);
+    updateNewsSvcRowPreview(row, norm(it.name), color, duplicate);
   });
 }
 
@@ -1604,36 +1626,65 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("newsSvcList").addEventListener("input", (e) => {
     if (!loadedData) return;
+    const row = e.target.closest('.news-svc-row');
     const idx = Number(e.target?.dataset?.idx || -1);
-    if (!Number.isInteger(idx) || idx < 0) return;
+    if (!row || !Number.isInteger(idx) || idx < 0) return;
+
     const list = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
+    loadedData.newsServiceCatalog = list;
     const cur = list[idx];
     if (!cur) return;
 
     if (e.target.matches('input[data-k="name"]')) {
       cur.name = e.target.value;
+      const colorText = row.querySelector('input[data-k="colorText"]')?.value || cur.color || "#94a3b8";
+      const candidate = normalizeHexColor(colorText, cur.color || "#94a3b8");
+      const duplicate = isDuplicateCatalogColor(list, idx, candidate);
+      updateNewsSvcRowPreview(row, norm(cur.name), candidate, duplicate);
+      return;
     }
+
     if (e.target.matches('input[data-k="colorText"]')) {
       const color = normalizeHexColor(e.target.value, cur.color || "#94a3b8");
-      cur.color = color;
-      const picker = e.target.closest('.news-svc-row')?.querySelector('input[data-k="colorPicker"]');
+      if (isDuplicateCatalogColor(list, idx, color)) {
+        e.target.value = normalizeHexColor(cur.color || "#94a3b8");
+        const picker = row.querySelector('input[data-k="colorPicker"]');
+        if (picker) picker.value = normalizeHexColor(cur.color || "#94a3b8");
+        setMsg("이미 사용 중인 색상은 선택할 수 없습니다.", "err");
+        updateNewsSvcRowPreview(row, norm(cur.name), normalizeHexColor(cur.color || "#94a3b8"), true);
+        return;
+      }
+      const picker = row.querySelector('input[data-k="colorPicker"]');
       if (picker) picker.value = color;
+      const duplicate = isDuplicateCatalogColor(list, idx, color);
+      updateNewsSvcRowPreview(row, norm(cur.name), color, duplicate);
+      return;
     }
+
     if (e.target.matches('input[data-k="colorPicker"]')) {
-      cur.color = normalizeHexColor(e.target.value, cur.color || "#94a3b8");
-      const txt = e.target.closest('.news-svc-row')?.querySelector('input[data-k="colorText"]');
-      if (txt) txt.value = cur.color;
+      const color = normalizeHexColor(e.target.value, cur.color || "#94a3b8");
+      if (isDuplicateCatalogColor(list, idx, color)) {
+        e.target.value = normalizeHexColor(cur.color || "#94a3b8");
+        setMsg("이미 사용 중인 색상은 선택할 수 없습니다.", "err");
+        updateNewsSvcRowPreview(row, norm(cur.name), normalizeHexColor(cur.color || "#94a3b8"), true);
+        return;
+      }
+      cur.color = color;
+      const txt = row.querySelector('input[data-k="colorText"]');
+      if (txt) txt.value = color;
+      updateNewsSvcRowPreview(row, norm(cur.name), color, false);
     }
-    loadedData.newsServiceCatalog = list;
-    renderNewsServiceCatalogModal();
   });
 
   $("newsSvcList").addEventListener("click", (e) => {
-    const btn = e.target.closest('button[data-act="delNewsSvc"]');
-    if (!btn || !loadedData) return;
-    const idx = Number(btn.dataset.idx || -1);
+    if (!loadedData) return;
+    const list = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
+    loadedData.newsServiceCatalog = list;
+
+    const delBtn = e.target.closest('button[data-act="delNewsSvc"]');
+    if (!delBtn) return;
+    const idx = Number(delBtn.dataset.idx || -1);
     if (!Number.isInteger(idx) || idx < 0) return;
-    loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
     loadedData.newsServiceCatalog.splice(idx, 1);
     renderNewsServiceCatalogModal();
   });
@@ -1641,6 +1692,18 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btnApplyNewsSvc").addEventListener("click", () => {
     if (!loadedData) return;
     loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
+
+    const used = new Set();
+    for (const it of loadedData.newsServiceCatalog) {
+      const c = normalizeHexColor(it?.color, "#94a3b8");
+      if (used.has(c)) {
+        setMsg("중복된 색상이 있어 적용할 수 없습니다. 각 서비스에 고유 색상을 지정하세요.", "err");
+        renderNewsServiceCatalogModal();
+        return;
+      }
+      used.add(c);
+    }
+
     refreshAllNewsServiceSelects();
     updatePendingSummary();
     setNewsSvcModal(false);
