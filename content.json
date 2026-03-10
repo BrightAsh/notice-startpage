@@ -94,31 +94,31 @@
       "service": "Perplexity",
       "title": "Computer 대규모 업데이트",
       "date": "2026-03-06",
-      "file": "2026-03-06-computer-대규모-업데이트.html"
+      "file": "2026-03-06-perplexity-computer-대규모-업데이트.html"
     },
     {
       "service": "Perplexity",
       "title": "Computer·갤럭시 S26·Comet 음성 업데이트",
       "date": "2026-02-27",
-      "file": "2026-02-27-computer갤럭시-s26comet-음성-업데이트.html"
+      "file": "2026-02-27-perplexity-computer-갤럭시-s26-comet-음성-업데이트.html"
     },
     {
       "service": "Perplexity",
       "title": "모델·응답 설정·엔터프라이즈 메모리 업데이트",
       "date": "2026-02-20",
-      "file": "2026-02-20-모델응답-설정엔터프라이즈-메모리-업데이트.html"
+      "file": "2026-02-20-perplexity-모델-응답-설정-엔터프라이즈-메모리-업데이트.html"
     },
     {
       "service": "Perplexity",
       "title": "Deep Research·Model Council 메모리/검색 개선",
       "date": "2026-02-13",
-      "file": "2026-02-13-deep-researchmodel-council-메모리검색-개선.html"
+      "file": "2026-02-13-perplexity-deep-research-model-council-메모리-검색-개선.html"
     },
     {
       "service": "Perplexity",
       "title": "Deep Research·Model Council 업데이트",
       "date": "2026-02-06",
-      "file": "2026-02-06-deep-researchmodel-council-업데이트.html"
+      "file": "2026-02-06-perplexity-deep-research-model-council-업데이트.html"
     }
   ],
   "newsServiceCatalog": [
@@ -161,6 +161,74 @@
     {
       "name": "기타",
       "color": "#94a3b8"
+    },
+    {
+      "name": "OpenAI",
+      "color": "#10b981"
+    },
+    {
+      "name": "xAI",
+      "color": "#8b5cf6"
+    },
+    {
+      "name": "Flowith",
+      "color": "#2dd4bf"
+    },
+    {
+      "name": "Genspark",
+      "color": "#eab308"
+    },
+    {
+      "name": "Poe",
+      "color": "#f97316"
+    },
+    {
+      "name": "Character AI",
+      "color": "#f43f5e"
+    },
+    {
+      "name": "Suno",
+      "color": "#a855f7"
+    },
+    {
+      "name": "Runway",
+      "color": "#22c55e"
+    },
+    {
+      "name": "HeyGen",
+      "color": "#0ea5e9"
+    },
+    {
+      "name": "Lilys AI",
+      "color": "#14b8a6"
+    },
+    {
+      "name": "Skywork",
+      "color": "#84cc16"
+    },
+    {
+      "name": "Manus",
+      "color": "#fb7185"
+    },
+    {
+      "name": "NotebookLM",
+      "color": "#6366f1"
+    },
+    {
+      "name": "DeepSeek",
+      "color": "#2563eb"
+    },
+    {
+      "name": "Midjourney",
+      "color": "#a855f7"
+    },
+    {
+      "name": "Replit",
+      "color": "#f97316"
+    },
+    {
+      "name": "Gamma",
+      "color": "#d946ef"
     }
   ]
 }
