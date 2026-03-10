@@ -65,7 +65,7 @@ function normalizeNewsFileName(fileName, dateText, titleText, autoCreate = true)
     base = `${d}-${t}.html`;
   }
   if (!base) return "";
-  if (!/\.html?$/i.test(base)) base += ".html";
+  if (!/\.(html?|pdf)$/i.test(base)) base += ".html";
   return base;
 }
 
