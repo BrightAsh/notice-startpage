@@ -91,74 +91,88 @@
   },
   "news": [
     {
-      "title": "VS Code v1.110 Copilot 에이전트 기능 확장",
+      "title": "v1.110 Copilot 에이전트 기능 확장",
       "date": "2026-03-06",
-      "file": "2026-03-06-copilot-vscode-agent-기능-확장.html"
+      "file": "2026-03-06-copilot-vscode-agent-기능-확장.html",
+      "service": "Copilot"
     },
     {
       "title": "GPT-5.4가 Notion에 추가됨",
       "date": "2026-03-06",
-      "file": "2026-03-06-gpt-54가-notion에-추가됨.html"
+      "file": "2026-03-06-gpt-54가-notion에-추가됨.html",
+      "service": "Notion AI"
     },
     {
       "title": "Eleven v3 정식 출시",
       "date": "2026-03-06",
-      "file": "2026-03-06-eleven-v3-정식-출시.html"
+      "file": "2026-03-06-eleven-v3-정식-출시.html",
+      "service": "ElevenLabs"
     },
     {
-      "title": "Copilot Figma MCP 레이어 생성 지원",
+      "title": "Figma MCP 레이어 생성 지원",
       "date": "2026-03-06",
-      "file": "2026-03-06-copilot-figma-mcp-레이어-생성.html"
+      "file": "2026-03-06-copilot-figma-mcp-레이어-생성.html",
+      "service": "Copilot"
     },
     {
-      "title": "Perplexity Computer 대규모 업데이트",
+      "title": "Computer 대규모 업데이트",
       "date": "2026-03-06",
-      "file": "2026-03-06-perplexity-computer-대규모-업데이트.html"
+      "file": "2026-03-06-perplexity-computer-대규모-업데이트.html",
+      "service": "Perplexity"
     },
     {
-      "title": "Cursor Automations 출시",
+      "title": "Automations 출시",
       "date": "2026-03-05",
-      "file": "2026-03-05-cursor-automations-출시.html"
+      "file": "2026-03-05-cursor-automations-출시.html",
+      "service": "Cursor"
     },
     {
-      "title": "ChatGPT for Excel 및 금융 데이터 연동 추가",
+      "title": "Excel 및 금융 데이터 연동 추가",
       "date": "2026-03-05",
-      "file": "2026-03-05-chatgpt-for-excel-금융데이터-연동-추가.html"
+      "file": "2026-03-05-chatgpt-for-excel-금융데이터-연동-추가.html",
+      "service": "ChatGPT"
     },
     {
-      "title": "ChatGPT GPT-5.4 Thinking 출시",
+      "title": "GPT-5.4 Thinking 출시",
       "date": "2026-03-05",
-      "file": "2026-03-05-chatgpt-gpt-54-thinking-출시.html"
+      "file": "2026-03-05-chatgpt-gpt-54-thinking-출시.html",
+      "service": "ChatGPT"
     },
     {
       "title": "GPT-5.3 Instant 업데이트",
       "date": "2026-03-03",
-      "file": "2026-03-03-gpt-5.3-instant-업데이트.html"
+      "file": "2026-03-03-gpt-5.3-instant-업데이트.html",
+      "service": "ChatGPT"
     },
     {
-      "title": "Perplexity Computer·갤럭시 S26·Comet 음성 업데이트",
+      "title": "Computer·갤럭시 S26·Comet 음성 업데이트",
       "date": "2026-02-27",
-      "file": "2026-02-27-perplexity-computer-갤럭시-s26-comet-음성-업데이트.html"
+      "file": "2026-02-27-perplexity-computer-갤럭시-s26-comet-음성-업데이트.html",
+      "service": "Perplexity"
     },
     {
-      "title": "Canva AI·프로 크리에이티브 기능 확장",
+      "title": "프로 크리에이티브 기능 확장",
       "date": "2026-02-23",
-      "file": "2026-02-23-canva-ai프로-크리에이티브-기능-확장.html"
+      "file": "2026-02-23-canva-ai프로-크리에이티브-기능-확장.html",
+      "service": "Canva AI"
     },
     {
-      "title": "Perplexity 모델·응답 설정·엔터프라이즈 메모리 업데이트",
+      "title": "모델·응답 설정·엔터프라이즈 메모리 업데이트",
       "date": "2026-02-20",
-      "file": "2026-02-20-perplexity-모델-응답-설정-엔터프라이즈-메모리-업데이트.html"
+      "file": "2026-02-20-perplexity-모델-응답-설정-엔터프라이즈-메모리-업데이트.html",
+      "service": "Perplexity"
     },
     {
-      "title": "Perplexity Deep Research·Model Council 메모리/검색 개선",
+      "title": "Deep Research·Model Council 메모리/검색 개선",
       "date": "2026-02-13",
-      "file": "2026-02-13-perplexity-deep-research-model-council-메모리-검색-개선.html"
+      "file": "2026-02-13-perplexity-deep-research-model-council-메모리-검색-개선.html",
+      "service": "Perplexity"
     },
     {
-      "title": "Perplexity Deep Research·Model Council 업데이트",
+      "title": "Deep Research·Model Council 업데이트",
       "date": "2026-02-06",
-      "file": "2026-02-06-perplexity-deep-research-model-council-업데이트.html"
+      "file": "2026-02-06-perplexity-deep-research-model-council-업데이트.html",
+      "service": "Perplexity"
     }
   ]
 }

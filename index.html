@@ -43,7 +43,7 @@
     body{
       margin:0;
       font-family: var(--font);
-      color: var(--text);
+      color:#0b1220;
       background:
         radial-gradient(1200px 500px at 15% 0%, rgba(94,234,212,.18), transparent 55%),
         radial-gradient(900px 450px at 95% 10%, rgba(251,191,36,.16), transparent 50%),
@@ -103,7 +103,7 @@
       border-radius: 999px;
       background: rgba(94,234,212,.14);
       border: 1px solid rgba(94,234,212,.28);
-      color: var(--text);
+      color:#0b1220;
       font-weight: 700;
       flex: 0 0 auto;
     }
@@ -121,7 +121,7 @@
       appearance:none;
       border: 1px solid var(--line);
       background: var(--panel);
-      color: var(--text);
+      color:#0b1220;
       padding: 8px 10px;
       border-radius: 12px;
       cursor:pointer;
@@ -186,13 +186,13 @@
       border-radius: 999px;
       border: 1px solid var(--line);
       background: rgba(255,255,255,.04);
-      color: var(--text);
+      color:#0b1220;
       white-space: nowrap;
     }
     .badge.new{
       border-color: rgba(251,191,36,.45);
       background: rgba(251,191,36,.14);
-      color: var(--text);
+      color:#0b1220;
     }
     .panel-bd{ padding: 14px 16px 16px; }
 
@@ -215,7 +215,7 @@
       border-radius: var(--radius2);
       padding: 12px 12px;
       text-decoration:none;
-      color: var(--text);
+      color:#0b1220;
       display:flex;
       align-items:flex-start;
       gap: 12px;
@@ -245,7 +245,7 @@
       font-weight: 900;
       letter-spacing: -0.02em;
       font-size: 18px;
-      color: var(--text);
+      color:#0b1220;
     }
 
     .svc-name{
@@ -309,7 +309,7 @@
       border-radius: 14px;
       padding: 10px 8px 9px;
       text-decoration:none;
-      color: var(--text);
+      color:#0b1220;
       display:flex;
       flex-direction:column;
       align-items:center;
@@ -334,14 +334,14 @@
       font-weight: 900;
       letter-spacing: -0.02em;
       font-size: 16px;
-      color: var(--text);
+      color:#0b1220;
     }
 
     .glabel{
       font-weight: 900;
       font-size: 12px;
       line-height: 1.1;
-      color: var(--text);
+      color:#0b1220;
       text-align:center;
       white-space:nowrap;
       overflow:hidden;
@@ -441,8 +441,36 @@
       border-radius: 12px;
     }
     .news-open:hover{ background: rgba(255,255,255,.04); }
-    .news-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
-    .news-title{ font-size:13px; font-weight:800; line-height:1.3; }
+    .news-row{ display:grid; grid-template-columns: auto 1fr auto; align-items:center; gap:8px; }
+    .news-service{ display:inline-flex; align-items:center; font-size:11px; font-weight:900; padding:5px 9px; border-radius:999px; border:1px solid rgba(255,255,255,.16); background: rgba(148,163,184,.20); color:#0b1220; white-space:nowrap; }
+    .news-service.other{ background: rgba(148,163,184,.22); border-color: rgba(148,163,184,.45); color:#0b1220; }
+    .news-service.openai{ background: rgba(16,185,129,.24); border-color: rgba(16,185,129,.45); color:#0b1220; }
+    .news-service.gemini{ background: rgba(96,165,250,.24); border-color: rgba(96,165,250,.45); color:#0b1220; }
+    .news-service.claude{ background: rgba(245,158,11,.24); border-color: rgba(245,158,11,.45); color:#0b1220; }
+    .news-service.perplexity{ background: rgba(56,189,248,.24); border-color: rgba(56,189,248,.45); color:#0b1220; }
+    .news-service.xai{ background: rgba(139,92,246,.24); border-color: rgba(139,92,246,.45); color:#0b1220; }
+    .news-service.elevenlabs{ background: rgba(236,72,153,.22); border-color: rgba(236,72,153,.45); color:#0b1220; }
+    .news-service.flowith{ background: rgba(45,212,191,.24); border-color: rgba(45,212,191,.45); color:#0b1220; }
+    .news-service.genspark{ background: rgba(234,179,8,.24); border-color: rgba(234,179,8,.45); color:#0b1220; }
+    .news-service.copilot{ background: rgba(59,130,246,.24); border-color: rgba(59,130,246,.45); color:#0b1220; }
+    .news-service.notion{ background: rgba(107,114,128,.24); border-color: rgba(107,114,128,.45); color:#0b1220; }
+    .news-service.poe{ background: rgba(249,115,22,.24); border-color: rgba(249,115,22,.45); color:#0b1220; }
+    .news-service.characterai{ background: rgba(244,63,94,.22); border-color: rgba(244,63,94,.45); color:#0b1220; }
+    .news-service.cursor{ background: rgba(6,182,212,.24); border-color: rgba(6,182,212,.45); color:#0b1220; }
+    .news-service.suno{ background: rgba(168,85,247,.24); border-color: rgba(168,85,247,.45); color:#0b1220; }
+    .news-service.runway{ background: rgba(34,197,94,.22); border-color: rgba(34,197,94,.45); color:#0b1220; }
+    .news-service.heygen{ background: rgba(14,165,233,.22); border-color: rgba(14,165,233,.45); color:#0b1220; }
+    .news-service.lilysai{ background: rgba(20,184,166,.24); border-color: rgba(20,184,166,.45); color:#0b1220; }
+    .news-service.skywork{ background: rgba(132,204,22,.24); border-color: rgba(132,204,22,.45); color:#0b1220; }
+    .news-service.manus{ background: rgba(251,113,133,.22); border-color: rgba(251,113,133,.45); color:#0b1220; }
+    .news-service.canva{ background: rgba(6,182,212,.22); border-color: rgba(6,182,212,.45); color:#0b1220; }
+    .news-service.notebooklm{ background: rgba(99,102,241,.22); border-color: rgba(99,102,241,.45); color:#0b1220; }
+    .news-service.deepseek{ background: rgba(37,99,235,.24); border-color: rgba(37,99,235,.45); color:#0b1220; }
+    .news-service.midjourney{ background: rgba(168,85,247,.22); border-color: rgba(168,85,247,.45); color:#0b1220; }
+    .news-service.replit{ background: rgba(249,115,22,.22); border-color: rgba(249,115,22,.45); color:#0b1220; }
+    .news-service.gamma{ background: rgba(217,70,239,.22); border-color: rgba(217,70,239,.45); color:#0b1220; }
+    .news-service-title{ min-width:0; font-size:13px; font-weight:800; line-height:1.3; }
+    .news-title{ margin:0; }
     .news-date{ color: var(--muted); font-size:11px; white-space:nowrap; margin-top:2px; }
     .news-pager{
       margin-top: 10px;
@@ -625,7 +653,7 @@
     .badge.beta{
       border-color: rgba(96,165,250,.55);
       background: rgba(96,165,250,.18);
-      color: var(--text);
+      color:#0b1220;
       font-weight: 900;
       letter-spacing: .02em;
     }
@@ -834,6 +862,33 @@
     let newsPage = 1;
     let newsPageGroupStart = 1;
     let modalNewsIndex = -1;
+    const SERVICE_COLOR_MAP = {
+      "openai": "openai", "chatgpt": "openai",
+      "gemini": "gemini", "google": "gemini", "notebooklm": "notebooklm",
+      "claude": "claude", "anthropic": "claude",
+      "perplexity": "perplexity",
+      "xai": "xai", "grok": "xai",
+      "elevenlabs": "elevenlabs",
+      "flowith": "flowith",
+      "genspark": "genspark",
+      "copilot": "copilot", "github copilot": "copilot",
+      "notion ai": "notion", "notion": "notion",
+      "poe": "poe",
+      "character.ai": "characterai", "character ai": "characterai",
+      "cursor": "cursor",
+      "suno": "suno",
+      "runway": "runway",
+      "heygen": "heygen",
+      "lilysai": "lilysai", "lilys ai": "lilysai",
+      "skywork": "skywork",
+      "manus": "manus",
+      "canva ai": "canva", "canva": "canva",
+      "deepseek": "deepseek",
+      "midjourney": "midjourney",
+      "replit ai": "replit", "replit": "replit",
+      "gamma": "gamma"
+    };
+
 
     function fmtNow(){
       const d = new Date();
@@ -1051,13 +1106,36 @@
     }
 
 
+    function normalizeServiceName(v){
+      return String(v || "").trim();
+    }
+
+    function serviceKey(service){
+      const k = normalizeServiceName(service).toLowerCase();
+      return SERVICE_COLOR_MAP[k] || "other";
+    }
+
+    function splitLegacyTitle(title){
+      const raw = String(title || "").trim();
+      const m = raw.match(/^([^\-–—:|]+?)\s*[\-–—:|]\s+(.+)$/);
+      if(!m) return { service: "", title: raw };
+      return { service: String(m[1] || "").trim(), title: String(m[2] || "").trim() };
+    }
+
     function normalizedNewsItems(){
-      return (NEWS || []).map((it) => ({
-        title: String(it?.title || "").trim(),
-        sub: String(it?.sub || "").trim(),
-        date: String(it?.date || "").trim(),
-        file: String(it?.file || "").trim(),
-      })).filter((it) => it.title && it.date).sort((a, b) => b.date.localeCompare(a.date));
+      return (NEWS || []).map((it) => {
+        const explicitService = normalizeServiceName(it?.service);
+        const legacy = splitLegacyTitle(it?.title);
+        const service = explicitService || legacy.service;
+        return {
+          service,
+          serviceKey: serviceKey(service),
+          title: legacy.title || String(it?.title || "").trim(),
+          sub: String(it?.sub || "").trim(),
+          date: String(it?.date || "").trim(),
+          file: String(it?.file || "").trim(),
+        };
+      }).filter((it) => it.title && it.date).sort((a, b) => b.date.localeCompare(a.date));
     }
 
     function renderNews(){
@@ -1080,10 +1158,18 @@
           content.dataset.newsFile = it.file;
         }
 
-        const head = document.createElement("div");
-        head.className = "news-head";
+        const row = document.createElement("div");
+        row.className = "news-row";
 
-        const t = document.createElement("div");
+        const svc = document.createElement("span");
+        const svcKey = it.serviceKey || "other";
+        svc.className = `news-service ${svcKey}`;
+        svc.textContent = it.service || "기타";
+
+        const titleWrap = document.createElement("div");
+        titleWrap.className = "news-service-title";
+
+        const t = document.createElement("p");
         t.className = "news-title";
         t.textContent = it.title;
 
@@ -1091,9 +1177,12 @@
         d.className = "news-date";
         d.textContent = it.date;
 
-        head.appendChild(t);
-        head.appendChild(d);
-        content.appendChild(head);
+        titleWrap.appendChild(t);
+
+        row.appendChild(svc);
+        row.appendChild(titleWrap);
+        row.appendChild(d);
+        content.appendChild(row);
         li.appendChild(content);
         newsList.appendChild(li);
       }

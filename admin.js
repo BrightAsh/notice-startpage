@@ -376,8 +376,10 @@ function noticeSummaryText(idx, title) {
 }
 function newsSummaryText(idx, item) {
   const t = norm(item?.title);
+  const s = norm(item?.service);
   const d = norm(item?.date) || "날짜 미입력";
-  return t ? `뉴스 #${idx + 1} · ${d} · ${t}` : `뉴스 #${idx + 1} · ${d}`;
+  const head = s ? `${d} · ${s}` : d;
+  return t ? `뉴스 #${idx + 1} · ${head} · ${t}` : `뉴스 #${idx + 1} · ${head}`;
 }
 
 function serviceCardTemplate(s, idx) {
@@ -528,6 +530,10 @@ function newsCardTemplate(it, idx) {
           <label>title</label>
           <input type="text" data-k="title" value="${escapeHtml(it.title || "")}" />
         </div>
+        <div>
+          <label>service</label>
+          <input type="text" data-k="service" value="${escapeHtml(it.service || "")}" placeholder="예: ChatGPT" />
+        </div>
       </div>
 
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
@@ -620,6 +626,7 @@ function snapshotFromFormWithUids() {
     const uid = card.dataset.uid || makeUid();
     news.push({
       _uid: uid,
+      service: get("service")?.value?.trim() || "",
       title: get("title")?.value?.trim() || "",
       date: get("date")?.value?.trim() || "",
       file: normalizeNewsFileName("", get("date")?.value?.trim() || "", get("title")?.value?.trim() || "", true),
@@ -646,6 +653,7 @@ function stripInternalFields(dataWithUids) {
       })),
     },
     news: (dataWithUids.news || []).map((it) => ({
+      service: it.service || "",
       title: it.title || "",
       date: it.date || "",
       file: normalizeNewsFileName("", it.date, it.title, true),
@@ -697,6 +705,7 @@ async function loadContentJson(token) {
   originalNewsByUid = new Map();
   (news || []).forEach((it) => {
     originalNewsByUid.set(String(it._uid), {
+      service: it.service || "",
       title: it.title || "",
       date: it.date || "",
       file: normalizeNewsFileName("", it.date, it.title, true),
@@ -1221,6 +1230,7 @@ function isNoticeChanged(orig, cur) {
 function isNewsChanged(orig, cur) {
   const a = (v) => norm(v);
   return (
+    a(orig.service) !== a(cur.service) ||
     a(orig.title) !== a(cur.title) ||
     a(orig.date) !== a(cur.date) ||
     a(orig.file) !== a(cur.file)
@@ -1428,7 +1438,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadedData.services = ensureServiceUids(snap.services);
     loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
     loadedData.news = ensureNewsItemUids(snap.news || []);
-    loadedData.news.push({ _uid: makeUid(), title: "", date: "", file: "" });
+    loadedData.news.push({ _uid: makeUid(), service: "", title: "", date: "", file: "" });
     renderAll();
   });
 
@@ -1684,14 +1694,15 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePendingSummary();
     const card = e.target.closest(".card");
     if (!card) return;
-    if (e.target.matches('input[data-k="title"],input[data-k="date"]')) {
+    if (e.target.matches('input[data-k="title"],input[data-k="date"],input[data-k="service"]')) {
       const cards = Array.from(requireEl("newsList").querySelectorAll(".card"));
       const idx = cards.indexOf(card);
       const sumTitle = card.querySelector(".sum-title");
       if (sumTitle) {
         const titleNow = card.querySelector('input[data-k="title"]')?.value || "";
         const dateNow = card.querySelector('input[data-k="date"]')?.value || "";
-        sumTitle.textContent = newsSummaryText(idx, { title: titleNow, date: dateNow });
+        const serviceNow = card.querySelector('input[data-k="service"]')?.value || "";
+        sumTitle.textContent = newsSummaryText(idx, { title: titleNow, date: dateNow, service: serviceNow });
       }
     }
     if (e.target.matches('input[data-k="title"],input[data-k="date"]')) {
