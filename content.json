@@ -91,34 +91,280 @@
   },
   "news": [
     {
+      "service": "Notion AI",
+      "title": "Generate images with Notion AI",
+      "date": "2026-03-09",
+      "file": "2026-03-09-generate-images-with-notion-ai.html"
+    },
+    {
       "service": "Perplexity",
-      "title": "Computer 대규모 업데이트",
+      "title": "Perplexity Computer 대규모 업데이트",
       "date": "2026-03-06",
       "file": "2026-03-06-perplexity-computer-대규모-업데이트.html"
     },
     {
+      "service": "OpenAI",
+      "title": "Codex Security 연구 프리뷰",
+      "date": "2026-03-06",
+      "file": "2026-03-06-codex-security-연구-프리뷰.html"
+    },
+    {
+      "service": "Notion AI",
+      "title": "GPT-5.4 is now in Notion",
+      "date": "2026-03-06",
+      "file": "2026-03-06-gpt-5-4-is-now-in-notion.html"
+    },
+    {
+      "service": "ElevenLabs",
+      "title": "Scribe 출시",
+      "date": "2026-03-06",
+      "file": "2026-03-06-scribe-출시.html"
+    },
+    {
+      "service": "ElevenLabs",
+      "title": "11.ai 알파 출시",
+      "date": "2026-03-06",
+      "file": "2026-03-06-11-ai-알파-출시.html"
+    },
+    {
+      "service": "Copilot",
+      "title": "VS Code 에이전트 대규모 강화",
+      "date": "2026-03-06",
+      "file": "2026-03-06-vs-code-에이전트-대규모-강화.html"
+    },
+    {
+      "service": "OpenAI",
+      "title": "GPT-5.4 출시",
+      "date": "2026-03-05",
+      "file": "2026-03-05-gpt-5-4-출시.html"
+    },
+    {
+      "service": "Genspark",
+      "title": "AI Slides에 Guide Mode 추가",
+      "date": "2026-03-05",
+      "file": "2026-03-05-ai-slides에-guide-mode-추가.html"
+    },
+    {
+      "service": "Copilot",
+      "title": "Jira 코딩 에이전트 + 에이전트형 코드 리뷰",
+      "date": "2026-03-05",
+      "file": "2026-03-05-jira-코딩-에이전트-에이전트형-코드-리뷰.html"
+    },
+    {
+      "service": "Copilot",
+      "title": "GPT-5.4 GitHub Copilot 도입",
+      "date": "2026-03-05",
+      "file": "2026-03-05-gpt-5-4-github-copilot-도입.html"
+    },
+    {
+      "service": "NotebookLM",
+      "title": "Cinematic Video Overviews 추가",
+      "date": "2026-03-04",
+      "file": "2026-03-04-cinematic-video-overviews-추가.html"
+    },
+    {
+      "service": "Copilot",
+      "title": "Copilot Memory 기본 활성화",
+      "date": "2026-03-04",
+      "file": "2026-03-04-copilot-memory-기본-활성화.html"
+    },
+    {
+      "service": "OpenAI",
+      "title": "GPT-5.3 Instant 출시",
+      "date": "2026-03-03",
+      "file": "2026-03-03-gpt-5-3-instant-출시.html"
+    },
+    {
+      "service": "Notion AI",
+      "title": "Custom Agents에 MiniMax M2.5 추가",
+      "date": "2026-03-03",
+      "file": "2026-03-03-custom-agents에-minimax-m2-5-추가.html"
+    },
+    {
+      "service": "Gemini",
+      "title": "앱 안의 멀티스텝 작업 처리 시작",
+      "date": "2026-03-03",
+      "file": "2026-03-03-multi-step-tasks.html"
+    },
+    {
       "service": "Perplexity",
-      "title": "Computer·갤럭시 S26·Comet 음성 업데이트",
+      "title": "Perplexity Computer·갤럭시 S26·Comet 음성 업데이트",
       "date": "2026-02-27",
       "file": "2026-02-27-perplexity-computer-갤럭시-s26-comet-음성-업데이트.html"
     },
     {
+      "service": "Gemini",
+      "title": "February Gemini Drop",
+      "date": "2026-02-27",
+      "file": "2026-02-27-february-gemini-drop.html"
+    },
+    {
+      "service": "Midjourney",
+      "title": "Personalization & Web 업데이트",
+      "date": "2026-02-26",
+      "file": "2026-02-26-personalization-web-업데이트.html"
+    },
+    {
+      "service": "Gemini",
+      "title": "Nano Banana 2 출시",
+      "date": "2026-02-26",
+      "file": "2026-02-26-nano-banana-2-출시.html"
+    },
+    {
+      "service": "Gemini",
+      "title": "Gemini 대화 기록 및 대화 공유 확대",
+      "date": "2026-02-26",
+      "file": "2026-02-26-conversation-history-and-sharing.html"
+    },
+    {
+      "service": "Copilot",
+      "title": "GPT-5.3-Codex 및 Claude/Codex 확대",
+      "date": "2026-02-26",
+      "file": "2026-02-26-gpt-5-3-codex-및-claudecodex-확대.html"
+    },
+    {
+      "service": "Copilot",
+      "title": "Copilot CLI 정식 출시",
+      "date": "2026-02-25",
+      "file": "2026-02-25-copilot-cli-정식-출시.html"
+    },
+    {
+      "service": "Notion AI",
+      "title": "Notion 3.3: Custom Agents",
+      "date": "2026-02-24",
+      "file": "2026-02-24-notion-3-3-custom-agents.html"
+    },
+    {
+      "service": "Copilot",
+      "title": "Computer-using agents 강화",
+      "date": "2026-02-24",
+      "file": "2026-02-24-computer-using-agents-강화.html"
+    },
+    {
+      "service": "Canva AI",
+      "title": "MangoAI·Cavalry 인수로 AI 및 프로 크리에이티브 역량 확장",
+      "date": "2026-02-23",
+      "file": "2026-02-23-mangoai·cavalry-인수로-ai-및-프로-크리에이티브-역량-확장.html"
+    },
+    {
       "service": "Perplexity",
-      "title": "모델·응답 설정·엔터프라이즈 메모리 업데이트",
+      "title": "Perplexity 모델·응답 설정·엔터프라이즈 메모리 업데이트",
       "date": "2026-02-20",
       "file": "2026-02-20-perplexity-모델-응답-설정-엔터프라이즈-메모리-업데이트.html"
     },
     {
+      "service": "ElevenLabs",
+      "title": "Text to Speech API 글로벌 속도 개선",
+      "date": "2026-02-20",
+      "file": "2026-02-20-text-to-speech-api-글로벌-속도-개선.html"
+    },
+    {
+      "service": "ElevenLabs",
+      "title": "Experiments in ElevenAgents 추가",
+      "date": "2026-02-19",
+      "file": "2026-02-19-experiments-in-elevenagents-추가.html"
+    },
+    {
+      "service": "Claude",
+      "title": "Claude Sonnet 4.6 출시",
+      "date": "2026-02-17",
+      "file": "2026-02-17-sonnet-4-6-출시.html"
+    },
+    {
+      "service": "Canva AI",
+      "title": "2월 묶음 업데이트: 더 강한 AI와 더 매끄러운 워크플로",
+      "date": "2026-02-17",
+      "file": "2026-02-17-2월-묶음-업데이트-더-강한-ai와-더-매끄러운-워크플로.html"
+    },
+    {
+      "service": "Manus",
+      "title": "Manus Agents for Chat 출시",
+      "date": "2026-02-16",
+      "file": "2026-02-16-agents-for-chat-출시.html"
+    },
+    {
+      "service": "Skywork",
+      "title": "Skywork App 5.0.8 업데이트",
+      "date": "2026-02-13",
+      "file": "2026-02-13-app-5-0-8-업데이트.html"
+    },
+    {
       "service": "Perplexity",
-      "title": "Deep Research·Model Council 메모리/검색 개선",
+      "title": "Perplexity Deep Research·Model Council 메모리/검색 개선",
       "date": "2026-02-13",
       "file": "2026-02-13-perplexity-deep-research-model-council-메모리-검색-개선.html"
     },
     {
+      "service": "OpenAI",
+      "title": "GPT-5.3-Codex-Spark 연구 프리뷰",
+      "date": "2026-02-12",
+      "file": "2026-02-12-gpt-5-3-codex-spark-연구-프리뷰.html"
+    },
+    {
+      "service": "Manus",
+      "title": "Project Skills 출시",
+      "date": "2026-02-12",
+      "file": "2026-02-12-project-skills-출시.html"
+    },
+    {
+      "service": "Notion AI",
+      "title": "Claude Opus 4.6, now in Notion",
+      "date": "2026-02-09",
+      "file": "2026-02-09-claude-opus-4-6-now-in-notion.html"
+    },
+    {
       "service": "Perplexity",
-      "title": "Deep Research·Model Council 업데이트",
+      "title": "Perplexity Deep Research·Model Council 업데이트",
       "date": "2026-02-06",
       "file": "2026-02-06-perplexity-deep-research-model-council-업데이트.html"
+    },
+    {
+      "service": "Canva AI",
+      "title": "ChatGPT 안에서 Canva 디자인 생성·편집 지원",
+      "date": "2026-02-06",
+      "file": "2026-02-06-chatgpt-안에서-canva-디자인-생성·편집-지원.html"
+    },
+    {
+      "service": "OpenAI",
+      "title": "GPT-5.3-Codex 출시",
+      "date": "2026-02-05",
+      "file": "2026-02-05-gpt-5-3-codex-출시.html"
+    },
+    {
+      "service": "NotebookLM",
+      "title": "더 큰 source library와 고가치 출력 확대",
+      "date": "2026-02-05",
+      "file": "2026-02-05-더-큰-source-library와-고가치-출력-확대.html"
+    },
+    {
+      "service": "Claude",
+      "title": "Claude Opus 4.6 출시",
+      "date": "2026-02-05",
+      "file": "2026-02-05-opus-4-6-출시.html"
+    },
+    {
+      "service": "Skywork",
+      "title": "Skywork Desktop 글로벌 출시",
+      "date": "2026-02-04",
+      "file": "2026-02-04-desktop-글로벌-출시.html"
+    },
+    {
+      "service": "Notion AI",
+      "title": "Asana 작업·프로젝트 검색 연동",
+      "date": "2026-02-04",
+      "file": "2026-02-04-asana-작업·프로젝트-검색-연동.html"
+    },
+    {
+      "service": "OpenAI",
+      "title": "Codex 앱 출시",
+      "date": "2026-02-02",
+      "file": "2026-02-02-codex-앱-출시.html"
+    },
+    {
+      "service": "ElevenLabs",
+      "title": "Eleven v3 정식 출시",
+      "date": "2026-02-02",
+      "file": "2026-02-02-eleven-v3-정식-출시.html"
     }
   ],
   "newsServiceCatalog": [
