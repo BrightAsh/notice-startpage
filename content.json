@@ -91,19 +91,39 @@
   },
   "news": [
     {
+      "title": "VS Code v1.110 Copilot 에이전트 기능 확장",
+      "date": "2026-03-06",
+      "file": "2026-03-06-copilot-vscode-agent-기능-확장.html"
+    },
+    {
       "title": "GPT-5.4가 Notion에 추가됨",
       "date": "2026-03-06",
       "file": "2026-03-06-gpt-54가-notion에-추가됨.html"
     },
     {
-      "title": "ChatGPT GPT-5.4 Thinking 출시",
-      "date": "2026-03-05",
-      "file": "2026-03-05-chatgpt-gpt-54-thinking-출시.html"
+      "title": "Eleven v3 정식 출시",
+      "date": "2026-03-06",
+      "file": "2026-03-06-eleven-v3-정식-출시.html"
+    },
+    {
+      "title": "Copilot Figma MCP 레이어 생성 지원",
+      "date": "2026-03-06",
+      "file": "2026-03-06-copilot-figma-mcp-레이어-생성.html"
     },
     {
       "title": "Cursor Automations 출시",
       "date": "2026-03-05",
       "file": "2026-03-05-cursor-automations-출시.html"
+    },
+    {
+      "title": "ChatGPT for Excel 및 금융 데이터 연동 추가",
+      "date": "2026-03-05",
+      "file": "2026-03-05-chatgpt-for-excel-금융데이터-연동-추가.html"
+    },
+    {
+      "title": "ChatGPT GPT-5.4 Thinking 출시",
+      "date": "2026-03-05",
+      "file": "2026-03-05-chatgpt-gpt-54-thinking-출시.html"
     },
     {
       "title": "GPT-5.3 Instant 업데이트",
