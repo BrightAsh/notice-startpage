@@ -65,38 +65,60 @@
       "name": "ElevenLabs",
       "url": "https://elevenlabs.io/",
       "domain": "elevenlabs.io",
-      "note": "TTS 음성 생성\n보이스 클로닝\n더빙·다국어 음성\n음성 스타일 제어\nTest 수정"
-    },
-    {
-      "name": "구글",
-      "url": "https://www.google.com",
-      "domain": "google.com",
-      "note": "Test 중"
+      "note": "TTS 음성 생성\n보이스 클로닝\n더빙·다국어 음성\n음성 스타일 제어\n오디오 제작"
     }
   ],
   "notice": {
-    "noticeId": "2026-01-30",
+    "noticeId": "2026-03-09",
     "items": [
       {
         "title": "Perplexity 구독 해지",
-        "sub": "사유: 사용량 저조"
+        "sub": "2026년 1월 28일부터 Perplexity를 이용하실 수 없습니다. (사유: 사용량 저조)"
       },
       {
         "title": "Google AI Pro 구독 시작",
-        "sub": "Gemini, NotebookLM 등 사용 가능"
+        "sub": "2026년 1월 28일부터 Gemini, NotebookLM 등 이용하실 수 있습니다."
       },
       {
-        "title": "ㅇㄴㄹ",
-        "sub": "ㄴㅇㄹ"
+        "title": "ElevenLabs 플랜 다운그레이드",
+        "sub": "2026년 1월 29일부터 Creator Plan에서 Starter Plan으로 다운그레이드됩니다. (사유: 사용량 저조)"
+      },
+      {
+        "title": "Flowith 구독 해지",
+        "sub": "2026년 3월 28일부터 Flowith를 사용하실 수 없습니다. (사유: 사용량 저조)"
       }
     ]
   },
   "news": [
     {
-      "title": "[Gemini] Gemini 3.1 Pro 출시 및 생태계 통합",
-      "sub": "Chrome 통합·에이전트 검색·기업용 40% 비용 절감",
-      "date": "2026-03-01",
-      "file": "2026-03-01-gemini-gemini-31-pro-출시-및-생태계-통합.html"
+      "title": "GPT-5.4가 Notion에 추가됨",
+      "sub": "",
+      "date": "2026-03-06",
+      "file": "2026-03-06-gpt-54가-notion에-추가됨.html"
+    },
+    {
+      "title": "ChatGPT GPT-5.4 Thinking 출시",
+      "sub": "",
+      "date": "2026-03-05",
+      "file": "2026-03-05-chatgpt-gpt-54-thinking-출시.html"
+    },
+    {
+      "title": "Cursor Automations 출시",
+      "sub": "",
+      "date": "2026-03-05",
+      "file": "2026-03-05-cursor-automations-출시.html"
+    },
+    {
+      "title": "GPT-5.3 Instant 업데이트",
+      "sub": "",
+      "date": "2026-03-03",
+      "file": "2026-03-03-gpt-5.3-instant-업데이트.html"
+    },
+    {
+      "title": "Canva AI·프로 크리에이티브 기능 확장",
+      "sub": "",
+      "date": "2026-02-23",
+      "file": "2026-02-23-canva-ai프로-크리에이티브-기능-확장.html"
     }
   ]
 }
