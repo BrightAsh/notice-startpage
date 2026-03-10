@@ -25,6 +25,7 @@
       --radius: 18px;
       --radius2: 14px;
       --font: system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      --news-badge-text: rgba(255,255,255,.94);
     }
     @media (prefers-color-scheme: light){
       :root{
@@ -441,8 +442,10 @@
       border-radius: 12px;
     }
     .news-open:hover{ background: rgba(255,255,255,.04); }
-    .news-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
-    .news-title{ font-size:13px; font-weight:800; line-height:1.3; }
+    .news-row{ display:grid; grid-template-columns: auto 1fr auto; align-items:center; gap:8px; }
+    .news-service{ display:inline-flex; align-items:center; font-size:11px; font-weight:900; padding:5px 9px; border-radius:999px; border:1px solid var(--news-badge-border, rgba(255,255,255,.16)); background: var(--news-badge-bg, rgba(148,163,184,.20)); color: var(--news-badge-fg, var(--news-badge-text)); white-space:nowrap; }
+    .news-service-title{ min-width:0; font-size:13px; font-weight:800; line-height:1.3; }
+    .news-title{ margin:0; }
     .news-date{ color: var(--muted); font-size:11px; white-space:nowrap; margin-top:2px; }
     .news-pager{
       margin-top: 10px;
@@ -782,6 +785,7 @@
     let SERVICES = [];
     let NOTICE = { noticeId: "", items: [] };
     let NEWS = [];
+    let NEWS_SERVICE_CATALOG = [];
 
     function noteText(note){
       if (Array.isArray(note)) return note.join("\n");
@@ -795,6 +799,7 @@
       SERVICES = data.services || [];
       NOTICE = data.notice || { noticeId: "", items: [] };
       NEWS = Array.isArray(data.news) ? data.news : [];
+      NEWS_SERVICE_CATALOG = Array.isArray(data.newsServiceCatalog) ? data.newsServiceCatalog : [];
     }
 
     // 공지 숨김 로컬스토리지 키
@@ -1051,13 +1056,61 @@
     }
 
 
+    function normalizeServiceName(v){
+      return String(v || "").trim();
+    }
+
+    function normalizeHexColor(v, fallback = "#94a3b8"){
+      const raw = String(v || "").trim().replace(/^#/, "");
+      if(/^[0-9a-fA-F]{6}$/.test(raw)) return `#${raw.toLowerCase()}`;
+      if(/^[0-9a-fA-F]{3}$/.test(raw)) return `#${raw.split("").map((c) => c + c).join("").toLowerCase()}`;
+      return fallback;
+    }
+
+    function hexToRgba(hex, alpha){
+      const h = normalizeHexColor(hex).slice(1);
+      const r = parseInt(h.slice(0,2), 16);
+      const g = parseInt(h.slice(2,4), 16);
+      const b = parseInt(h.slice(4,6), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    function badgeTextColor(hex){
+      const h = normalizeHexColor(hex).slice(1);
+      const r = parseInt(h.slice(0,2), 16);
+      const g = parseInt(h.slice(2,4), 16);
+      const b = parseInt(h.slice(4,6), 16);
+      const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+      return yiq >= 150 ? "#0b1220" : "#f8fafc";
+    }
+
+    function serviceColor(service){
+      const key = normalizeServiceName(service).toLowerCase();
+      const item = (NEWS_SERVICE_CATALOG || []).find((it) => normalizeServiceName(it?.name).toLowerCase() === key);
+      return item?.color ? normalizeHexColor(item.color) : "";
+    }
+
+    function splitLegacyTitle(title){
+      const raw = String(title || "").trim();
+      const m = raw.match(/^([^\-–—:|]+?)\s*[\-–—:|]\s+(.+)$/);
+      if(!m) return { service: "", title: raw };
+      return { service: String(m[1] || "").trim(), title: String(m[2] || "").trim() };
+    }
+
     function normalizedNewsItems(){
-      return (NEWS || []).map((it) => ({
-        title: String(it?.title || "").trim(),
-        sub: String(it?.sub || "").trim(),
-        date: String(it?.date || "").trim(),
-        file: String(it?.file || "").trim(),
-      })).filter((it) => it.title && it.date).sort((a, b) => b.date.localeCompare(a.date));
+      return (NEWS || []).map((it) => {
+        const explicitService = normalizeServiceName(it?.service);
+        const legacy = splitLegacyTitle(it?.title);
+        const service = explicitService || legacy.service;
+        return {
+          service,
+          serviceColor: serviceColor(service),
+          title: legacy.title || String(it?.title || "").trim(),
+          sub: String(it?.sub || "").trim(),
+          date: String(it?.date || "").trim(),
+          file: String(it?.file || "").trim(),
+        };
+      }).filter((it) => it.title && it.date).sort((a, b) => b.date.localeCompare(a.date));
     }
 
     function renderNews(){
@@ -1080,10 +1133,22 @@
           content.dataset.newsFile = it.file;
         }
 
-        const head = document.createElement("div");
-        head.className = "news-head";
+        const row = document.createElement("div");
+        row.className = "news-row";
 
-        const t = document.createElement("div");
+        const svc = document.createElement("span");
+        svc.className = "news-service";
+        svc.textContent = it.service || "기타";
+        if(it.serviceColor){
+          svc.style.setProperty("--news-badge-bg", hexToRgba(it.serviceColor, .24));
+          svc.style.setProperty("--news-badge-border", hexToRgba(it.serviceColor, .45));
+          svc.style.setProperty("--news-badge-fg", badgeTextColor(it.serviceColor));
+        }
+
+        const titleWrap = document.createElement("div");
+        titleWrap.className = "news-service-title";
+
+        const t = document.createElement("p");
         t.className = "news-title";
         t.textContent = it.title;
 
@@ -1091,9 +1156,12 @@
         d.className = "news-date";
         d.textContent = it.date;
 
-        head.appendChild(t);
-        head.appendChild(d);
-        content.appendChild(head);
+        titleWrap.appendChild(t);
+
+        row.appendChild(svc);
+        row.appendChild(titleWrap);
+        row.appendChild(d);
+        content.appendChild(row);
         li.appendChild(content);
         newsList.appendChild(li);
       }
