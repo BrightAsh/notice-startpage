@@ -444,33 +444,7 @@
     }
     .news-open:hover{ background: rgba(255,255,255,.04); }
     .news-row{ display:grid; grid-template-columns: auto 1fr auto; align-items:center; gap:8px; }
-    .news-service{ display:inline-flex; align-items:center; font-size:11px; font-weight:900; padding:5px 9px; border-radius:999px; border:1px solid rgba(255,255,255,.16); background: rgba(148,163,184,.20); color: var(--news-badge-text); white-space:nowrap; }
-    .news-service.other{ background: rgba(148,163,184,.22); border-color: rgba(148,163,184,.45); }
-    .news-service.openai{ background: rgba(16,185,129,.24); border-color: rgba(16,185,129,.45); }
-    .news-service.gemini{ background: rgba(96,165,250,.24); border-color: rgba(96,165,250,.45); }
-    .news-service.claude{ background: rgba(245,158,11,.24); border-color: rgba(245,158,11,.45); }
-    .news-service.perplexity{ background: rgba(56,189,248,.24); border-color: rgba(56,189,248,.45); }
-    .news-service.xai{ background: rgba(139,92,246,.24); border-color: rgba(139,92,246,.45); }
-    .news-service.elevenlabs{ background: rgba(236,72,153,.22); border-color: rgba(236,72,153,.45); }
-    .news-service.flowith{ background: rgba(45,212,191,.24); border-color: rgba(45,212,191,.45); }
-    .news-service.genspark{ background: rgba(234,179,8,.24); border-color: rgba(234,179,8,.45); }
-    .news-service.copilot{ background: rgba(59,130,246,.24); border-color: rgba(59,130,246,.45); }
-    .news-service.notion{ background: rgba(107,114,128,.24); border-color: rgba(107,114,128,.45); }
-    .news-service.poe{ background: rgba(249,115,22,.24); border-color: rgba(249,115,22,.45); }
-    .news-service.characterai{ background: rgba(244,63,94,.22); border-color: rgba(244,63,94,.45); }
-    .news-service.cursor{ background: rgba(6,182,212,.24); border-color: rgba(6,182,212,.45); }
-    .news-service.suno{ background: rgba(168,85,247,.24); border-color: rgba(168,85,247,.45); }
-    .news-service.runway{ background: rgba(34,197,94,.22); border-color: rgba(34,197,94,.45); }
-    .news-service.heygen{ background: rgba(14,165,233,.22); border-color: rgba(14,165,233,.45); }
-    .news-service.lilysai{ background: rgba(20,184,166,.24); border-color: rgba(20,184,166,.45); }
-    .news-service.skywork{ background: rgba(132,204,22,.24); border-color: rgba(132,204,22,.45); }
-    .news-service.manus{ background: rgba(251,113,133,.22); border-color: rgba(251,113,133,.45); }
-    .news-service.canva{ background: rgba(6,182,212,.22); border-color: rgba(6,182,212,.45); }
-    .news-service.notebooklm{ background: rgba(99,102,241,.22); border-color: rgba(99,102,241,.45); }
-    .news-service.deepseek{ background: rgba(37,99,235,.24); border-color: rgba(37,99,235,.45); }
-    .news-service.midjourney{ background: rgba(168,85,247,.22); border-color: rgba(168,85,247,.45); }
-    .news-service.replit{ background: rgba(249,115,22,.22); border-color: rgba(249,115,22,.45); }
-    .news-service.gamma{ background: rgba(217,70,239,.22); border-color: rgba(217,70,239,.45); }
+    .news-service{ display:inline-flex; align-items:center; font-size:11px; font-weight:900; padding:5px 9px; border-radius:999px; border:1px solid var(--news-badge-border, rgba(255,255,255,.16)); background: var(--news-badge-bg, rgba(148,163,184,.20)); color: var(--news-badge-fg, var(--news-badge-text)); white-space:nowrap; }
     .news-service-title{ min-width:0; font-size:13px; font-weight:800; line-height:1.3; }
     .news-title{ margin:0; }
     .news-date{ color: var(--muted); font-size:11px; white-space:nowrap; margin-top:2px; }
@@ -812,6 +786,7 @@
     let SERVICES = [];
     let NOTICE = { noticeId: "", items: [] };
     let NEWS = [];
+    let NEWS_SERVICE_CATALOG = [];
 
     function noteText(note){
       if (Array.isArray(note)) return note.join("\n");
@@ -825,6 +800,7 @@
       SERVICES = data.services || [];
       NOTICE = data.notice || { noticeId: "", items: [] };
       NEWS = Array.isArray(data.news) ? data.news : [];
+      NEWS_SERVICE_CATALOG = Array.isArray(data.newsServiceCatalog) ? data.newsServiceCatalog : [];
     }
 
     // 공지 숨김 로컬스토리지 키
@@ -1112,9 +1088,34 @@
       return String(v || "").trim();
     }
 
-    function serviceKey(service){
-      const k = normalizeServiceName(service).toLowerCase();
-      return SERVICE_COLOR_MAP[k] || "other";
+    function normalizeHexColor(v, fallback = "#94a3b8"){
+      const raw = String(v || "").trim().replace(/^#/, "");
+      if(/^[0-9a-fA-F]{6}$/.test(raw)) return `#${raw.toLowerCase()}`;
+      if(/^[0-9a-fA-F]{3}$/.test(raw)) return `#${raw.split("").map((c) => c + c).join("").toLowerCase()}`;
+      return fallback;
+    }
+
+    function hexToRgba(hex, alpha){
+      const h = normalizeHexColor(hex).slice(1);
+      const r = parseInt(h.slice(0,2), 16);
+      const g = parseInt(h.slice(2,4), 16);
+      const b = parseInt(h.slice(4,6), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    function badgeTextColor(hex){
+      const h = normalizeHexColor(hex).slice(1);
+      const r = parseInt(h.slice(0,2), 16);
+      const g = parseInt(h.slice(2,4), 16);
+      const b = parseInt(h.slice(4,6), 16);
+      const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+      return yiq >= 150 ? "#0b1220" : "#f8fafc";
+    }
+
+    function serviceColor(service){
+      const key = normalizeServiceName(service).toLowerCase();
+      const item = (NEWS_SERVICE_CATALOG || []).find((it) => normalizeServiceName(it?.name).toLowerCase() === key);
+      return item?.color ? normalizeHexColor(item.color) : "";
     }
 
     function splitLegacyTitle(title){
@@ -1131,7 +1132,7 @@
         const service = explicitService || legacy.service;
         return {
           service,
-          serviceKey: serviceKey(service),
+          serviceColor: serviceColor(service),
           title: legacy.title || String(it?.title || "").trim(),
           sub: String(it?.sub || "").trim(),
           date: String(it?.date || "").trim(),
@@ -1164,9 +1165,14 @@
         row.className = "news-row";
 
         const svc = document.createElement("span");
-        const svcKey = it.serviceKey || "other";
-        svc.className = `news-service ${svcKey}`;
+
+        svc.className = "news-service";
         svc.textContent = it.service || "기타";
+        if(it.serviceColor){
+          svc.style.setProperty("--news-badge-bg", hexToRgba(it.serviceColor, .24));
+          svc.style.setProperty("--news-badge-border", hexToRgba(it.serviceColor, .45));
+          svc.style.setProperty("--news-badge-fg", badgeTextColor(it.serviceColor));
+        }
 
         const titleWrap = document.createElement("div");
         titleWrap.className = "news-service-title";

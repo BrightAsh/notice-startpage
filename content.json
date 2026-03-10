@@ -174,5 +174,47 @@
       "file": "2026-02-06-perplexity-deep-research-model-council-업데이트.html",
       "service": "Perplexity"
     }
+  ],
+  "newsServiceCatalog": [
+    {
+      "name": "ChatGPT",
+      "color": "#10b981"
+    },
+    {
+      "name": "Gemini",
+      "color": "#60a5fa"
+    },
+    {
+      "name": "Claude",
+      "color": "#f59e0b"
+    },
+    {
+      "name": "Perplexity",
+      "color": "#38bdf8"
+    },
+    {
+      "name": "Copilot",
+      "color": "#3b82f6"
+    },
+    {
+      "name": "Notion AI",
+      "color": "#6b7280"
+    },
+    {
+      "name": "Cursor",
+      "color": "#06b6d4"
+    },
+    {
+      "name": "Canva AI",
+      "color": "#22d3ee"
+    },
+    {
+      "name": "ElevenLabs",
+      "color": "#ec4899"
+    },
+    {
+      "name": "기타",
+      "color": "#94a3b8"
+    }
   ]
 }

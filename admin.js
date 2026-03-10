@@ -238,6 +238,61 @@ function ensureNewsItemUids(items) {
   return items;
 }
 
+
+const DEFAULT_NEWS_SERVICE_CATALOG = [
+  { name: "ChatGPT", color: "#10b981" },
+  { name: "Gemini", color: "#60a5fa" },
+  { name: "Claude", color: "#f59e0b" },
+  { name: "Perplexity", color: "#38bdf8" },
+  { name: "Copilot", color: "#3b82f6" },
+  { name: "Notion AI", color: "#6b7280" },
+  { name: "Cursor", color: "#06b6d4" },
+  { name: "Canva AI", color: "#22d3ee" },
+  { name: "ElevenLabs", color: "#ec4899" },
+  { name: "기타", color: "#94a3b8" },
+];
+
+function normalizeHexColor(v, fallback = "#94a3b8") {
+  const raw = norm(v).replace(/^#/, "");
+  if (/^[0-9a-fA-F]{6}$/.test(raw)) return `#${raw.toLowerCase()}`;
+  if (/^[0-9a-fA-F]{3}$/.test(raw)) return `#${raw.split("").map((c) => c + c).join("").toLowerCase()}`;
+  return fallback;
+}
+
+function ensureNewsServiceCatalog(catalog, newsItems = []) {
+  const out = [];
+  const seen = new Set();
+  const pushOne = (name, color = "#94a3b8") => {
+    const n = norm(name);
+    if (!n) return;
+    const key = n.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ name: n, color: normalizeHexColor(color) });
+  };
+
+  (catalog || []).forEach((it) => pushOne(it?.name, it?.color));
+  DEFAULT_NEWS_SERVICE_CATALOG.forEach((it) => pushOne(it.name, it.color));
+  (newsItems || []).forEach((it) => pushOne(it?.service, "#94a3b8"));
+  return out;
+}
+
+function buildNewsServiceOptions(selected = "") {
+  const cur = norm(selected);
+  const list = ensureNewsServiceCatalog(loadedData?.newsServiceCatalog, loadedData?.news || []);
+  const items = [...list];
+  if (cur && !items.some((it) => norm(it.name).toLowerCase() === cur.toLowerCase())) {
+    items.unshift({ name: cur, color: "#94a3b8" });
+  }
+  const opts = ['<option value="">(선택 안함)</option>'];
+  items.forEach((it) => {
+    const n = it.name;
+    const sel = cur && n.toLowerCase() === cur.toLowerCase() ? " selected" : "";
+    opts.push(`<option value="${escapeHtml(n)}"${sel}>${escapeHtml(n)}</option>`);
+  });
+  return opts.join("");
+}
+
 // ===== GitHub REST =====
 function ghRestHeaders(token) {
   return {
@@ -355,6 +410,7 @@ let originalSvcByUid = new Map();
 let originalNoticeByUid = new Map();
 let originalNoticeId = "";
 let originalNewsByUid = new Map();
+let originalNewsServiceCatalogJson = "[]";
 
 // baseline(되돌리기용)
 let baselineData = null;
@@ -532,7 +588,8 @@ function newsCardTemplate(it, idx) {
         </div>
         <div>
           <label>service</label>
-          <input type="text" data-k="service" value="${escapeHtml(it.service || "")}" placeholder="예: ChatGPT" />
+          <select data-k="service">${buildNewsServiceOptions(it.service || "")}</select>
+          <div class="small" style="margin-top:6px;">목록에 없으면 우측 상단 <b>서비스/색상 편집</b>에서 추가하세요.</div>
         </div>
       </div>
 
@@ -578,6 +635,7 @@ function renderAll() {
   ntList.innerHTML = "";
   (loadedData.notice?.items || []).forEach((it, i) => ntList.appendChild(noticeCardTemplate(it, i)));
 
+  loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
   loadedData.news = sortNewsLatestFirst(loadedData.news || []);
   const newsList = requireEl("newsList");
   newsList.innerHTML = "";
@@ -633,7 +691,7 @@ function snapshotFromFormWithUids() {
     });
   });
 
-  return { services, notice: { noticeId, items }, news };
+  return { services, notice: { noticeId, items }, news, newsServiceCatalog: ensureNewsServiceCatalog(loadedData?.newsServiceCatalog, news) };
 }
 
 function stripInternalFields(dataWithUids) {
@@ -658,6 +716,7 @@ function stripInternalFields(dataWithUids) {
       date: it.date || "",
       file: normalizeNewsFileName("", it.date, it.title, true),
     })),
+    newsServiceCatalog: ensureNewsServiceCatalog(dataWithUids.newsServiceCatalog, dataWithUids.news || []),
   };
 }
 
@@ -678,8 +737,9 @@ async function loadContentJson(token) {
   const notice = parsed.notice || { noticeId: "", items: [] };
   notice.items = ensureNoticeItemUids(Array.isArray(notice.items) ? notice.items : []);
   const news = ensureNewsItemUids(Array.isArray(parsed.news) ? parsed.news : []);
+  const newsServiceCatalog = ensureNewsServiceCatalog(Array.isArray(parsed.newsServiceCatalog) ? parsed.newsServiceCatalog : [], news);
 
-  loadedData = { services, notice, news };
+  loadedData = { services, notice, news, newsServiceCatalog };
 
   // baseline 저장(불러오기 직후)
   baselineData = deepClone(loadedData);
@@ -711,6 +771,8 @@ async function loadContentJson(token) {
       file: normalizeNewsFileName("", it.date, it.title, true),
     });
   });
+
+  originalNewsServiceCatalogJson = JSON.stringify(ensureNewsServiceCatalog(newsServiceCatalog, news));
 
   stagedPdfOps.clear();
   stagedNewsFileOps.clear();
@@ -1338,6 +1400,9 @@ function updatePendingSummary() {
     if (!isNewsChanged(orig, cur)) newsMod += 1;
   }
   
+  const currentCatalogJson = JSON.stringify(ensureNewsServiceCatalog(loadedData?.newsServiceCatalog, snap.news || []));
+  if (currentCatalogJson !== originalNewsServiceCatalogJson) newsMod += 1;
+
   const newsTotal = newsAdd + newsMod + newsDel;
 
   setNum("p_news_total", newsTotal);
@@ -1354,6 +1419,70 @@ function updatePendingSummary() {
   }
 
   setResetButtonState((pdfTotal + svcTotal + ntTotal + newsTotal) === 0);
+}
+
+
+function syncNewsServiceCatalogFromForm() {
+  if (!loadedData) return;
+  const snap = snapshotFromFormWithUids();
+  loadedData.services = ensureServiceUids(snap.services || []);
+  loadedData.notice = { ...(snap.notice || { noticeId: "", items: [] }), items: ensureNoticeItemUids((snap.notice?.items) || []) };
+  loadedData.news = ensureNewsItemUids(snap.news || []);
+  loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
+}
+
+function refreshAllNewsServiceSelects() {
+  document.querySelectorAll('#newsList .card select[data-k="service"]').forEach((sel) => {
+    const current = norm(sel.value);
+    sel.innerHTML = buildNewsServiceOptions(current);
+    if (current) sel.value = current;
+  });
+}
+
+function serviceBadgeTextColor(hex) {
+  const c = normalizeHexColor(hex, "#94a3b8").slice(1);
+  const r = parseInt(c.slice(0, 2), 16);
+  const g = parseInt(c.slice(2, 4), 16);
+  const b = parseInt(c.slice(4, 6), 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 150 ? "#0b1220" : "#f8fafc";
+}
+
+function renderNewsServiceCatalogModal() {
+  const box = document.getElementById('newsSvcList');
+  if (!box || !loadedData) return;
+  const list = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
+  loadedData.newsServiceCatalog = list;
+
+  box.innerHTML = "";
+  list.forEach((it, idx) => {
+    const row = document.createElement('div');
+    row.className = 'news-svc-row';
+    const color = normalizeHexColor(it.color);
+    const textColor = serviceBadgeTextColor(color);
+    row.innerHTML = `
+      <input type="text" data-k="name" data-idx="${idx}" value="${escapeHtml(it.name || "")}" placeholder="서비스명" />
+      <input type="text" data-k="colorText" data-idx="${idx}" value="${escapeHtml(color)}" placeholder="#RRGGBB" />
+      <input type="color" data-k="colorPicker" data-idx="${idx}" value="${escapeHtml(color)}" title="색상 선택" />
+      <div class="row" style="justify-content:flex-end;gap:6px;">
+        <span class="news-svc-badge" style="background:${escapeHtml(color)};color:${escapeHtml(textColor)};border-color:${escapeHtml(color)};">${escapeHtml(it.name || "미지정")}</span>
+        <button type="button" class="btn danger" data-act="delNewsSvc" data-idx="${idx}">삭제</button>
+      </div>
+    `;
+    box.appendChild(row);
+  });
+}
+
+function setNewsSvcModal(open) {
+  const modal = document.getElementById('newsSvcModal');
+  const backdrop = document.getElementById('newsSvcModalBackdrop');
+  if (!modal || !backdrop) return;
+  const on = !!open;
+  modal.classList.toggle('show', on);
+  backdrop.classList.toggle('show', on);
+  modal.setAttribute('aria-hidden', on ? 'false' : 'true');
+  backdrop.setAttribute('aria-hidden', on ? 'false' : 'true');
+  if (on) renderNewsServiceCatalogModal();
 }
 
 // ===== init =====
@@ -1376,6 +1505,13 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("btnAddNews");
   requireEl("btnNewsExpandAll");
   requireEl("btnNewsCollapseAll");
+  requireEl("btnManageNewsServices");
+  requireEl("btnAddNewsSvc");
+  requireEl("btnApplyNewsSvc");
+  requireEl("btnCloseNewsSvcModal");
+  requireEl("newsSvcList");
+  requireEl("newsSvcModal");
+  requireEl("newsSvcModalBackdrop");
   requireEl("btnSave");
 
   wirePromptPdfControls();
@@ -1410,8 +1546,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $("btnAddSvc").addEventListener("click", () => {
-    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [] };
+    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [], newsServiceCatalog: ensureNewsServiceCatalog([]) };
     if (!requireEl("editor").classList.contains("hidden")) {
+      syncNewsServiceCatalogFromForm();
       const snap = snapshotFromFormWithUids();
       loadedData.services = ensureServiceUids(snap.services);
       loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
@@ -1422,7 +1559,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $("btnAddNotice").addEventListener("click", () => {
-    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [] };
+    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [], newsServiceCatalog: ensureNewsServiceCatalog([]) };
     const snap = snapshotFromFormWithUids();
     loadedData.services = ensureServiceUids(snap.services);
     loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
@@ -1433,7 +1570,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $("btnAddNews").addEventListener("click", () => {
-    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [] };
+    if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [], newsServiceCatalog: ensureNewsServiceCatalog([]) };
     const snap = snapshotFromFormWithUids();
     loadedData.services = ensureServiceUids(snap.services);
     loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
@@ -1447,6 +1584,67 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   $("btnNewsCollapseAll").addEventListener("click", () => {
     document.querySelectorAll("#newsList details.card").forEach((el) => { el.open = false; });
+  });
+
+  $("btnManageNewsServices").addEventListener("click", () => {
+    if (!loadedData) return;
+    syncNewsServiceCatalogFromForm();
+    setNewsSvcModal(true);
+  });
+
+  $("btnCloseNewsSvcModal").addEventListener("click", () => setNewsSvcModal(false));
+  $("newsSvcModalBackdrop").addEventListener("click", () => setNewsSvcModal(false));
+
+  $("btnAddNewsSvc").addEventListener("click", () => {
+    if (!loadedData) return;
+    loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
+    loadedData.newsServiceCatalog.push({ name: "", color: "#94a3b8" });
+    renderNewsServiceCatalogModal();
+  });
+
+  $("newsSvcList").addEventListener("input", (e) => {
+    if (!loadedData) return;
+    const idx = Number(e.target?.dataset?.idx || -1);
+    if (!Number.isInteger(idx) || idx < 0) return;
+    const list = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
+    const cur = list[idx];
+    if (!cur) return;
+
+    if (e.target.matches('input[data-k="name"]')) {
+      cur.name = e.target.value;
+    }
+    if (e.target.matches('input[data-k="colorText"]')) {
+      const color = normalizeHexColor(e.target.value, cur.color || "#94a3b8");
+      cur.color = color;
+      const picker = e.target.closest('.news-svc-row')?.querySelector('input[data-k="colorPicker"]');
+      if (picker) picker.value = color;
+    }
+    if (e.target.matches('input[data-k="colorPicker"]')) {
+      cur.color = normalizeHexColor(e.target.value, cur.color || "#94a3b8");
+      const txt = e.target.closest('.news-svc-row')?.querySelector('input[data-k="colorText"]');
+      if (txt) txt.value = cur.color;
+    }
+    loadedData.newsServiceCatalog = list;
+    renderNewsServiceCatalogModal();
+  });
+
+  $("newsSvcList").addEventListener("click", (e) => {
+    const btn = e.target.closest('button[data-act="delNewsSvc"]');
+    if (!btn || !loadedData) return;
+    const idx = Number(btn.dataset.idx || -1);
+    if (!Number.isInteger(idx) || idx < 0) return;
+    loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
+    loadedData.newsServiceCatalog.splice(idx, 1);
+    renderNewsServiceCatalogModal();
+  });
+
+  $("btnApplyNewsSvc").addEventListener("click", () => {
+    if (!loadedData) return;
+    loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
+    refreshAllNewsServiceSelects();
+    updatePendingSummary();
+    setNewsSvcModal(false);
+    setMsg("뉴스 서비스/색상 목록을 적용했습니다.", "ok");
   });
 
   // ✅ 서비스 리스트 click
@@ -1694,14 +1892,15 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePendingSummary();
     const card = e.target.closest(".card");
     if (!card) return;
-    if (e.target.matches('input[data-k="title"],input[data-k="date"],input[data-k="service"]')) {
+    if (e.target.matches('input[data-k="title"],input[data-k="date"],select[data-k="service"]')) {
       const cards = Array.from(requireEl("newsList").querySelectorAll(".card"));
       const idx = cards.indexOf(card);
       const sumTitle = card.querySelector(".sum-title");
       if (sumTitle) {
         const titleNow = card.querySelector('input[data-k="title"]')?.value || "";
         const dateNow = card.querySelector('input[data-k="date"]')?.value || "";
-        const serviceNow = card.querySelector('input[data-k="service"]')?.value || "";
+        const serviceNow = card.querySelector('[data-k="service"]')?.value || "";
+
         sumTitle.textContent = newsSummaryText(idx, { title: titleNow, date: dateNow, service: serviceNow });
       }
     }
