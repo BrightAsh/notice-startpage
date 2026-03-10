@@ -252,6 +252,17 @@ function ghRestContentUrl(path) {
 }
 const REST_GET_CONTENT = (path) => `${ghRestContentUrl(path)}?ref=${encodeURIComponent(BRANCH)}`;
 
+async function getRepoFileB64(token, path) {
+  const res = await fetch(REST_GET_CONTENT(path), { headers: ghRestHeaders(token) });
+  if (res.status === 404) return "";
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    throw new Error(`파일 조회 실패(${path}): ${res.status} ${res.statusText}\n${t}`);
+  }
+  const json = await res.json();
+  return String(json?.content || "").replace(/\n/g, "");
+}
+
 // ===== GitHub GraphQL =====
 async function ghGraphQL(token, query, variables) {
   const res = await fetch("https://api.github.com/graphql", {
@@ -363,9 +374,10 @@ function noticeSummaryText(idx, title) {
   const t = norm(title);
   return t ? `공지 #${idx + 1} · ${t}` : `공지 #${idx + 1}`;
 }
-function newsSummaryText(idx, title) {
-  const t = norm(title);
-  return t ? `뉴스 #${idx + 1} · ${t}` : `뉴스 #${idx + 1}`;
+function newsSummaryText(idx, item) {
+  const t = norm(item?.title);
+  const d = norm(item?.date) || "날짜 미입력";
+  return t ? `뉴스 #${idx + 1} · ${d} · ${t}` : `뉴스 #${idx + 1} · ${d}`;
 }
 
 function serviceCardTemplate(s, idx) {
@@ -469,16 +481,6 @@ function noticeCardTemplate(it, idx) {
         </div>
       </div>
 
-      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <div style="flex:1;min-width:260px;font-size:12px;color:var(--muted);">
-          뉴스 HTML 파일: <span data-k="newsBodyState">확인중…</span>
-        </div>
-        <input type="file" accept=".html,text/html" data-k="newsBodyInput" style="display:none" />
-        <button class="btn" data-act="attachNewsBody">파일 첨부</button>
-        <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
-      </div>
-      <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리됩니다. 파일명은 기본적으로 <span class="mono">날짜-제목.html</span> 규칙을 사용하며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
-
     </div>
   `;
   return card;
@@ -493,7 +495,7 @@ function newsCardTemplate(it, idx) {
 
   card.innerHTML = `
     <summary class="card-summary">
-      <span class="sum-title">${escapeHtml(newsSummaryText(idx, it.title))}</span>
+      <span class="sum-title">${escapeHtml(newsSummaryText(idx, it))}</span>
       <span class="sum-right">
         <span class="sum-actions">
           <button type="button" class="btn sum-btn" data-act="attachNewsBody">파일 첨부</button>
@@ -517,18 +519,14 @@ function newsCardTemplate(it, idx) {
           <input type="text" data-k="date" value="${escapeHtml(it.date || "")}" placeholder="예: 2026-02-01" />
         </div>
         <div>
-          <label>file (News 폴더 내 HTML)</label>
-          <input type="text" data-k="file" value="${escapeHtml(it.file || "")}" placeholder="예: 2026-02-01.html" />
+          <label>file (자동 생성/읽기 전용)</label>
+          <input type="text" data-k="fileAuto" value="${escapeHtml(normalizeNewsFileName(it.file, it.date, it.title, true))}" readonly />
         </div>
       </div>
       <div class="grid2">
         <div>
           <label>title</label>
           <input type="text" data-k="title" value="${escapeHtml(it.title || "")}" />
-        </div>
-        <div>
-          <label>sub</label>
-          <input type="text" data-k="sub" value="${escapeHtml(it.sub || "")}" />
         </div>
       </div>
 
@@ -540,10 +538,25 @@ function newsCardTemplate(it, idx) {
         <button class="btn" data-act="attachNewsBody">파일 첨부</button>
         <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
       </div>
-      <div class="small" style="margin-top:8px;">서비스 PDF와 동일하게 첨부/교체/삭제로 관리되며 저장 시 <span class="mono">News/{file}</span>에 반영됩니다.</div>
+      <div class="small" style="margin-top:8px;">파일명은 <span class="mono">date-title.html</span> 규칙으로 자동 생성됩니다. title/date가 바뀌면 파일명도 자동으로 함께 변경됩니다.</div>
     </div>
   `;
   return card;
+}
+
+function toDateSortValue(v) {
+  const s = norm(v);
+  if (!s) return -Infinity;
+  const t = Date.parse(s);
+  return Number.isFinite(t) ? t : -Infinity;
+}
+
+function sortNewsLatestFirst(items) {
+  return [...(items || [])].sort((a, b) => {
+    const byDate = toDateSortValue(b?.date) - toDateSortValue(a?.date);
+    if (byDate) return byDate;
+    return norm(b?.title).localeCompare(norm(a?.title), "ko");
+  });
 }
 
 // ===== 렌더 =====
@@ -559,6 +572,7 @@ function renderAll() {
   ntList.innerHTML = "";
   (loadedData.notice?.items || []).forEach((it, i) => ntList.appendChild(noticeCardTemplate(it, i)));
 
+  loadedData.news = sortNewsLatestFirst(loadedData.news || []);
   const newsList = requireEl("newsList");
   newsList.innerHTML = "";
   (loadedData.news || []).forEach((it, i) => newsList.appendChild(newsCardTemplate(it, i)));
@@ -607,9 +621,8 @@ function snapshotFromFormWithUids() {
     news.push({
       _uid: uid,
       title: get("title")?.value?.trim() || "",
-      sub: get("sub")?.value?.trim() || "",
       date: get("date")?.value?.trim() || "",
-      file: get("file")?.value?.trim() || "",
+      file: normalizeNewsFileName("", get("date")?.value?.trim() || "", get("title")?.value?.trim() || "", true),
     });
   });
 
@@ -634,9 +647,8 @@ function stripInternalFields(dataWithUids) {
     },
     news: (dataWithUids.news || []).map((it) => ({
       title: it.title || "",
-      sub: it.sub || "",
       date: it.date || "",
-      file: it.file || "",
+      file: normalizeNewsFileName("", it.date, it.title, true),
     })),
   };
 }
@@ -686,9 +698,8 @@ async function loadContentJson(token) {
   (news || []).forEach((it) => {
     originalNewsByUid.set(String(it._uid), {
       title: it.title || "",
-      sub: it.sub || "",
       date: it.date || "",
-      file: it.file || "",
+      file: normalizeNewsFileName("", it.date, it.title, true),
     });
   });
 
@@ -844,9 +855,8 @@ function resetEditsToBaseline() {
   (loadedData.news || []).forEach((it) => {
     originalNewsByUid.set(String(it._uid), {
       title: it.title || "",
-      sub: it.sub || "",
       date: it.date || "",
-      file: it.file || "",
+      file: normalizeNewsFileName("", it.date, it.title, true),
     });
   });
 
@@ -971,8 +981,7 @@ function refreshAllNewsBodyUI() {
 }
 
 function getNewsBodyUiState(uid, dateText, titleText, fileText) {
-
-  const fileName = norm(fileText) || suggestUniqueNewsFileName(dateText, titleText, uid);
+  const fileName = norm(fileText) || normalizeNewsFileName("", dateText, titleText, true);
   const repoHas = !!fileName && newsFilesIndex.has(fileName);
   const staged = stagedNewsFileOps.get(uid) || null;
   return { fileName, repoHas, staged };
@@ -983,7 +992,7 @@ function refreshNewsBodyUI(card) {
   const tokenOk = !!norm($("ghToken")?.value);
   const date = card.querySelector('input[data-k="date"]')?.value || "";
   const title = card.querySelector('input[data-k="title"]')?.value || "";
-  const fileInputText = card.querySelector('input[data-k="file"]');
+  const fileInputText = card.querySelector('input[data-k="fileAuto"]');
   const fileText = fileInputText?.value || "";
 
   const stateEl = card.querySelector('[data-k="newsBodyState"]');
@@ -1001,7 +1010,7 @@ function refreshNewsBodyUI(card) {
   if (fileInputText && fileInputText.value !== fileName) fileInputText.value = fileName;
 
   if (!fileName) {
-    stateEl.textContent = "date/title 또는 file을 입력하면 파일을 첨부할 수 있어요.";
+    stateEl.textContent = "date/title을 입력하면 파일명이 자동 생성됩니다.";
 
     bodyAttach.textContent = "파일 첨부";
     bodyAttach.disabled = true;
@@ -1072,10 +1081,12 @@ function refreshNewsBodyUI(card) {
     bodyDel.style.display = "none";
     quickDel.style.display = "none";
   }
+
+  if (fileInputText) fileInputText.value = fileName;
 }
 
 // ===== 커밋 파일 변경 =====
-function buildFileChangesForCommit(dataWithUids) {
+async function buildFileChangesForCommit(token, dataWithUids) {
   const cleanData = stripInternalFields(dataWithUids);
   const contentJsonB64 = utf8ToB64(JSON.stringify(cleanData, null, 2));
 
@@ -1151,6 +1162,29 @@ function buildFileChangesForCommit(dataWithUids) {
   }
 
   for (const [uid, orig] of originalNewsByUid.entries()) {
+    const cur = curNewsByUid.get(String(uid));
+    if (!cur) continue;
+
+    const oldFile = normalizeNewsFileName(orig?.file, orig?.date, orig?.title, false);
+    const newFile = normalizeNewsFileName(cur?.file, cur?.date, cur?.title, false);
+    if (!oldFile || !newFile || oldFile === newFile) continue;
+
+    const oldPath = `${NEWS_DIR}/${oldFile}`;
+    const newPath = `${NEWS_DIR}/${newFile}`;
+    const hasStagedFileChange = stagedNewsFileOps.has(String(uid));
+
+    if (!hasStagedFileChange && newsFilesIndex.has(oldFile)) {
+      const oldB64 = await getRepoFileB64(token, oldPath);
+      if (oldB64) {
+        additions.push({ path: newPath, contents: oldB64 });
+        additionPaths.add(newPath);
+      }
+    }
+
+    if (newsFilesIndex.has(oldFile)) deletionPaths.add(oldPath);
+  }
+
+  for (const [uid, orig] of originalNewsByUid.entries()) {
     if (curNewsByUid.has(String(uid))) continue;
 
     const oldFile = normalizeNewsFileName(orig?.file, orig?.date, orig?.title, false);
@@ -1188,7 +1222,6 @@ function isNewsChanged(orig, cur) {
   const a = (v) => norm(v);
   return (
     a(orig.title) !== a(cur.title) ||
-    a(orig.sub) !== a(cur.sub) ||
     a(orig.date) !== a(cur.date) ||
     a(orig.file) !== a(cur.file)
   );
@@ -1331,6 +1364,8 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("btnAddSvc");
   requireEl("btnAddNotice");
   requireEl("btnAddNews");
+  requireEl("btnNewsExpandAll");
+  requireEl("btnNewsCollapseAll");
   requireEl("btnSave");
 
   wirePromptPdfControls();
@@ -1393,8 +1428,15 @@ document.addEventListener("DOMContentLoaded", () => {
     loadedData.services = ensureServiceUids(snap.services);
     loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
     loadedData.news = ensureNewsItemUids(snap.news || []);
-    loadedData.news.push({ _uid: makeUid(), title: "", sub: "", date: "", file: "" });
+    loadedData.news.push({ _uid: makeUid(), title: "", date: "", file: "" });
     renderAll();
+  });
+
+  $("btnNewsExpandAll").addEventListener("click", () => {
+    document.querySelectorAll("#newsList details.card").forEach((el) => { el.open = true; });
+  });
+  $("btnNewsCollapseAll").addEventListener("click", () => {
+    document.querySelectorAll("#newsList details.card").forEach((el) => { el.open = false; });
   });
 
   // ✅ 서비스 리스트 click
@@ -1609,7 +1651,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!token) return setMsg("토큰을 입력하세요.", "err");
       const date = card.querySelector('input[data-k="date"]')?.value || "";
       const title = card.querySelector('input[data-k="title"]')?.value || "";
-      const fileVal = card.querySelector('input[data-k="file"]')?.value || "";
+      const fileVal = card.querySelector('input[data-k="fileAuto"]')?.value || "";
       const fileName = normalizeNewsFileName(fileVal, date, title);
 
       const cur = stagedNewsFileOps.get(uid);
@@ -1642,13 +1684,17 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePendingSummary();
     const card = e.target.closest(".card");
     if (!card) return;
-    if (e.target.matches('input[data-k="title"]')) {
+    if (e.target.matches('input[data-k="title"],input[data-k="date"]')) {
       const cards = Array.from(requireEl("newsList").querySelectorAll(".card"));
       const idx = cards.indexOf(card);
       const sumTitle = card.querySelector(".sum-title");
-      if (sumTitle) sumTitle.textContent = newsSummaryText(idx, e.target.value);
+      if (sumTitle) {
+        const titleNow = card.querySelector('input[data-k="title"]')?.value || "";
+        const dateNow = card.querySelector('input[data-k="date"]')?.value || "";
+        sumTitle.textContent = newsSummaryText(idx, { title: titleNow, date: dateNow });
+      }
     }
-    if (e.target.matches('input[data-k="title"],input[data-k="date"],input[data-k="file"]')) {
+    if (e.target.matches('input[data-k="title"],input[data-k="date"]')) {
       refreshNewsBodyUI(card);
     }
   });
@@ -1669,8 +1715,8 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const date = card.querySelector('input[data-k="date"]')?.value || "";
       const title = card.querySelector('input[data-k="title"]')?.value || "";
-      const fileInputText = card.querySelector('input[data-k="file"]');
-      const fileName = suggestUniqueNewsFileName(date, title, uid);
+      const fileInputText = card.querySelector('input[data-k="fileAuto"]');
+      const fileName = normalizeNewsFileName("", date, title, true);
 
       if (fileInputText) fileInputText.value = fileName;
 
@@ -1705,7 +1751,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      const { additions, deletions } = buildFileChangesForCommit(snap);
+      const { additions, deletions } = await buildFileChangesForCommit(token, snap);
       const headline = norm($("commitMsg")?.value) || "Update via admin";
       setSaveMsg("저장 중… (한 번의 커밋으로 반영)", "");
 

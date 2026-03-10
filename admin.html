@@ -429,6 +429,10 @@
       cursor:not-allowed;
       box-shadow:none;
     }
+
+    .news-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:8px 0 10px;}
+    .news-toolbar .small{margin:0;}
+    .news-list-wrap{max-height:68vh;overflow:auto;padding-right:4px;border-radius:12px;}
   </style>
 </head>
 
@@ -529,8 +533,17 @@
         <div class="divider"></div>
 
         <h3 style="margin:0 0 6px;font-size:14px;">AI Update News</h3>
-        <div class="small">News 폴더에 있는 HTML 파일명(file)과 표시용 제목/설명을 함께 관리합니다.</div>
-        <div id="newsList"></div>
+        <div class="small">뉴스 파일명은 입력하지 않습니다. <b>date + title</b>로 자동 생성/관리됩니다.</div>
+        <div class="news-toolbar">
+          <div class="small" id="newsOrderInfo">정렬: 최신순(날짜 내림차순)</div>
+          <div class="row" style="gap:6px;">
+            <button class="btn" id="btnNewsExpandAll" type="button">뉴스 전체 펼치기</button>
+            <button class="btn" id="btnNewsCollapseAll" type="button">뉴스 전체 접기</button>
+          </div>
+        </div>
+        <div class="news-list-wrap">
+          <div id="newsList"></div>
+        </div>
         <button class="btn" id="btnAddNews" style="margin-top:10px;">+ 뉴스 추가</button>
 
         <div class="divider"></div>
