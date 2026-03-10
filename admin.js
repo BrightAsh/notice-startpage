@@ -1900,6 +1900,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const titleNow = card.querySelector('input[data-k="title"]')?.value || "";
         const dateNow = card.querySelector('input[data-k="date"]')?.value || "";
         const serviceNow = card.querySelector('[data-k="service"]')?.value || "";
+
         sumTitle.textContent = newsSummaryText(idx, { title: titleNow, date: dateNow, service: serviceNow });
       }
     }
