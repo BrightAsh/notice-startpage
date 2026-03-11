@@ -40,9 +40,9 @@
 
 ## Repository Structure (요약)
 
-- `index.html` : Notice Page
+- `index.html` + `static/css/index.css` + `static/js/index.js` : Notice Page(마크업/스타일/동작 분리)
 - `content.json` : 서비스 목록/공지 데이터
-- `admin.html`, `admin.js` : 관리자 페이지(편집/업로드/저장)
+- `admin.html` + `static/css/admin.css` + `static/js/admin.js` : 관리자 페이지(마크업/스타일/동작 분리)
 - `files/*.pdf` : 서비스별 이용 가이드 PDF
 - `News/*.html` : AI Update News 상세 페이지
 - `asset/logo.png` : 로고/파비콘
