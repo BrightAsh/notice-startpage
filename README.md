@@ -1,54 +1,63 @@
-# Notice Page (Test)
+# notice-startpage 코드 설명
 
-사내 AI SaaS 구독 리스트 / 공지사항 / AI Update News / 이용 가이드(PDF)를 한 곳에서 확인하는 GitHub Pages 기반 시작페이지
-관리자 페이지에서 `content.json`과 `Files`폴더를 수정·업로드
+이 저장소는 **GitHub Pages 정적 사이트**이며, 사용자 화면과 관리자 화면으로 구성됩니다.
 
-- Test: https://brightash.github.io/notice-startpage/
-- Main: https://knoc-aifieldzone.github.io/Notice-page/
+## 1) 전체 구조
 
----
+- 사용자 페이지: `index.html`
+  - 스타일: `static/css/index.css`
+  - 동작 스크립트: `static/js/index.js`
+- 관리자 페이지: `admin.html`
+  - 스타일: `static/css/admin.css`
+  - 설정: `static/js/admin-config.js`
+  - 동작 스크립트: `static/js/admin.js`
+- 데이터 소스: `content.json`
+- 뉴스 상세 HTML: `News/*.html`
+- 서비스 가이드 PDF: `files/*.pdf`
+- 로고: `asset/logo.png`
 
-## 1) Notice Page (사용자 화면)
+## 2) 사용자 페이지 동작
 
-- **구독 리스트(서비스 카드)** 표시
-- **공지사항** 표시
-- **AI Update News** 표시(날짜 내림차순, 페이지네이션)
-- **이용 가이드(PDF)** 제공(우측 슬라이드 패널)
-  - Prompt Guide (고정)
-  - 서비스별 가이드(PDF) 자동 연결: `./files/{서비스명}.pdf`가 있으면 열기, 없으면 비활성/준비중 처리
+`static/js/index.js`는 로드 시 `content.json`을 읽고 아래를 렌더링합니다.
 
----
+- `services`: 구독 서비스 카드 목록
+- `notice`: 공지 영역
+- `news`: AI Update News 목록/페이지네이션/모달 상세
+- `newsServiceCatalog`: 뉴스 서비스 배지 색상/표기 정보
 
-## 2) Admin Page (관리자 화면)
+추가로 서비스명 기준으로 `files/{서비스명}.pdf` 존재를 확인해 가이드 버튼 상태를 제어합니다.
 
-- 로그인: **GitHub Fine-grained PAT** 사용(Contents: Read/Write)
-- 구독 리스트(services) 추가/삭제/수정
-- 공지사항(notice) 추가/삭제/수정
-- AI Update News(news) 추가/삭제/수정
-- 가이드 PDF 첨부/교체/삭제  
-  - 업로드 파일명과 상관없이 저장 시 `files/{서비스명}.pdf`로 자동 저장
+## 3) 관리자 페이지 동작
 
----
+`static/js/admin.js`는 GitHub API(REST/GraphQL)를 통해 저장소 파일을 직접 수정합니다.
 
-## 3) Guide Book 진행 상황
+- `content.json` 로드/편집/저장
+- 서비스별 PDF 업로드/삭제(`files/*.pdf`)
+- 뉴스 상세 HTML 업로드/삭제(`News/*.html`)
+- 변경사항 요약 후 커밋
 
-- Prompt Guide: 초안 완료
-- 서비스별 가이드: 11개 초안 완료
-- 향후 지속 고도화 예정
+### 관리자 재사용(다른 레포 적용)
 
----
+다른 저장소에서 재사용할 때는 `static/js/admin-config.js`만 수정하면 됩니다.
 
-## Repository Structure (요약)
+- `owner`: GitHub 사용자/조직
+- `repo`: 저장소 이름
+- `branch`: 대상 브랜치
+- `contentPath`, `filesDir`, `newsDir`: 파일 경로 설정
 
-- `index.html` + `static/css/index.css` + `static/js/index.js` : Notice Page(마크업/스타일/동작 분리)
-- `content.json` : 서비스 목록/공지 데이터
-- `admin.html` + `static/css/admin.css` + `static/js/admin.js` + `static/js/admin-config.js` : 관리자 페이지(마크업/스타일/동작 분리 + 레포 설정 분리)
-- `files/*.pdf` : 서비스별 이용 가이드 PDF
-- `News/*.html` : AI Update News 상세 페이지
-- `asset/logo.png` : 로고/파비콘
+## 4) 데이터 스키마 요약 (`content.json`)
 
+- `services[]`
+  - `name`, `domain`, `url`, `note`, `disabled`
+- `notice`
+  - `noticeId`, `items[]`
+- `news[]`
+  - `date`, `title`, `sub`, `service`, `file`
+- `newsServiceCatalog[]`
+  - `name`, `color`
 
-### Admin 재사용 설정
+## 5) 운영 시 주의사항
 
-- 다른 저장소에서 재사용할 때는 `static/js/admin-config.js`의 `owner`, `repo`, `branch`만 바꾸면 됩니다.
-- `contentPath`, `filesDir`, `newsDir`도 필요 시 함께 조정할 수 있습니다.
+- 관리자 저장은 GitHub 토큰 권한(`Contents: Read/Write`)이 필요합니다.
+- `services[].name`을 바꾸면 연결 PDF 경로(`files/{name}.pdf`)도 함께 고려해야 합니다.
+- `news[].file`은 `News/` 하위 상세 HTML 파일과 일치해야 합니다.
