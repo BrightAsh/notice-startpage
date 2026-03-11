@@ -1478,9 +1478,16 @@ function hideAllServiceSuggestionDropdowns() {
   document.querySelectorAll('.svc-dropdown.show').forEach((el) => el.classList.remove('show'));
 }
 
+function refreshSvcPickerState(input) {
+  const picker = input?.closest('.svc-picker');
+  if (!picker) return;
+  picker.classList.toggle('has-value', !!norm(input.value));
+}
+
 function refreshAllNewsServiceInputs() {
   document.querySelectorAll('#newsList .card input[data-k="service"]').forEach((input) => {
     const dropdown = input.closest('.svc-picker')?.querySelector('[data-k="serviceSuggest"]');
+    refreshSvcPickerState(input);
     renderServiceSuggestionDropdown(dropdown, input.value);
   });
 }
@@ -1492,6 +1499,19 @@ function serviceBadgeTextColor(hex) {
   const b = parseInt(c.slice(4, 6), 16);
   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
   return yiq >= 150 ? "#0b1220" : "#f8fafc";
+}
+
+function updateNewsSvcAddPreview() {
+  const name = norm($("newsSvcAddName")?.value || "") || "미리보기";
+  const color = normalizeHexColor($("newsSvcAddColor")?.value || "#94a3b8", "#94a3b8");
+  const preview = $("newsSvcAddPreview");
+  const picker = $("newsSvcAddColorPicker");
+  if (picker && picker.value !== color) picker.value = color;
+  if (!preview) return;
+  preview.textContent = name;
+  preview.style.background = color;
+  preview.style.borderColor = color;
+  preview.style.color = serviceBadgeTextColor(color);
 }
 
 function isDuplicateCatalogColor(list, idx, color) {
@@ -1557,6 +1577,7 @@ function refreshNewsAddServiceSuggest() {
   const input = document.getElementById("newsAddService");
   const suggest = document.getElementById("newsAddServiceSuggest");
   if (!input || !suggest) return;
+  refreshSvcPickerState(input);
   renderServiceSuggestionDropdown(suggest, input.value);
 }
 
@@ -1577,6 +1598,7 @@ function setNewsAddModal(open) {
     if (dateInput) dateInput.value = "";
     if (titleInput) titleInput.value = "";
     if (svcInput) svcInput.value = "";
+    refreshSvcPickerState(svcInput);
     refreshNewsAddServiceSuggest();
     dateInput?.focus();
   }
@@ -1645,6 +1667,8 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("btnCloseNewsSvcAddModal");
   requireEl("btnCancelNewsSvcAdd");
   requireEl("btnApplyNewsSvcAdd");
+  requireEl("newsSvcAddColorPicker");
+  requireEl("newsSvcAddPreview");
   requireEl("btnApplyNewsAdd");
   requireEl("btnCancelNewsAdd");
   requireEl("btnCloseNewsAddModal");
@@ -1739,6 +1763,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $("btnCloseNewsSvcAddModal").addEventListener("click", () => setNewsSvcAddModal(false));
+  $("newsSvcAddName").addEventListener("input", () => updateNewsSvcAddPreview());
+  $("newsSvcAddColor").addEventListener("input", () => updateNewsSvcAddPreview());
+  $("newsSvcAddColorPicker").addEventListener("input", (e) => { $("newsSvcAddColor").value = e.target.value; updateNewsSvcAddPreview(); });
   $("btnCancelNewsSvcAdd").addEventListener("click", () => setNewsSvcAddModal(false));
   $("newsSvcAddModalBackdrop").addEventListener("click", () => setNewsSvcAddModal(false));
   $("btnApplyNewsSvcAdd").addEventListener("click", () => {
@@ -1746,12 +1773,16 @@ document.addEventListener("DOMContentLoaded", () => {
     loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
     const name = norm($("newsSvcAddName")?.value || "");
     if (!name) return setMsg("서비스명을 입력하세요.", "err");
-    const color = normalizeHexColor($("newsSvcAddColor")?.value || "#94a3b8", "#94a3b8");
+    const color = normalizeHexColor($("newsSvcAddColorPicker")?.value || $("newsSvcAddColor")?.value || "#94a3b8", "#94a3b8");
     if (loadedData.newsServiceCatalog.some((it) => norm(it?.name).toLowerCase() === name.toLowerCase())) return setMsg("이미 있는 서비스명입니다.", "err");
     if (loadedData.newsServiceCatalog.some((it) => normalizeHexColor(it?.color, "") === color)) return setMsg("이미 사용 중인 색상입니다.", "err");
     loadedData.newsServiceCatalog.push({ name, color });
     renderNewsServiceCatalogModal();
     setNewsSvcAddModal(false);
+    $("newsSvcAddName").value = "";
+    $("newsSvcAddColor").value = "#94a3b8";
+    $("newsSvcAddColorPicker").value = "#94a3b8";
+    updateNewsSvcAddPreview();
   });
 
   $("btnCloseNewsAddModal").addEventListener("click", () => setNewsAddModal(false));
@@ -1764,6 +1795,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!btn) return;
     const input = document.getElementById("newsAddService");
     if (input) input.value = btn.dataset.v || "";
+    refreshSvcPickerState(input);
     refreshNewsAddServiceSuggest();
     hideAllServiceSuggestionDropdowns();
   });
@@ -1799,6 +1831,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("btnAddNewsSvc").addEventListener("click", () => {
     if (!loadedData) return;
+    $("newsSvcAddName").value = "";
+    $("newsSvcAddColor").value = "#94a3b8";
+    $("newsSvcAddColorPicker").value = "#94a3b8";
+    updateNewsSvcAddPreview();
     setNewsSvcAddModal(true);
   });
 
@@ -2141,6 +2177,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (e.target.matches('input[data-k="service"]')) {
       const dropdown = card.querySelector('[data-k="serviceSuggest"]');
+      refreshSvcPickerState(e.target);
       renderServiceSuggestionDropdown(dropdown, e.target.value);
     }
     if (e.target.matches('input[data-k="title"],input[data-k="date"],input[data-k="service"]')) {
@@ -2174,6 +2211,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!input) return;
     const card = input.closest('.card');
     const dropdown = card?.querySelector('[data-k="serviceSuggest"]');
+    refreshSvcPickerState(input);
     renderServiceSuggestionDropdown(dropdown, input.value);
   });
 
@@ -2184,6 +2222,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const input = card?.querySelector('input[data-k="service"]');
     const dropdown = card?.querySelector('[data-k="serviceSuggest"]');
     if (input) input.value = opt.dataset.v || "";
+    refreshSvcPickerState(input);
     if (dropdown) dropdown.classList.remove('show');
     updatePendingSummary();
   });
