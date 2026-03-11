@@ -624,7 +624,6 @@ function newsCardTemplate(it, idx) {
         <div>
           <label>service</label>
           <div class="svc-picker">
-            <span class="svc-icon" aria-hidden="true">🔍</span>
             <input type="text" class="svc-input" data-k="service" data-role="newsServiceInput" value="${escapeHtml(it.service || "")}" placeholder="Search AI Service" autocomplete="off" />
             <div class="svc-dropdown" data-k="serviceSuggest"></div>
           </div>
@@ -1606,7 +1605,6 @@ function setNewsAddModal(open) {
     dateInput?.focus();
   }
 }
-
 
 function setBasicModal(open, modalId, backdropId) {
   const modal = document.getElementById(modalId);
