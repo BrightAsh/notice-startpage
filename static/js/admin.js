@@ -1,10 +1,13 @@
 // ===== 고정 설정 =====
-const OWNER = "BrightAsh";
-const REPO = "notice-startpage";
-const BRANCH = "main";
-const FILE_PATH = "content.json";
-const FILES_DIR = "files";
-const NEWS_DIR = "News";
+const CONFIG = (window.ADMIN_CONFIG && typeof window.ADMIN_CONFIG === "object")
+  ? window.ADMIN_CONFIG
+  : {};
+const OWNER = String(CONFIG.owner || "BrightAsh");
+const REPO = String(CONFIG.repo || "notice-startpage");
+const BRANCH = String(CONFIG.branch || "main");
+const FILE_PATH = String(CONFIG.contentPath || "content.json");
+const FILES_DIR = String(CONFIG.filesDir || "files");
+const NEWS_DIR = String(CONFIG.newsDir || "News");
 
 // Prompt Guide (고정 PDF: 교체만, 삭제 없음)
 const PROMPT_PDF_NAME = "Prompt.pdf";

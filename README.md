@@ -42,7 +42,13 @@
 
 - `index.html` + `static/css/index.css` + `static/js/index.js` : Notice Page(마크업/스타일/동작 분리)
 - `content.json` : 서비스 목록/공지 데이터
-- `admin.html` + `static/css/admin.css` + `static/js/admin.js` : 관리자 페이지(마크업/스타일/동작 분리)
+- `admin.html` + `static/css/admin.css` + `static/js/admin.js` + `static/js/admin-config.js` : 관리자 페이지(마크업/스타일/동작 분리 + 레포 설정 분리)
 - `files/*.pdf` : 서비스별 이용 가이드 PDF
 - `News/*.html` : AI Update News 상세 페이지
 - `asset/logo.png` : 로고/파비콘
+
+
+### Admin 재사용 설정
+
+- 다른 저장소에서 재사용할 때는 `static/js/admin-config.js`의 `owner`, `repo`, `branch`만 바꾸면 됩니다.
+- `contentPath`, `filesDir`, `newsDir`도 필요 시 함께 조정할 수 있습니다.
