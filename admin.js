@@ -1604,7 +1604,6 @@ function setNewsAddModal(open) {
   }
 }
 
-
 function setBasicModal(open, modalId, backdropId) {
   const modal = document.getElementById(modalId);
   const backdrop = document.getElementById(backdropId);
