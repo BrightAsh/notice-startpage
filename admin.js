@@ -277,9 +277,33 @@ function ensureNewsServiceCatalog(catalog, newsItems = []) {
   return out;
 }
 
+function compareServiceNameForSort(a, b) {
+  const na = norm(a);
+  const nb = norm(b);
+  const aEtc = na.toLowerCase() === "기타";
+  const bEtc = nb.toLowerCase() === "기타";
+  if (aEtc && !bEtc) return 1;
+  if (!aEtc && bEtc) return -1;
+  return na.localeCompare(nb, "ko", { sensitivity: "base" });
+}
+
+function getSortedNewsServices(catalog, newsItems = []) {
+  return ensureNewsServiceCatalog(catalog, newsItems).sort((x, y) => compareServiceNameForSort(x?.name, y?.name));
+}
+
+function formatDateInput(raw) {
+  const digits = String(raw || "").replace(/\D/g, "").slice(0, 8);
+  const y = digits.slice(0, 4);
+  const m = digits.slice(4, 6);
+  const d = digits.slice(6, 8);
+  if (digits.length <= 4) return y;
+  if (digits.length <= 6) return `${y}-${m}`;
+  return `${y}-${m}-${d}`;
+}
+
 function buildNewsServiceOptions(selected = "") {
   const cur = norm(selected);
-  const list = ensureNewsServiceCatalog(loadedData?.newsServiceCatalog, loadedData?.news || []);
+  const list = getSortedNewsServices(loadedData?.newsServiceCatalog, loadedData?.news || []);
   const items = [...list];
   if (cur && !items.some((it) => norm(it.name).toLowerCase() === cur.toLowerCase())) {
     items.unshift({ name: cur, color: "#94a3b8" });
@@ -291,6 +315,14 @@ function buildNewsServiceOptions(selected = "") {
     opts.push(`<option value="${escapeHtml(n)}"${sel}>${escapeHtml(n)}</option>`);
   });
   return opts.join("");
+}
+
+function buildNewsServiceSuggestions(query = "") {
+  const q = norm(query).toLowerCase();
+  const list = getSortedNewsServices(loadedData?.newsServiceCatalog, loadedData?.news || []);
+  return list
+    .filter((it) => !q || norm(it.name).toLowerCase().includes(q))
+    .map((it) => it.name);
 }
 
 // ===== GitHub REST =====
@@ -588,8 +620,9 @@ function newsCardTemplate(it, idx) {
         </div>
         <div>
           <label>service</label>
-          <select data-k="service">${buildNewsServiceOptions(it.service || "")}</select>
-          <div class="small" style="margin-top:6px;">목록에 없으면 우측 상단 <b>서비스/색상 편집</b>에서 추가하세요.</div>
+          <input type="text" data-k="service" data-role="newsServiceInput" list="news-service-list-${escapeHtml(String(it._uid || idx))}" value="${escapeHtml(it.service || "")}" placeholder="서비스 입력 (부분 검색 가능)" />
+          <datalist id="news-service-list-${escapeHtml(String(it._uid || idx))}">${buildNewsServiceDatalistOptions(it.service || "")}</datalist>
+          <div class="small" style="margin-top:6px;">입력한 문자열을 포함하는 서비스만 목록에 표시됩니다. 목록에 없으면 직접 입력할 수 있습니다.</div>
         </div>
       </div>
 
@@ -1431,11 +1464,19 @@ function syncNewsServiceCatalogFromForm() {
   loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
 }
 
-function refreshAllNewsServiceSelects() {
-  document.querySelectorAll('#newsList .card select[data-k="service"]').forEach((sel) => {
-    const current = norm(sel.value);
-    sel.innerHTML = buildNewsServiceOptions(current);
-    if (current) sel.value = current;
+function buildNewsServiceDatalistOptions(query = "") {
+  return buildNewsServiceSuggestions(query)
+    .map((name) => `<option value="${escapeHtml(name)}"></option>`)
+    .join("");
+}
+
+function refreshAllNewsServiceInputs() {
+  document.querySelectorAll('#newsList .card input[data-k="service"]').forEach((input) => {
+    const current = norm(input.value);
+    const card = input.closest(".card");
+    const listId = input.getAttribute("list");
+    const datalist = listId ? document.getElementById(listId) : null;
+    if (datalist) datalist.innerHTML = buildNewsServiceDatalistOptions(current);
   });
 }
 
@@ -1471,7 +1512,7 @@ function updateNewsSvcRowPreview(row, name, color, duplicate) {
 function renderNewsServiceCatalogModal() {
   const box = document.getElementById('newsSvcList');
   if (!box || !loadedData) return;
-  const list = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
+  const list = getSortedNewsServices(loadedData.newsServiceCatalog, loadedData.news || []);
   loadedData.newsServiceCatalog = list;
 
   box.innerHTML = "";
@@ -1507,6 +1548,36 @@ function setNewsSvcModal(open) {
   if (on) renderNewsServiceCatalogModal();
 }
 
+function refreshNewsAddServiceSuggest() {
+  const input = document.getElementById("newsAddService");
+  const suggest = document.getElementById("newsAddServiceSuggest");
+  if (!input || !suggest) return;
+  const list = buildNewsServiceSuggestions(input.value);
+  suggest.innerHTML = list.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+}
+
+function setNewsAddModal(open) {
+  const modal = document.getElementById('newsAddModal');
+  const backdrop = document.getElementById('newsAddModalBackdrop');
+  if (!modal || !backdrop) return;
+  const on = !!open;
+  modal.classList.toggle('show', on);
+  backdrop.classList.toggle('show', on);
+  modal.setAttribute('aria-hidden', on ? 'false' : 'true');
+  backdrop.setAttribute('aria-hidden', on ? 'false' : 'true');
+
+  if (on) {
+    const dateInput = document.getElementById("newsAddDate");
+    const titleInput = document.getElementById("newsAddTitle");
+    const svcInput = document.getElementById("newsAddService");
+    if (dateInput) dateInput.value = "";
+    if (titleInput) titleInput.value = "";
+    if (svcInput) svcInput.value = "";
+    refreshNewsAddServiceSuggest();
+    dateInput?.focus();
+  }
+}
+
 // ===== init =====
 document.addEventListener("DOMContentLoaded", () => {
   const pill = $("repoPill");
@@ -1534,6 +1605,15 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("newsSvcList");
   requireEl("newsSvcModal");
   requireEl("newsSvcModalBackdrop");
+  requireEl("newsAddModal");
+  requireEl("newsAddModalBackdrop");
+  requireEl("newsAddDate");
+  requireEl("newsAddTitle");
+  requireEl("newsAddService");
+  requireEl("newsAddServiceSuggest");
+  requireEl("btnApplyNewsAdd");
+  requireEl("btnCancelNewsAdd");
+  requireEl("btnCloseNewsAddModal");
   requireEl("btnSave");
 
   wirePromptPdfControls();
@@ -1582,10 +1662,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("btnAddNotice").addEventListener("click", () => {
     if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [], newsServiceCatalog: ensureNewsServiceCatalog([]) };
-    const snap = snapshotFromFormWithUids();
-    loadedData.services = ensureServiceUids(snap.services);
-    loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
-    loadedData.news = ensureNewsItemUids(snap.news || []);
+    if (!requireEl("editor").classList.contains("hidden")) {
+      const snap = snapshotFromFormWithUids();
+      loadedData.services = ensureServiceUids(snap.services);
+      loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+      loadedData.news = ensureNewsItemUids(snap.news || []);
+    }
     if (!loadedData.notice) loadedData.notice = { noticeId: "", items: [] };
     loadedData.notice.items.push({ _uid: makeUid(), title: "", sub: "" });
     renderAll();
@@ -1593,12 +1675,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("btnAddNews").addEventListener("click", () => {
     if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [], newsServiceCatalog: ensureNewsServiceCatalog([]) };
-    const snap = snapshotFromFormWithUids();
-    loadedData.services = ensureServiceUids(snap.services);
-    loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
-    loadedData.news = ensureNewsItemUids(snap.news || []);
-    loadedData.news.push({ _uid: makeUid(), service: "", title: "", date: "", file: "" });
+    if (!requireEl("editor").classList.contains("hidden")) {
+      const snap = snapshotFromFormWithUids();
+      loadedData.services = ensureServiceUids(snap.services);
+      loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+      loadedData.news = ensureNewsItemUids(snap.news || []);
+    }
+    setNewsAddModal(true);
+  });
+
+  $("btnCloseNewsAddModal").addEventListener("click", () => setNewsAddModal(false));
+  $("btnCancelNewsAdd").addEventListener("click", () => setNewsAddModal(false));
+  $("newsAddModalBackdrop").addEventListener("click", () => setNewsAddModal(false));
+  $("newsAddService").addEventListener("input", () => refreshNewsAddServiceSuggest());
+  $("newsAddDate").addEventListener("input", (e) => { e.target.value = formatDateInput(e.target.value); });
+  $("newsAddServiceSuggest").addEventListener("change", (e) => {
+    const input = document.getElementById("newsAddService");
+    if (input) input.value = e.target.value;
+  });
+  $("btnApplyNewsAdd").addEventListener("click", () => {
+    if (!loadedData) return;
+    const date = formatDateInput($("newsAddDate")?.value || "");
+    const title = norm($("newsAddTitle")?.value || "");
+    const service = norm($("newsAddService")?.value || "");
+    if (!date || !title) return setMsg("뉴스 추가 시 date/title은 필수입니다.", "err");
+
+    loadedData.news.push({ _uid: makeUid(), service, title, date, file: "" });
+    loadedData.news = sortNewsLatestFirst(loadedData.news || []);
     renderAll();
+    setNewsAddModal(false);
+    setMsg("뉴스 항목을 추가했습니다. (저장 전까지 캐시 상태)", "ok");
   });
 
   $("btnNewsExpandAll").addEventListener("click", () => {
@@ -1620,7 +1726,17 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btnAddNewsSvc").addEventListener("click", () => {
     if (!loadedData) return;
     loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
-    loadedData.newsServiceCatalog.push({ name: "", color: "#94a3b8" });
+
+    const baseName = "새 서비스";
+    const used = new Set((loadedData.newsServiceCatalog || []).map((it) => norm(it?.name).toLowerCase()));
+    let nextName = baseName;
+    let seq = 2;
+    while (used.has(nextName.toLowerCase())) {
+      nextName = `${baseName} ${seq}`;
+      seq += 1;
+    }
+
+    loadedData.newsServiceCatalog.push({ name: nextName, color: "#94a3b8" });
     renderNewsServiceCatalogModal();
   });
 
@@ -1704,7 +1820,7 @@ document.addEventListener("DOMContentLoaded", () => {
       used.add(c);
     }
 
-    refreshAllNewsServiceSelects();
+    refreshAllNewsServiceInputs();
     updatePendingSummary();
     setNewsSvcModal(false);
     setMsg("뉴스 서비스/색상 목록을 적용했습니다.", "ok");
@@ -1955,7 +2071,18 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePendingSummary();
     const card = e.target.closest(".card");
     if (!card) return;
-    if (e.target.matches('input[data-k="title"],input[data-k="date"],select[data-k="service"]')) {
+
+    if (e.target.matches('input[data-k="date"]')) {
+      const formatted = formatDateInput(e.target.value);
+      if (e.target.value !== formatted) e.target.value = formatted;
+    }
+
+    if (e.target.matches('input[data-k="service"]')) {
+      const listId = e.target.getAttribute("list");
+      const datalist = listId ? document.getElementById(listId) : null;
+      if (datalist) datalist.innerHTML = buildNewsServiceDatalistOptions(e.target.value);
+    }
+    if (e.target.matches('input[data-k="title"],input[data-k="date"],input[data-k="service"]')) {
       const cards = Array.from(requireEl("newsList").querySelectorAll(".card"));
       const idx = cards.indexOf(card);
       const sumTitle = card.querySelector(".sum-title");
