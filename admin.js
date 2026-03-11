@@ -434,6 +434,9 @@ let newsFilesIndexLoaded = false;
 const stagedPdfOps = new Map();
 const stagedNewsFileOps = new Map();
 
+let pendingSvcAddPdf = null;
+let pendingNewsAddBody = null;
+
 // Prompt PDF 스테이징(교체만)
 let stagedPromptPdfOp = null;
 
@@ -1656,6 +1659,9 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("btnCloseSvcAddModal");
   requireEl("btnCancelSvcAdd");
   requireEl("btnApplySvcAdd");
+  requireEl("btnSvcAddPdfPick");
+  requireEl("svcAddPdfInput");
+  requireEl("svcAddPdfState");
   requireEl("noticeAddModal");
   requireEl("noticeAddModalBackdrop");
   requireEl("btnCloseNoticeAddModal");
@@ -1669,6 +1675,9 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("newsSvcAddColorPicker");
   requireEl("newsSvcAddPreview");
   requireEl("btnApplyNewsAdd");
+  requireEl("btnNewsAddBodyPick");
+  requireEl("newsAddBodyInput");
+  requireEl("newsAddBodyState");
   requireEl("btnCancelNewsAdd");
   requireEl("btnCloseNewsAddModal");
   requireEl("btnSave");
@@ -1706,6 +1715,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("btnAddSvc").addEventListener("click", () => {
     if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [], newsServiceCatalog: ensureNewsServiceCatalog([]) };
+    pendingSvcAddPdf = null;
+    $("svcAddPdfState").textContent = "선택된 파일 없음";
     setSvcAddModal(true);
   });
 
@@ -1722,12 +1733,28 @@ document.addEventListener("DOMContentLoaded", () => {
       loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
       loadedData.news = ensureNewsItemUids(snap.news || []);
     }
+    pendingNewsAddBody = null;
+    $("newsAddBodyState").textContent = "선택된 파일 없음";
     setNewsAddModal(true);
   });
 
   $("btnCloseSvcAddModal").addEventListener("click", () => setSvcAddModal(false));
   $("btnCancelSvcAdd").addEventListener("click", () => setSvcAddModal(false));
   $("svcAddModalBackdrop").addEventListener("click", () => setSvcAddModal(false));
+  $("btnSvcAddPdfPick").addEventListener("click", () => $("svcAddPdfInput").click());
+  $("svcAddPdfInput").addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const b64 = await fileToB64(file);
+      pendingSvcAddPdf = { b64, size: file.size, origName: file.name };
+      $("svcAddPdfState").textContent = `선택됨: ${file.name}`;
+    } catch (err) {
+      setMsg(String(err.message || err), "err");
+    }
+  });
+
   $("btnApplySvcAdd").addEventListener("click", () => {
     if (!loadedData) return;
     const name = norm($("svcAddName")?.value || "");
@@ -1739,7 +1766,11 @@ document.addEventListener("DOMContentLoaded", () => {
       loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
       loadedData.news = ensureNewsItemUids(snap.news || []);
     }
-    loadedData.services.push({ _uid: makeUid(), name, url: norm($("svcAddUrl")?.value || ""), domain: norm($("svcAddDomain")?.value || ""), note: $("svcAddNote")?.value || "", disabled: !!$("svcAddDisabled")?.checked });
+    const uid = makeUid();
+    loadedData.services.push({ _uid: uid, name, url: norm($("svcAddUrl")?.value || ""), domain: norm($("svcAddDomain")?.value || ""), note: $("svcAddNote")?.value || "", disabled: !!$("svcAddDisabled")?.checked });
+    if (pendingSvcAddPdf?.b64) stagedPdfOps.set(uid, { type: "upsert", b64: pendingSvcAddPdf.b64, size: pendingSvcAddPdf.size, origName: pendingSvcAddPdf.origName });
+    pendingSvcAddPdf = null;
+    $("svcAddPdfState").textContent = "선택된 파일 없음";
     renderAll();
     setSvcAddModal(false);
   });
@@ -1784,6 +1815,20 @@ document.addEventListener("DOMContentLoaded", () => {
     updateNewsSvcAddPreview();
   });
 
+  $("btnNewsAddBodyPick").addEventListener("click", () => $("newsAddBodyInput").click());
+  $("newsAddBodyInput").addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const htmlText = await file.text();
+      pendingNewsAddBody = { b64: utf8ToB64(htmlText), size: file.size, origName: file.name };
+      $("newsAddBodyState").textContent = `선택됨: ${file.name}`;
+    } catch (err) {
+      setMsg(String(err.message || err), "err");
+    }
+  });
+
   $("btnCloseNewsAddModal").addEventListener("click", () => setNewsAddModal(false));
   $("btnCancelNewsAdd").addEventListener("click", () => setNewsAddModal(false));
   $("newsAddModalBackdrop").addEventListener("click", () => setNewsAddModal(false));
@@ -1805,7 +1850,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const service = norm($("newsAddService")?.value || "");
     if (!date || !title) return setMsg("뉴스 추가 시 date/title은 필수입니다.", "err");
 
-    loadedData.news.push({ _uid: makeUid(), service, title, date, file: "" });
+    const uid = makeUid();
+    loadedData.news.push({ _uid: uid, service, title, date, file: "" });
+    if (pendingNewsAddBody?.b64) stagedNewsFileOps.set(uid, { type: "upsert", b64: pendingNewsAddBody.b64, size: pendingNewsAddBody.size, origName: pendingNewsAddBody.origName });
+    pendingNewsAddBody = null;
+    $("newsAddBodyState").textContent = "선택된 파일 없음";
     loadedData.news = sortNewsLatestFirst(loadedData.news || []);
     renderAll();
     setNewsAddModal(false);

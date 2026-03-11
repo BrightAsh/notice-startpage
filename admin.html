@@ -705,6 +705,14 @@
         <div id="newsAddServiceSuggest" class="svc-dropdown"></div>
       </div>
     </div>
+    <div style="margin-top:10px;">
+      <label>뉴스 HTML 파일 (선택)</label>
+      <div class="row" style="gap:8px;align-items:center;">
+        <input id="newsAddBodyInput" type="file" accept=".html,text/html" class="hidden" />
+        <button class="btn" id="btnNewsAddBodyPick" type="button">파일 첨부</button>
+        <span id="newsAddBodyState" class="small">선택된 파일 없음</span>
+      </div>
+    </div>
     <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;">
       <button class="btn" id="btnCancelNewsAdd" type="button">취소</button>
       <button class="btn primary" id="btnApplyNewsAdd" type="button">추가</button>
@@ -716,6 +724,14 @@
     <div class="grid2"><div><label>name *</label><input id="svcAddName" type="text" /></div><div><label>domain</label><input id="svcAddDomain" type="text" /></div></div>
     <div class="grid2"><div><label>url</label><input id="svcAddUrl" type="text" /></div><div class="check"><input id="svcAddDisabled" type="checkbox" /><span>disabled</span></div></div>
     <div><label>note</label><textarea id="svcAddNote"></textarea></div>
+    <div style="margin-top:10px;">
+      <label>소개 PDF (선택)</label>
+      <div class="row" style="gap:8px;align-items:center;">
+        <input id="svcAddPdfInput" type="file" accept="application/pdf" class="hidden" />
+        <button class="btn" id="btnSvcAddPdfPick" type="button">PDF 첨부</button>
+        <span id="svcAddPdfState" class="small">선택된 파일 없음</span>
+      </div>
+    </div>
     <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;"><button class="btn" id="btnCancelSvcAdd" type="button">취소</button><button class="btn primary" id="btnApplySvcAdd" type="button">추가</button></div>
   </section>
 
