@@ -194,6 +194,13 @@
     .news-add-modal.show{display:block;}
     .news-service-filter{display:grid;grid-template-columns:1fr;gap:8px;}
     .news-service-suggest{min-height:130px;}
+    .svc-picker{position:relative;}
+    .svc-input{padding-left:34px;}
+    .svc-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.55;pointer-events:none;font-size:14px;}
+    .svc-dropdown{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:120;background:var(--panel2);border:1px solid var(--line);border-radius:10px;max-height:180px;overflow:auto;display:none;box-shadow:var(--shadow2);}
+    .svc-dropdown.show{display:block;}
+    .svc-opt{width:100%;text-align:left;background:transparent;border:0;color:var(--text);padding:8px 10px;cursor:pointer;}
+    .svc-opt:hover{background:var(--accent2);}
     select{color:var(--text);background-color:var(--field);}
     option{color:#0f172a;background-color:#ffffff;}
     @media (prefers-color-scheme: light){
@@ -690,9 +697,10 @@
     </div>
     <div style="margin-top:10px;">
       <label>service</label>
-      <div class="news-service-filter">
-        <input id="newsAddService" type="text" placeholder="서비스 입력 (부분 검색 가능)" />
-        <select id="newsAddServiceSuggest" class="news-service-suggest" size="6"></select>
+      <div class="svc-picker">
+        <span class="svc-icon" aria-hidden="true">🔍</span>
+        <input id="newsAddService" class="svc-input" type="text" placeholder="Search AI Service" autocomplete="off" />
+        <div id="newsAddServiceSuggest" class="svc-dropdown"></div>
       </div>
     </div>
     <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;">
@@ -701,6 +709,28 @@
     </div>
   </section>
 
+  <div id="svcAddModalBackdrop" class="news-add-modal-backdrop" aria-hidden="true"></div>
+  <section id="svcAddModal" class="news-add-modal" aria-hidden="true">
+    <div class="card-hd" style="margin-bottom:8px;"><div class="card-title">서비스 추가</div><button class="btn" id="btnCloseSvcAddModal" type="button">닫기</button></div>
+    <div class="grid2"><div><label>name *</label><input id="svcAddName" type="text" /></div><div><label>domain</label><input id="svcAddDomain" type="text" /></div></div>
+    <div class="grid2"><div><label>url</label><input id="svcAddUrl" type="text" /></div><div class="check"><input id="svcAddDisabled" type="checkbox" /><span>disabled</span></div></div>
+    <div><label>note</label><textarea id="svcAddNote"></textarea></div>
+    <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;"><button class="btn" id="btnCancelSvcAdd" type="button">취소</button><button class="btn primary" id="btnApplySvcAdd" type="button">추가</button></div>
+  </section>
+
+  <div id="noticeAddModalBackdrop" class="news-add-modal-backdrop" aria-hidden="true"></div>
+  <section id="noticeAddModal" class="news-add-modal" aria-hidden="true">
+    <div class="card-hd" style="margin-bottom:8px;"><div class="card-title">공지 추가</div><button class="btn" id="btnCloseNoticeAddModal" type="button">닫기</button></div>
+    <div class="grid2"><div><label>title</label><input id="noticeAddTitle" type="text" /></div><div><label>sub</label><input id="noticeAddSub" type="text" /></div></div>
+    <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;"><button class="btn" id="btnCancelNoticeAdd" type="button">취소</button><button class="btn primary" id="btnApplyNoticeAdd" type="button">추가</button></div>
+  </section>
+
+  <div id="newsSvcAddModalBackdrop" class="news-add-modal-backdrop" aria-hidden="true"></div>
+  <section id="newsSvcAddModal" class="news-add-modal" aria-hidden="true">
+    <div class="card-hd" style="margin-bottom:8px;"><div class="card-title">서비스/색상 추가</div><button class="btn" id="btnCloseNewsSvcAddModal" type="button">닫기</button></div>
+    <div class="grid2"><div><label>서비스명</label><input id="newsSvcAddName" type="text" /></div><div><label>색상</label><input id="newsSvcAddColor" type="text" value="#94a3b8" /></div></div>
+    <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;"><button class="btn" id="btnCancelNewsSvcAdd" type="button">취소</button><button class="btn primary" id="btnApplyNewsSvcAdd" type="button">추가</button></div>
+  </section>
   <!-- ✅ 캐시 이슈 있으면 v= 값을 바꾸세요 -->
   <script src="./admin.js?v=3" defer></script>
 </body>

@@ -620,8 +620,11 @@ function newsCardTemplate(it, idx) {
         </div>
         <div>
           <label>service</label>
-          <input type="text" data-k="service" data-role="newsServiceInput" list="news-service-list-${escapeHtml(String(it._uid || idx))}" value="${escapeHtml(it.service || "")}" placeholder="서비스 입력 (부분 검색 가능)" />
-          <datalist id="news-service-list-${escapeHtml(String(it._uid || idx))}">${buildNewsServiceDatalistOptions(it.service || "")}</datalist>
+          <div class="svc-picker">
+            <span class="svc-icon" aria-hidden="true">🔍</span>
+            <input type="text" class="svc-input" data-k="service" data-role="newsServiceInput" value="${escapeHtml(it.service || "")}" placeholder="Search AI Service" autocomplete="off" />
+            <div class="svc-dropdown" data-k="serviceSuggest"></div>
+          </div>
           <div class="small" style="margin-top:6px;">입력한 문자열을 포함하는 서비스만 목록에 표시됩니다. 목록에 없으면 직접 입력할 수 있습니다.</div>
         </div>
       </div>
@@ -1464,19 +1467,21 @@ function syncNewsServiceCatalogFromForm() {
   loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
 }
 
-function buildNewsServiceDatalistOptions(query = "") {
-  return buildNewsServiceSuggestions(query)
-    .map((name) => `<option value="${escapeHtml(name)}"></option>`)
-    .join("");
+function renderServiceSuggestionDropdown(container, query = "") {
+  if (!container) return;
+  const list = buildNewsServiceSuggestions(query);
+  container.innerHTML = list.map((name) => `<button type="button" class="svc-opt" data-v="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("");
+  container.classList.toggle("show", list.length > 0);
+}
+
+function hideAllServiceSuggestionDropdowns() {
+  document.querySelectorAll('.svc-dropdown.show').forEach((el) => el.classList.remove('show'));
 }
 
 function refreshAllNewsServiceInputs() {
   document.querySelectorAll('#newsList .card input[data-k="service"]').forEach((input) => {
-    const current = norm(input.value);
-    const card = input.closest(".card");
-    const listId = input.getAttribute("list");
-    const datalist = listId ? document.getElementById(listId) : null;
-    if (datalist) datalist.innerHTML = buildNewsServiceDatalistOptions(current);
+    const dropdown = input.closest('.svc-picker')?.querySelector('[data-k="serviceSuggest"]');
+    renderServiceSuggestionDropdown(dropdown, input.value);
   });
 }
 
@@ -1552,8 +1557,7 @@ function refreshNewsAddServiceSuggest() {
   const input = document.getElementById("newsAddService");
   const suggest = document.getElementById("newsAddServiceSuggest");
   if (!input || !suggest) return;
-  const list = buildNewsServiceSuggestions(input.value);
-  suggest.innerHTML = list.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+  renderServiceSuggestionDropdown(suggest, input.value);
 }
 
 function setNewsAddModal(open) {
@@ -1577,6 +1581,21 @@ function setNewsAddModal(open) {
     dateInput?.focus();
   }
 }
+
+function setBasicModal(open, modalId, backdropId) {
+  const modal = document.getElementById(modalId);
+  const backdrop = document.getElementById(backdropId);
+  if (!modal || !backdrop) return;
+  const on = !!open;
+  modal.classList.toggle('show', on);
+  backdrop.classList.toggle('show', on);
+  modal.setAttribute('aria-hidden', on ? 'false' : 'true');
+  backdrop.setAttribute('aria-hidden', on ? 'false' : 'true');
+}
+
+const setSvcAddModal = (open) => setBasicModal(open, 'svcAddModal', 'svcAddModalBackdrop');
+const setNoticeAddModal = (open) => setBasicModal(open, 'noticeAddModal', 'noticeAddModalBackdrop');
+const setNewsSvcAddModal = (open) => setBasicModal(open, 'newsSvcAddModal', 'newsSvcAddModalBackdrop');
 
 // ===== init =====
 document.addEventListener("DOMContentLoaded", () => {
@@ -1611,6 +1630,21 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("newsAddTitle");
   requireEl("newsAddService");
   requireEl("newsAddServiceSuggest");
+  requireEl("svcAddModal");
+  requireEl("svcAddModalBackdrop");
+  requireEl("btnCloseSvcAddModal");
+  requireEl("btnCancelSvcAdd");
+  requireEl("btnApplySvcAdd");
+  requireEl("noticeAddModal");
+  requireEl("noticeAddModalBackdrop");
+  requireEl("btnCloseNoticeAddModal");
+  requireEl("btnCancelNoticeAdd");
+  requireEl("btnApplyNoticeAdd");
+  requireEl("newsSvcAddModal");
+  requireEl("newsSvcAddModalBackdrop");
+  requireEl("btnCloseNewsSvcAddModal");
+  requireEl("btnCancelNewsSvcAdd");
+  requireEl("btnApplyNewsSvcAdd");
   requireEl("btnApplyNewsAdd");
   requireEl("btnCancelNewsAdd");
   requireEl("btnCloseNewsAddModal");
@@ -1649,28 +1683,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("btnAddSvc").addEventListener("click", () => {
     if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [], newsServiceCatalog: ensureNewsServiceCatalog([]) };
-    if (!requireEl("editor").classList.contains("hidden")) {
-      syncNewsServiceCatalogFromForm();
-      const snap = snapshotFromFormWithUids();
-      loadedData.services = ensureServiceUids(snap.services);
-      loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
-      loadedData.news = ensureNewsItemUids(snap.news || []);
-    }
-    loadedData.services.push({ _uid: makeUid(), name: "", url: "", domain: "", note: "", disabled: false });
-    renderAll();
+    setSvcAddModal(true);
   });
 
   $("btnAddNotice").addEventListener("click", () => {
     if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [], newsServiceCatalog: ensureNewsServiceCatalog([]) };
-    if (!requireEl("editor").classList.contains("hidden")) {
-      const snap = snapshotFromFormWithUids();
-      loadedData.services = ensureServiceUids(snap.services);
-      loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
-      loadedData.news = ensureNewsItemUids(snap.news || []);
-    }
-    if (!loadedData.notice) loadedData.notice = { noticeId: "", items: [] };
-    loadedData.notice.items.push({ _uid: makeUid(), title: "", sub: "" });
-    renderAll();
+    setNoticeAddModal(true);
   });
 
   $("btnAddNews").addEventListener("click", () => {
@@ -1684,14 +1702,70 @@ document.addEventListener("DOMContentLoaded", () => {
     setNewsAddModal(true);
   });
 
+  $("btnCloseSvcAddModal").addEventListener("click", () => setSvcAddModal(false));
+  $("btnCancelSvcAdd").addEventListener("click", () => setSvcAddModal(false));
+  $("svcAddModalBackdrop").addEventListener("click", () => setSvcAddModal(false));
+  $("btnApplySvcAdd").addEventListener("click", () => {
+    if (!loadedData) return;
+    const name = norm($("svcAddName")?.value || "");
+    if (!name) return setMsg("서비스 name은 필수입니다.", "err");
+    if (!requireEl("editor").classList.contains("hidden")) {
+      syncNewsServiceCatalogFromForm();
+      const snap = snapshotFromFormWithUids();
+      loadedData.services = ensureServiceUids(snap.services);
+      loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+      loadedData.news = ensureNewsItemUids(snap.news || []);
+    }
+    loadedData.services.push({ _uid: makeUid(), name, url: norm($("svcAddUrl")?.value || ""), domain: norm($("svcAddDomain")?.value || ""), note: $("svcAddNote")?.value || "", disabled: !!$("svcAddDisabled")?.checked });
+    renderAll();
+    setSvcAddModal(false);
+  });
+
+  $("btnCloseNoticeAddModal").addEventListener("click", () => setNoticeAddModal(false));
+  $("btnCancelNoticeAdd").addEventListener("click", () => setNoticeAddModal(false));
+  $("noticeAddModalBackdrop").addEventListener("click", () => setNoticeAddModal(false));
+  $("btnApplyNoticeAdd").addEventListener("click", () => {
+    if (!loadedData) return;
+    if (!requireEl("editor").classList.contains("hidden")) {
+      const snap = snapshotFromFormWithUids();
+      loadedData.services = ensureServiceUids(snap.services);
+      loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+      loadedData.news = ensureNewsItemUids(snap.news || []);
+    }
+    if (!loadedData.notice) loadedData.notice = { noticeId: "", items: [] };
+    loadedData.notice.items.push({ _uid: makeUid(), title: norm($("noticeAddTitle")?.value || ""), sub: norm($("noticeAddSub")?.value || "") });
+    renderAll();
+    setNoticeAddModal(false);
+  });
+
+  $("btnCloseNewsSvcAddModal").addEventListener("click", () => setNewsSvcAddModal(false));
+  $("btnCancelNewsSvcAdd").addEventListener("click", () => setNewsSvcAddModal(false));
+  $("newsSvcAddModalBackdrop").addEventListener("click", () => setNewsSvcAddModal(false));
+  $("btnApplyNewsSvcAdd").addEventListener("click", () => {
+    if (!loadedData) return;
+    loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
+    const name = norm($("newsSvcAddName")?.value || "");
+    if (!name) return setMsg("서비스명을 입력하세요.", "err");
+    const color = normalizeHexColor($("newsSvcAddColor")?.value || "#94a3b8", "#94a3b8");
+    if (loadedData.newsServiceCatalog.some((it) => norm(it?.name).toLowerCase() === name.toLowerCase())) return setMsg("이미 있는 서비스명입니다.", "err");
+    if (loadedData.newsServiceCatalog.some((it) => normalizeHexColor(it?.color, "") === color)) return setMsg("이미 사용 중인 색상입니다.", "err");
+    loadedData.newsServiceCatalog.push({ name, color });
+    renderNewsServiceCatalogModal();
+    setNewsSvcAddModal(false);
+  });
+
   $("btnCloseNewsAddModal").addEventListener("click", () => setNewsAddModal(false));
   $("btnCancelNewsAdd").addEventListener("click", () => setNewsAddModal(false));
   $("newsAddModalBackdrop").addEventListener("click", () => setNewsAddModal(false));
   $("newsAddService").addEventListener("input", () => refreshNewsAddServiceSuggest());
   $("newsAddDate").addEventListener("input", (e) => { e.target.value = formatDateInput(e.target.value); });
-  $("newsAddServiceSuggest").addEventListener("change", (e) => {
+  $("newsAddServiceSuggest").addEventListener("click", (e) => {
+    const btn = e.target.closest('.svc-opt');
+    if (!btn) return;
     const input = document.getElementById("newsAddService");
-    if (input) input.value = e.target.value;
+    if (input) input.value = btn.dataset.v || "";
+    refreshNewsAddServiceSuggest();
+    hideAllServiceSuggestionDropdowns();
   });
   $("btnApplyNewsAdd").addEventListener("click", () => {
     if (!loadedData) return;
@@ -1725,19 +1799,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("btnAddNewsSvc").addEventListener("click", () => {
     if (!loadedData) return;
-    loadedData.newsServiceCatalog = ensureNewsServiceCatalog(loadedData.newsServiceCatalog, loadedData.news || []);
-
-    const baseName = "새 서비스";
-    const used = new Set((loadedData.newsServiceCatalog || []).map((it) => norm(it?.name).toLowerCase()));
-    let nextName = baseName;
-    let seq = 2;
-    while (used.has(nextName.toLowerCase())) {
-      nextName = `${baseName} ${seq}`;
-      seq += 1;
-    }
-
-    loadedData.newsServiceCatalog.push({ name: nextName, color: "#94a3b8" });
-    renderNewsServiceCatalogModal();
+    setNewsSvcAddModal(true);
   });
 
   $("newsSvcList").addEventListener("input", (e) => {
@@ -2078,9 +2140,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (e.target.matches('input[data-k="service"]')) {
-      const listId = e.target.getAttribute("list");
-      const datalist = listId ? document.getElementById(listId) : null;
-      if (datalist) datalist.innerHTML = buildNewsServiceDatalistOptions(e.target.value);
+      const dropdown = card.querySelector('[data-k="serviceSuggest"]');
+      renderServiceSuggestionDropdown(dropdown, e.target.value);
     }
     if (e.target.matches('input[data-k="title"],input[data-k="date"],input[data-k="service"]')) {
       const cards = Array.from(requireEl("newsList").querySelectorAll(".card"));
@@ -2099,6 +2160,33 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest('.svc-picker')) hideAllServiceSuggestionDropdowns();
+  });
+
+  $("newsAddService").addEventListener("focus", () => refreshNewsAddServiceSuggest());
+  $("newsAddService").addEventListener("click", () => refreshNewsAddServiceSuggest());
+
+  $("newsList").addEventListener("focusin", (e) => {
+    const input = e.target.closest('input[data-k="service"]');
+    if (!input) return;
+    const card = input.closest('.card');
+    const dropdown = card?.querySelector('[data-k="serviceSuggest"]');
+    renderServiceSuggestionDropdown(dropdown, input.value);
+  });
+
+  $("newsList").addEventListener("click", (e) => {
+    const opt = e.target.closest('.svc-opt');
+    if (!opt) return;
+    const card = opt.closest('.card');
+    const input = card?.querySelector('input[data-k="service"]');
+    const dropdown = card?.querySelector('[data-k="serviceSuggest"]');
+    if (input) input.value = opt.dataset.v || "";
+    if (dropdown) dropdown.classList.remove('show');
+    updatePendingSummary();
+  });
 
   $("newsList").addEventListener("change", async (e) => {
     const input = e.target.closest('input[type="file"][data-k="newsBodyInput"]');
