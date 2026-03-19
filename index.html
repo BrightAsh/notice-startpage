@@ -1236,13 +1236,11 @@
       return `rgba(${r},${g},${b},${alpha})`;
     }
 
-    function badgeTextColor(hex){
-      const h = normalizeHexColor(hex).slice(1);
-      const r = parseInt(h.slice(0,2), 16);
-      const g = parseInt(h.slice(2,4), 16);
-      const b = parseInt(h.slice(4,6), 16);
-      const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-      return yiq >= 150 ? "#0b1220" : "#f8fafc";
+    function badgeTextColor(){
+      const isLightMode = typeof window !== "undefined"
+        && typeof window.matchMedia === "function"
+        && window.matchMedia("(prefers-color-scheme: light)").matches;
+      return isLightMode ? "#0b1220" : "#f8fafc";
     }
 
     function serviceColor(service){
