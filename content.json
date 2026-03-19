@@ -73,19 +73,31 @@
     "items": [
       {
         "title": "Perplexity 구독 해지",
-        "sub": "2026년 1월 28일부터 Perplexity를 이용하실 수 없습니다. (사유: 사용량 저조)"
+        "sub": "2026년 1월 28일부터 Perplexity를 이용하실 수 없습니다. (사유: 사용량 저조)",
+        "keyword": "긴급",
+        "priority": 1,
+        "date": "2026-03-19"
       },
       {
         "title": "Google AI Pro 구독 시작",
-        "sub": "2026년 1월 28일부터 Gemini, NotebookLM 등 이용하실 수 있습니다."
+        "sub": "2026년 1월 28일부터 Gemini, NotebookLM 등 이용하실 수 있습니다.",
+        "keyword": "안내",
+        "priority": 10,
+        "date": "2026-03-18"
       },
       {
         "title": "ElevenLabs 플랜 다운그레이드",
-        "sub": "2026년 1월 29일부터 Creator Plan에서 Starter Plan으로 다운그레이드됩니다. (사유: 사용량 저조)"
+        "sub": "2026년 1월 29일부터 Creator Plan에서 Starter Plan으로 다운그레이드됩니다. (사유: 사용량 저조)",
+        "keyword": "안내",
+        "priority": 10,
+        "date": "2026-03-17"
       },
       {
         "title": "Flowith 구독 해지",
-        "sub": "2026년 3월 28일부터 Flowith를 사용하실 수 없습니다. (사유: 사용량 저조)"
+        "sub": "2026년 3월 28일부터 Flowith를 사용하실 수 없습니다. (사유: 사용량 저조)",
+        "keyword": "안내",
+        "priority": 10,
+        "date": "2026-03-16"
       }
     ]
   },
@@ -475,6 +487,18 @@
     {
       "name": "Gamma",
       "color": "#d946ef"
+    }
+  ],
+  "noticeKeywordCatalog": [
+    {
+      "name": "긴급",
+      "color": "#ef4444",
+      "priority": 1
+    },
+    {
+      "name": "안내",
+      "color": "#34d399",
+      "priority": 10
     }
   ]
 }

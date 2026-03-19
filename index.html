@@ -393,6 +393,11 @@
       margin-top: 1px;
     }
     .tag.ok{ border-color: rgba(52,211,153,.45); background: rgba(52,211,153,.14); }
+    .tag.custom{
+      border-color: var(--tag-border, rgba(52,211,153,.45));
+      background: var(--tag-bg, rgba(52,211,153,.14));
+      color: var(--tag-fg, var(--text));
+    }
 
     .ni-title{
       font-weight: 900;
@@ -723,6 +728,11 @@
 
           <div class="panel-bd" id="noticeBody">
             <ul class="notice-list" id="noticeList"></ul>
+            <div class="news-pager">
+              <button class="btn mini" id="noticePrev">&lt;&lt;</button>
+              <div class="news-page-list" id="noticePages"></div>
+              <button class="btn mini" id="noticeNext">&gt;&gt;</button>
+            </div>
 
             <div class="notice-hide">
               <input type="checkbox" id="hideToday" />
@@ -811,6 +821,7 @@
      */
     let SERVICES = [];
     let NOTICE = { noticeId: "", items: [] };
+    let NOTICE_KEYWORD_CATALOG = [];
     let NEWS = [];
     let NEWS_SERVICE_CATALOG = [];
 
@@ -825,8 +836,40 @@
       const data = await res.json();
       SERVICES = data.services || [];
       NOTICE = data.notice || { noticeId: "", items: [] };
+      NOTICE_KEYWORD_CATALOG = Array.isArray(data.noticeKeywordCatalog) ? data.noticeKeywordCatalog : [];
       NEWS = Array.isArray(data.news) ? data.news : [];
       NEWS_SERVICE_CATALOG = Array.isArray(data.newsServiceCatalog) ? data.newsServiceCatalog : [];
+    }
+
+    function normalizeNoticePriority(v, fallback = 999){
+      const n = Number.parseInt(String(v ?? "").trim(), 10);
+      if(!Number.isFinite(n) || n < 1) return fallback;
+      return n;
+    }
+
+    function ensureNoticeKeywordCatalog(catalog, noticeItems = []){
+      const out = [];
+      const seen = new Set();
+      const pushOne = (name, color = "#34d399", priority = 999) => {
+        const n = String(name || "").trim();
+        if(!n) return;
+        const key = n.toLowerCase();
+        if(seen.has(key)) return;
+        seen.add(key);
+        out.push({
+          name: n,
+          color: normalizeHexColor(color, "#34d399"),
+          priority: normalizeNoticePriority(priority, 999),
+        });
+      };
+      (catalog || []).forEach((it) => pushOne(it?.name, it?.color, it?.priority));
+      pushOne("안내", "#34d399", 10);
+      (noticeItems || []).forEach((it) => pushOne(it?.keyword, "#34d399", it?.priority));
+      return out.sort((a,b) => {
+        const byPriority = normalizeNoticePriority(a?.priority, 999) - normalizeNoticePriority(b?.priority, 999);
+        if(byPriority) return byPriority;
+        return String(a?.name || "").localeCompare(String(b?.name || ""), "ko");
+      });
     }
 
     // 공지 숨김 로컬스토리지 키
@@ -843,6 +886,9 @@
     const svcCount = $("#svcCount");
 
     const noticeList = $("#noticeList");
+    const noticePrev = $("#noticePrev");
+    const noticeNext = $("#noticeNext");
+    const noticePages = $("#noticePages");
     const hideToday = $("#hideToday");
     const resetLocal = $("#resetLocal");
     const newsList = $("#newsList");
@@ -863,6 +909,10 @@
 
     const NEWS_PAGE_SIZE = 5;
     const NEWS_PAGE_GROUP_SIZE = 5;
+    const NOTICE_PAGE_SIZE = 5;
+    const NOTICE_PAGE_GROUP_SIZE = 5;
+    let noticePage = 1;
+    let noticePageGroupStart = 1;
     let newsPage = 1;
     let newsPageGroupStart = 1;
     let modalNewsIndex = -1;
@@ -1079,14 +1129,36 @@
       hideToday.checked = hidden;
 
       noticeList.innerHTML = "";
-      for(const it of (NOTICE.items || [])){
+      const keywords = ensureNoticeKeywordCatalog(NOTICE_KEYWORD_CATALOG, NOTICE.items || []);
+      const keyMap = new Map(keywords.map((it) => [String(it.name || "").toLowerCase(), it]));
+      const items = [...(NOTICE.items || [])].sort((a, b) => {
+        const byDate = String(b?.date || "").localeCompare(String(a?.date || ""));
+        if(byDate !== 0) return byDate;
+        const ak = String(a?.keyword || "").toLowerCase();
+        const bk = String(b?.keyword || "").toLowerCase();
+        const ap = normalizeNoticePriority(a?.priority, keyMap.get(ak)?.priority ?? 999);
+        const bp = normalizeNoticePriority(b?.priority, keyMap.get(bk)?.priority ?? 999);
+        if(ap !== bp) return ap - bp;
+        return String(a?.title || "").localeCompare(String(b?.title || ""), "ko");
+      });
+      const totalPages = Math.max(1, Math.ceil(items.length / NOTICE_PAGE_SIZE));
+      noticePage = Math.min(Math.max(1, noticePage), totalPages);
+      const start = (noticePage - 1) * NOTICE_PAGE_SIZE;
+      const pageItems = items.slice(start, start + NOTICE_PAGE_SIZE);
+
+      for(const it of pageItems){
         const li = document.createElement("li");
         li.className = "notice-item";
 
-        // (요청) 전부 '안내'로 통일
+        const keywordName = String(it?.keyword || "").trim() || "안내";
+        const keywordDef = keyMap.get(keywordName.toLowerCase()) || { name: keywordName, color: "#34d399" };
+        const color = normalizeHexColor(keywordDef.color || "#34d399", "#34d399");
         const tag = document.createElement("span");
-        tag.className = "tag ok";
-        tag.textContent = "안내";
+        tag.className = "tag custom";
+        tag.textContent = keywordDef.name || "안내";
+        tag.style.setProperty("--tag-border", hexToRgba(color, .55));
+        tag.style.setProperty("--tag-bg", hexToRgba(color, .24));
+        tag.style.setProperty("--tag-fg", badgeTextColor(color));
 
         const box = document.createElement("div");
         const t = document.createElement("div");
@@ -1104,6 +1176,25 @@
         li.appendChild(box);
         noticeList.appendChild(li);
       }
+
+      const maxGroupStart = Math.max(1, Math.floor((totalPages - 1) / NOTICE_PAGE_GROUP_SIZE) * NOTICE_PAGE_GROUP_SIZE + 1);
+      if (noticePage < noticePageGroupStart || noticePage > (noticePageGroupStart + NOTICE_PAGE_GROUP_SIZE - 1)) {
+        noticePageGroupStart = Math.floor((noticePage - 1) / NOTICE_PAGE_GROUP_SIZE) * NOTICE_PAGE_GROUP_SIZE + 1;
+      }
+      noticePageGroupStart = Math.min(Math.max(1, noticePageGroupStart), maxGroupStart);
+
+      noticePages.innerHTML = "";
+      const groupEnd = Math.min(noticePageGroupStart + NOTICE_PAGE_GROUP_SIZE - 1, totalPages);
+      for(let p = noticePageGroupStart; p <= groupEnd; p += 1){
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "news-page-btn" + (p === noticePage ? " active" : "");
+        b.textContent = String(p);
+        b.dataset.noticePage = String(p);
+        noticePages.appendChild(b);
+      }
+      noticePrev.disabled = noticePageGroupStart <= 1;
+      noticeNext.disabled = noticePageGroupStart >= maxGroupStart;
 
       const body = $("#noticeBody");
       body.style.opacity = "1";
@@ -1301,6 +1392,22 @@
       hideToday.checked = false;
       renderNotice();
       alert("이 PC의 공지 상태를 초기화했습니다.");
+    });
+    noticePrev.addEventListener("click", () => {
+      noticePageGroupStart = Math.max(1, noticePageGroupStart - NOTICE_PAGE_GROUP_SIZE);
+      noticePage = noticePageGroupStart;
+      renderNotice();
+    });
+    noticeNext.addEventListener("click", () => {
+      noticePageGroupStart += NOTICE_PAGE_GROUP_SIZE;
+      noticePage = noticePageGroupStart;
+      renderNotice();
+    });
+    noticePages.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-notice-page]");
+      if (!btn) return;
+      noticePage = Number(btn.dataset.noticePage || "1");
+      renderNotice();
     });
 
     newsPrev.addEventListener("click", () => {
