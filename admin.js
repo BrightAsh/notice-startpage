@@ -35,7 +35,7 @@ function requireEl(id) {
 
 function setBtnTone(el, tone) {
   if (!el) return;
-  el.classList.remove("success", "replace", "danger");
+  el.classList.remove("success", "replace", "danger", "file-danger");
   if (tone) el.classList.add(tone);
 }
 
@@ -502,6 +502,10 @@ const NOTICE_PAGE_SIZE = 5;
 const NOTICE_PAGE_GROUP_SIZE = 5;
 let noticePage = 1;
 let noticePageGroupStart = 1;
+const NEWS_PAGE_SIZE = 5;
+const NEWS_PAGE_GROUP_SIZE = 5;
+let newsPage = 1;
+let newsPageGroupStart = 1;
 
 // ===== Reset button state =====
 function setResetButtonState(disabled) {
@@ -545,7 +549,7 @@ function serviceCardTemplate(s, idx) {
         <span class="sum-actions">
           <button type="button" class="btn sum-btn danger" data-act="delSvcQuick">서비스 삭제</button>
           <button type="button" class="btn sum-btn success" data-act="attachPdfQuick">PDF 첨부</button>
-          <button type="button" class="btn sum-btn danger" data-act="delPdfQuick">PDF 삭제</button>
+          <button type="button" class="btn sum-btn file-danger" data-act="delPdfQuick">PDF 삭제</button>
         </span>
         <span class="chev" aria-hidden="true">›</span>
       </span>
@@ -590,7 +594,7 @@ function serviceCardTemplate(s, idx) {
         </div>
         <input type="file" accept="application/pdf" data-k="pdfInput" style="display:none" />
         <button class="btn success" data-act="attachPdf">PDF 첨부</button>
-        <button class="btn danger" data-act="delPdf">PDF 삭제</button>
+        <button class="btn file-danger" data-act="delPdf">PDF 삭제</button>
       </div>
     </div>
   `;
@@ -643,8 +647,8 @@ function noticeCardTemplate(it, idx) {
           <select data-k="keyword">${buildNoticeKeywordOptions(it.keyword || "")}</select>
         </div>
         <div>
-          <label>priority (작을수록 상단)</label>
-          <input type="number" min="1" step="1" data-k="priority" value="${escapeHtml(String(normalizeNoticePriority(it.priority, 999)))}" />
+          <label>&nbsp;</label>
+          <button type="button" class="btn" data-act="openNoticeKeywordModal">키워드 편집</button>
         </div>
       </div>
 
@@ -666,7 +670,7 @@ function newsCardTemplate(it, idx) {
       <span class="sum-right">
         <span class="sum-actions">
           <button type="button" class="btn sum-btn success" data-act="attachNewsBody">파일 첨부</button>
-          <button type="button" class="btn sum-btn danger" data-act="delNewsBody">파일 삭제</button>
+          <button type="button" class="btn sum-btn file-danger" data-act="delNewsBody">파일 삭제</button>
 
           <button type="button" class="btn sum-btn danger" data-act="delNewsQuick">뉴스 삭제</button>
         </span>
@@ -711,7 +715,7 @@ function newsCardTemplate(it, idx) {
         </div>
         <input type="file" accept=".html,text/html" data-k="newsBodyInput" style="display:none" />
         <button class="btn success" data-act="attachNewsBody">파일 첨부</button>
-        <button class="btn danger" data-act="delNewsBody">파일 삭제</button>
+        <button class="btn file-danger" data-act="delNewsBody">파일 삭제</button>
       </div>
       <div class="small" style="margin-top:8px;">파일명은 <span class="mono">date-title.html</span> 규칙으로 자동 생성됩니다. title/date가 바뀌면 파일명도 자동으로 함께 변경됩니다.</div>
     </div>
@@ -734,12 +738,21 @@ function sortNewsLatestFirst(items) {
   });
 }
 
+function getNoticeKeywordPriorityByName(keywordName) {
+  const key = norm(keywordName).toLowerCase();
+  const list = ensureNoticeKeywordCatalog(loadedData?.noticeKeywordCatalog, loadedData?.notice?.items || []);
+  const row = list.find((it) => norm(it?.name).toLowerCase() === key);
+  return normalizeNoticePriority(row?.priority, 999);
+}
+
 function sortNoticeLatestFirst(items) {
   return [...(items || [])].sort((a, b) => {
+    const byPriority = getNoticeKeywordPriorityByName(a?.keyword) - getNoticeKeywordPriorityByName(b?.keyword);
+    if (byPriority) return byPriority;
+    const byKeyword = norm(a?.keyword).localeCompare(norm(b?.keyword), "ko", { sensitivity: "base" });
+    if (byKeyword) return byKeyword;
     const byDate = toDateSortValue(b?.date) - toDateSortValue(a?.date);
     if (byDate) return byDate;
-    const byPriority = normalizeNoticePriority(a?.priority, 999) - normalizeNoticePriority(b?.priority, 999);
-    if (byPriority) return byPriority;
     return norm(b?.title).localeCompare(norm(a?.title), "ko");
   });
 }
@@ -750,6 +763,14 @@ function getPagedNoticeItems(items = []) {
   noticePage = Math.min(Math.max(1, noticePage), totalPages);
   const start = (noticePage - 1) * NOTICE_PAGE_SIZE;
   return { sorted, totalPages, pageItems: sorted.slice(start, start + NOTICE_PAGE_SIZE) };
+}
+
+function getPagedNewsItems(items = []) {
+  const sorted = sortNewsLatestFirst(items);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / NEWS_PAGE_SIZE));
+  newsPage = Math.min(Math.max(1, newsPage), totalPages);
+  const start = (newsPage - 1) * NEWS_PAGE_SIZE;
+  return { sorted, totalPages, pageItems: sorted.slice(start, start + NEWS_PAGE_SIZE) };
 }
 
 function renderNoticePager(totalPages) {
@@ -778,6 +799,32 @@ function renderNoticePager(totalPages) {
   next.disabled = noticePageGroupStart >= maxGroupStart;
 }
 
+function renderNewsPager(totalPages) {
+  const prev = document.getElementById("newsPrev");
+  const next = document.getElementById("newsNext");
+  const pages = document.getElementById("newsPages");
+  if (!prev || !next || !pages) return;
+
+  const maxGroupStart = Math.max(1, Math.floor((totalPages - 1) / NEWS_PAGE_GROUP_SIZE) * NEWS_PAGE_GROUP_SIZE + 1);
+  if (newsPage < newsPageGroupStart || newsPage > (newsPageGroupStart + NEWS_PAGE_GROUP_SIZE - 1)) {
+    newsPageGroupStart = Math.floor((newsPage - 1) / NEWS_PAGE_GROUP_SIZE) * NEWS_PAGE_GROUP_SIZE + 1;
+  }
+  newsPageGroupStart = Math.min(Math.max(1, newsPageGroupStart), maxGroupStart);
+
+  pages.innerHTML = "";
+  const groupEnd = Math.min(newsPageGroupStart + NEWS_PAGE_GROUP_SIZE - 1, totalPages);
+  for (let p = newsPageGroupStart; p <= groupEnd; p += 1) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pager-btn" + (p === newsPage ? " active" : "");
+    btn.dataset.newsPage = String(p);
+    btn.textContent = String(p);
+    pages.appendChild(btn);
+  }
+  prev.disabled = newsPageGroupStart <= 1;
+  next.disabled = newsPageGroupStart >= maxGroupStart;
+}
+
 // ===== 렌더 =====
 function renderAll() {
   requireEl("editor").classList.remove("hidden");
@@ -801,7 +848,9 @@ function renderAll() {
   loadedData.news = sortNewsLatestFirst(loadedData.news || []);
   const newsList = requireEl("newsList");
   newsList.innerHTML = "";
-  (loadedData.news || []).forEach((it, i) => newsList.appendChild(newsCardTemplate(it, i)));
+  const pagedNews = getPagedNewsItems(loadedData.news || []);
+  pagedNews.pageItems.forEach((it, i) => newsList.appendChild(newsCardTemplate(it, (newsPage - 1) * NEWS_PAGE_SIZE + i)));
+  renderNewsPager(pagedNews.totalPages);
 
   refreshAllCardsPdfUI();
   refreshAllNewsBodyUI();
@@ -839,7 +888,7 @@ function snapshotFromFormWithUids() {
       title: get("title")?.value?.trim() || "",
       sub: get("sub")?.value?.trim() || "",
       keyword: get("keyword")?.value?.trim() || "",
-      priority: normalizeNoticePriority(get("priority")?.value, 999),
+      priority: getNoticeKeywordPriorityByName(get("keyword")?.value?.trim() || ""),
     });
   });
   const items = sortNoticeLatestFirst(Array.from(noticeByUid.values()));
@@ -1229,12 +1278,12 @@ function refreshCardPdfUI(card) {
     bodyDel.style.display = "";
     bodyDel.textContent = "PDF 삭제";
     bodyDel.disabled = !tokenOk;
-    setBtnTone(bodyDel, "danger");
+    setBtnTone(bodyDel, "file-danger");
 
     quickDel.style.display = repoHas ? "" : "none";
     quickDel.textContent = "PDF 삭제";
     quickDel.disabled = !tokenOk;
-    setBtnTone(quickDel, "danger");
+    setBtnTone(quickDel, "file-danger");
     return;
   }
 
@@ -1244,12 +1293,12 @@ function refreshCardPdfUI(card) {
     bodyDel.style.display = "";
     bodyDel.textContent = "PDF 삭제";
     bodyDel.disabled = !tokenOk;
-    setBtnTone(bodyDel, "danger");
+    setBtnTone(bodyDel, "file-danger");
 
     quickDel.style.display = "";
     quickDel.textContent = "PDF 삭제";
     quickDel.disabled = !tokenOk;
-    setBtnTone(quickDel, "danger");
+    setBtnTone(quickDel, "file-danger");
   } else {
     stateEl.textContent = `없음: ${fileName}`;
     bodyDel.style.display = "none";
@@ -1348,12 +1397,12 @@ function refreshNewsBodyUI(card) {
     bodyDel.style.display = "";
     bodyDel.textContent = "파일 삭제";
     bodyDel.disabled = !tokenOk;
-    setBtnTone(bodyDel, "danger");
+    setBtnTone(bodyDel, "file-danger");
 
     quickDel.style.display = repoHas ? "" : "none";
     quickDel.textContent = "파일 삭제";
     quickDel.disabled = !tokenOk;
-    setBtnTone(quickDel, "danger");
+    setBtnTone(quickDel, "file-danger");
     return;
   }
 
@@ -1363,12 +1412,12 @@ function refreshNewsBodyUI(card) {
     bodyDel.style.display = "";
     bodyDel.textContent = "파일 삭제";
     bodyDel.disabled = !tokenOk;
-    setBtnTone(bodyDel, "danger");
+    setBtnTone(bodyDel, "file-danger");
 
     quickDel.style.display = "";
     quickDel.textContent = "파일 삭제";
     quickDel.disabled = !tokenOk;
-    setBtnTone(quickDel, "danger");
+    setBtnTone(quickDel, "file-danger");
   } else {
     stateEl.textContent = `없음: ${fileName}`;
     bodyDel.style.display = "none";
@@ -1688,12 +1737,7 @@ function refreshAllNewsServiceInputs() {
 }
 
 function serviceBadgeTextColor(hex) {
-  const c = normalizeHexColor(hex, "#94a3b8").slice(1);
-  const r = parseInt(c.slice(0, 2), 16);
-  const g = parseInt(c.slice(2, 4), 16);
-  const b = parseInt(c.slice(4, 6), 16);
-  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-  return yiq >= 150 ? "#0b1220" : "#f8fafc";
+  return "#f8fafc";
 }
 
 function updateNewsSvcAddPreview() {
@@ -1782,7 +1826,7 @@ function updateNoticeKeywordRowPreview(row) {
   badge.textContent = `${name} · ${priority}`;
   badge.style.borderColor = `${color}88`;
   badge.style.background = `${color}22`;
-  badge.style.color = "#0b1220";
+  badge.style.color = "#f8fafc";
 }
 
 function renderNoticeKeywordList() {
@@ -1829,6 +1873,18 @@ function setNewsSvcModal(open) {
   modal.setAttribute('aria-hidden', on ? 'false' : 'true');
   backdrop.setAttribute('aria-hidden', on ? 'false' : 'true');
   if (on) renderNewsServiceCatalogModal();
+}
+
+function setNoticeKeywordModal(open) {
+  const modal = document.getElementById("noticeKeywordModal");
+  const backdrop = document.getElementById("noticeKeywordModalBackdrop");
+  if (!modal || !backdrop) return;
+  const on = !!open;
+  modal.classList.toggle("show", on);
+  backdrop.classList.toggle("show", on);
+  modal.setAttribute("aria-hidden", on ? "false" : "true");
+  backdrop.setAttribute("aria-hidden", on ? "false" : "true");
+  if (on) renderNoticeKeywordList();
 }
 
 function refreshNewsAddServiceSuggest() {
@@ -1894,11 +1950,19 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("btnLoad");
   requireEl("btnAddSvc");
   requireEl("btnAddNoticeKeyword");
+  requireEl("btnManageNoticeKeywords");
+  requireEl("btnApplyNoticeKeyword");
+  requireEl("btnCloseNoticeKeywordModal");
+  requireEl("noticeKeywordModal");
+  requireEl("noticeKeywordModalBackdrop");
   requireEl("btnAddNotice");
   requireEl("noticePrev");
   requireEl("noticeNext");
   requireEl("noticePages");
   requireEl("btnAddNews");
+  requireEl("newsPrev");
+  requireEl("newsNext");
+  requireEl("newsPages");
   requireEl("btnNewsExpandAll");
   requireEl("btnNewsCollapseAll");
   requireEl("btnManageNewsServices");
@@ -1928,7 +1992,6 @@ document.addEventListener("DOMContentLoaded", () => {
   requireEl("btnCancelNoticeAdd");
   requireEl("btnApplyNoticeAdd");
   requireEl("noticeAddKeyword");
-  requireEl("noticeAddPriority");
   requireEl("noticeAddDate");
   requireEl("noticeKeywordList");
   requireEl("newsSvcAddModal");
@@ -1988,7 +2051,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!loadedData) loadedData = { services: [], notice: { noticeId: "", items: [] }, news: [], noticeKeywordCatalog: ensureNoticeKeywordCatalog([]), newsServiceCatalog: ensureNewsServiceCatalog([]) };
     refreshNoticeKeywordInputs();
     $("noticeAddKeyword").value = "";
-    $("noticeAddPriority").value = "";
     $("noticeAddDate").value = "";
     setNoticeAddModal(true);
   });
@@ -2058,12 +2120,6 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btnCloseNoticeAddModal").addEventListener("click", () => setNoticeAddModal(false));
   $("btnCancelNoticeAdd").addEventListener("click", () => setNoticeAddModal(false));
   $("noticeAddModalBackdrop").addEventListener("click", () => setNoticeAddModal(false));
-  $("noticeAddKeyword").addEventListener("change", () => {
-    if (!loadedData) return;
-    const keyword = norm($("noticeAddKeyword").value);
-    const row = ensureNoticeKeywordCatalog(loadedData.noticeKeywordCatalog, loadedData.notice?.items || []).find((it) => norm(it.name).toLowerCase() === keyword.toLowerCase());
-    if (row && !norm($("noticeAddPriority").value)) $("noticeAddPriority").value = String(normalizeNoticePriority(row.priority, 999));
-  });
   $("noticeAddDate").addEventListener("input", (e) => { e.target.value = formatDateInput(e.target.value); });
   $("btnApplyNoticeAdd").addEventListener("click", () => {
     if (!loadedData) return;
@@ -2078,19 +2134,31 @@ document.addEventListener("DOMContentLoaded", () => {
     const date = formatDateInput($("noticeAddDate")?.value || "");
     if (!date) return setMsg("공지 추가 시 date를 입력하세요.", "err");
     const keyword = norm($("noticeAddKeyword")?.value || "");
-    const keywordDefault = ensureNoticeKeywordCatalog(loadedData.noticeKeywordCatalog, loadedData.notice?.items || []).find((it) => norm(it.name).toLowerCase() === keyword.toLowerCase());
-    const priority = normalizeNoticePriority($("noticeAddPriority")?.value, keywordDefault?.priority ?? 999);
     loadedData.notice.items.push({
       _uid: makeUid(),
       date,
       title: norm($("noticeAddTitle")?.value || ""),
       sub: norm($("noticeAddSub")?.value || ""),
       keyword,
-      priority,
+      priority: getNoticeKeywordPriorityByName(keyword),
     });
     loadedData.noticeKeywordCatalog = ensureNoticeKeywordCatalog(loadedData.noticeKeywordCatalog, loadedData.notice.items || []);
     renderAll();
     setNoticeAddModal(false);
+  });
+
+  $("btnManageNoticeKeywords").addEventListener("click", () => setNoticeKeywordModal(true));
+  $("btnCloseNoticeKeywordModal").addEventListener("click", () => setNoticeKeywordModal(false));
+  $("noticeKeywordModalBackdrop").addEventListener("click", () => setNoticeKeywordModal(false));
+  $("btnApplyNoticeKeyword").addEventListener("click", () => {
+    if (!loadedData) return;
+    syncNoticeKeywordCatalogFromForm();
+    loadedData.notice.items = (loadedData.notice?.items || []).map((it) => ({
+      ...it,
+      priority: getNoticeKeywordPriorityByName(it.keyword),
+    }));
+    renderAll();
+    setNoticeKeywordModal(false);
   });
 
   $("btnCloseNewsSvcAddModal").addEventListener("click", () => setNewsSvcAddModal(false));
@@ -2412,6 +2480,12 @@ document.addEventListener("DOMContentLoaded", () => {
       e.stopPropagation();
     }
 
+    const openKeywordBtn = e.target.closest("button[data-act='openNoticeKeywordModal']");
+    if (openKeywordBtn) {
+      setNoticeKeywordModal(true);
+      return;
+    }
+
     const btn = e.target.closest("button[data-act='delNotice'],button[data-act='delNoticeQuick']");
     if (!btn) return;
 
@@ -2448,13 +2522,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const dateVal = card.querySelector('input[data-k="date"]')?.value || "";
         if (sumTitle) sumTitle.textContent = noticeSummaryTextWithDate({ title: titleVal, date: dateVal }, idx);
       }
-    }
-    if (e.target.matches('select[data-k="keyword"]')) {
-      const keyword = norm(e.target.value);
-      const row = ensureNoticeKeywordCatalog(loadedData?.noticeKeywordCatalog, loadedData?.notice?.items || []).find((it) => norm(it.name).toLowerCase() === keyword.toLowerCase());
-      const card = e.target.closest(".card");
-      const priorityInput = card?.querySelector('input[data-k="priority"]');
-      if (priorityInput && row && !norm(priorityInput.value)) priorityInput.value = String(normalizeNoticePriority(row.priority, 999));
     }
   });
   $("noticeKeywordList").addEventListener("input", (e) => {
@@ -2657,6 +2724,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const btn = e.target.closest("button[data-notice-page]");
     if (!btn) return;
     noticePage = Number(btn.dataset.noticePage || "1");
+    renderAll();
+  });
+  $("newsPrev").addEventListener("click", () => {
+    newsPageGroupStart = Math.max(1, newsPageGroupStart - NEWS_PAGE_GROUP_SIZE);
+    newsPage = newsPageGroupStart;
+    renderAll();
+  });
+  $("newsNext").addEventListener("click", () => {
+    newsPageGroupStart += NEWS_PAGE_GROUP_SIZE;
+    newsPage = newsPageGroupStart;
+    renderAll();
+  });
+  $("newsPages").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-news-page]");
+    if (!btn) return;
+    newsPage = Number(btn.dataset.newsPage || "1");
     renderAll();
   });
 
