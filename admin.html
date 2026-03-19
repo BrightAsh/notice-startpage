@@ -177,6 +177,22 @@
       background: rgba(251,113,133,.18);
       border-color: rgba(251,113,133,.75);
     }
+    .btn.success{
+      border-color: rgba(52,211,153,.52);
+      background: rgba(52,211,153,.14);
+    }
+    .btn.success:hover{
+      background: rgba(52,211,153,.18);
+      border-color: rgba(52,211,153,.68);
+    }
+    .btn.replace{
+      border-color: rgba(59,130,246,.50);
+      background: rgba(59,130,246,.14);
+    }
+    .btn.replace:hover{
+      background: rgba(59,130,246,.18);
+      border-color: rgba(59,130,246,.68);
+    }
 
     .news-svc-modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,.55);z-index:80;display:none;}
     .news-svc-modal-backdrop.show{display:block;}
@@ -187,6 +203,15 @@
     .news-svc-badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;border:1px solid var(--line);}
     .news-svc-modal .row.actions{justify-content:space-between;margin-top:10px;}
     .news-svc-row.dup{border-color:rgba(251,113,133,.65);}
+    .notice-keyword-list{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+    .notice-keyword-row{display:grid;grid-template-columns:1.1fr 150px 90px auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px;background:rgba(30,41,59,.62);}
+    .notice-keyword-preview{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;border:1px solid var(--line);}
+    .notice-toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+    .notice-list-wrap{margin-top:10px;}
+    .pager{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;}
+    .pager-pages{display:flex;gap:6px;flex-wrap:wrap;}
+    .pager-btn{min-width:34px;padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-weight:800;cursor:pointer;}
+    .pager-btn.active{background:var(--accent2);border-color:rgba(94,234,212,.42);}
 
     .news-add-modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,.55);z-index:95;display:none;}
     .news-add-modal-backdrop.show{display:block;}
@@ -210,6 +235,7 @@
       .news-add-modal{background:rgba(255,255,255,.98);border:1px solid rgba(30,41,59,.16);}
       .svc-dropdown{background:#ffffff;}
       .news-svc-row{background:rgba(248,250,252,.98);}
+      .notice-keyword-row{background:rgba(248,250,252,.98);}
       select{color:#0f172a;background:#ffffff;}
       option{color:#0f172a;background:#ffffff;}
 
@@ -532,7 +558,7 @@
         </div>
 
         <div id="svcList"></div>
-        <button class="btn" id="btnAddSvc" style="margin-top:10px;">+ 서비스 추가</button>
+        <button class="btn success" id="btnAddSvc" style="margin-top:10px;">+ 서비스 추가</button>
 
         <!-- ✅ Prompt 섹션: 서비스 ↔ 공지 사이 -->
         <div class="divider"></div>
@@ -543,7 +569,7 @@
           <div class="card-hd">
             <div class="card-title">Prompt Guide (고정)</div>
             <div class="row">
-              <button class="btn" id="btnPromptPdfReplace">PDF 교체</button>
+              <button class="btn replace" id="btnPromptPdfReplace">PDF 교체</button>
             </div>
           </div>
 
@@ -564,8 +590,21 @@
             <input id="noticeId" type="text" placeholder="예: 2026-01-30" />
           </div>
         </div>
-        <div id="noticeList"></div>
-        <button class="btn" id="btnAddNotice" style="margin-top:10px;">+ 공지 추가</button>
+        <div class="small" style="margin-top:10px;">공지 키워드를 관리하고, 기본 우선순위를 지정할 수 있습니다. (숫자가 작을수록 상단)</div>
+        <div id="noticeKeywordList" class="notice-keyword-list"></div>
+        <button class="btn success" id="btnAddNoticeKeyword" style="margin-top:10px;">+ 공지 키워드 추가</button>
+        <div class="notice-toolbar" style="margin-top:10px;">
+          <div class="small" id="noticeOrderInfo">정렬: 최신순(날짜 내림차순)</div>
+        </div>
+        <div class="notice-list-wrap">
+          <div id="noticeList"></div>
+        </div>
+        <div class="pager">
+          <button type="button" class="btn" id="noticePrev">&lt;&lt;</button>
+          <div class="pager-pages" id="noticePages"></div>
+          <button type="button" class="btn" id="noticeNext">&gt;&gt;</button>
+        </div>
+        <button class="btn success" id="btnAddNotice" style="margin-top:10px;">+ 공지 추가</button>
 
         <div class="divider"></div>
 
@@ -582,7 +621,7 @@
         <div class="news-list-wrap">
           <div id="newsList"></div>
         </div>
-        <button class="btn" id="btnAddNews" style="margin-top:10px;">+ 뉴스 추가</button>
+        <button class="btn success" id="btnAddNews" style="margin-top:10px;">+ 뉴스 추가</button>
 
         <div class="divider"></div>
 
@@ -677,7 +716,7 @@
     <div class="small">서비스 이름과 색상을 관리합니다. 뉴스 편집의 서비스 선택 목록에 반영됩니다.</div>
     <div id="newsSvcList" class="news-svc-list"></div>
     <div class="row actions">
-      <button class="btn" id="btnAddNewsSvc" type="button">+ 서비스 추가</button>
+      <button class="btn success" id="btnAddNewsSvc" type="button">+ 서비스 추가</button>
       <button class="btn primary" id="btnApplyNewsSvc" type="button">적용</button>
     </div>
   </section>
@@ -709,13 +748,13 @@
       <label>뉴스 HTML 파일 (선택)</label>
       <div class="row" style="gap:8px;align-items:center;">
         <input id="newsAddBodyInput" type="file" accept=".html,text/html" class="hidden" />
-        <button class="btn" id="btnNewsAddBodyPick" type="button">파일 첨부</button>
+        <button class="btn success" id="btnNewsAddBodyPick" type="button">파일 첨부</button>
         <span id="newsAddBodyState" class="small">선택된 파일 없음</span>
       </div>
     </div>
     <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;">
       <button class="btn" id="btnCancelNewsAdd" type="button">취소</button>
-      <button class="btn primary" id="btnApplyNewsAdd" type="button">추가</button>
+      <button class="btn success" id="btnApplyNewsAdd" type="button">추가</button>
     </div>
   </section>
   <div id="svcAddModalBackdrop" class="news-add-modal-backdrop" aria-hidden="true"></div>
@@ -728,18 +767,23 @@
       <label>소개 PDF (선택)</label>
       <div class="row" style="gap:8px;align-items:center;">
         <input id="svcAddPdfInput" type="file" accept="application/pdf" class="hidden" />
-        <button class="btn" id="btnSvcAddPdfPick" type="button">PDF 첨부</button>
+        <button class="btn success" id="btnSvcAddPdfPick" type="button">PDF 첨부</button>
         <span id="svcAddPdfState" class="small">선택된 파일 없음</span>
       </div>
     </div>
-    <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;"><button class="btn" id="btnCancelSvcAdd" type="button">취소</button><button class="btn primary" id="btnApplySvcAdd" type="button">추가</button></div>
+    <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;"><button class="btn" id="btnCancelSvcAdd" type="button">취소</button><button class="btn success" id="btnApplySvcAdd" type="button">추가</button></div>
   </section>
 
   <div id="noticeAddModalBackdrop" class="news-add-modal-backdrop" aria-hidden="true"></div>
   <section id="noticeAddModal" class="news-add-modal" aria-hidden="true">
     <div class="card-hd" style="margin-bottom:8px;"><div class="card-title">공지 추가</div><button class="btn" id="btnCloseNoticeAddModal" type="button">닫기</button></div>
     <div class="grid2"><div><label>title</label><input id="noticeAddTitle" type="text" /></div><div><label>sub</label><input id="noticeAddSub" type="text" /></div></div>
-    <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;"><button class="btn" id="btnCancelNoticeAdd" type="button">취소</button><button class="btn primary" id="btnApplyNoticeAdd" type="button">추가</button></div>
+    <div class="grid2"><div><label>date (YYYY-MM-DD)</label><input id="noticeAddDate" type="text" placeholder="예: 2026-03-19" /></div></div>
+    <div class="grid2">
+      <div><label>keyword</label><select id="noticeAddKeyword"></select></div>
+      <div><label>priority (작을수록 상단)</label><input id="noticeAddPriority" type="number" min="1" step="1" placeholder="예: 1" /></div>
+    </div>
+    <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;"><button class="btn" id="btnCancelNoticeAdd" type="button">취소</button><button class="btn success" id="btnApplyNoticeAdd" type="button">추가</button></div>
   </section>
 
   <div id="newsSvcAddModalBackdrop" class="news-add-modal-backdrop" aria-hidden="true"></div>
@@ -747,7 +791,7 @@
     <div class="card-hd" style="margin-bottom:8px;"><div class="card-title">서비스/색상 추가</div><button class="btn" id="btnCloseNewsSvcAddModal" type="button">닫기</button></div>
     <div class="grid2"><div><label>서비스명</label><input id="newsSvcAddName" type="text" /></div><div><label>색상 코드</label><input id="newsSvcAddColor" type="text" value="#94a3b8" /></div></div>
     <div class="grid2"><div><label>색상 선택</label><input id="newsSvcAddColorPicker" type="color" value="#94a3b8" /></div><div><label>미리보기</label><span id="newsSvcAddPreview" class="news-svc-badge" style="display:inline-flex;">미리보기</span></div></div>
-    <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;"><button class="btn" id="btnCancelNewsSvcAdd" type="button">취소</button><button class="btn primary" id="btnApplyNewsSvcAdd" type="button">추가</button></div>
+    <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;"><button class="btn" id="btnCancelNewsSvcAdd" type="button">취소</button><button class="btn success" id="btnApplyNewsSvcAdd" type="button">추가</button></div>
   </section>
 
   <!-- ✅ 캐시 이슈 있으면 v= 값을 바꾸세요 -->
