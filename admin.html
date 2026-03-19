@@ -193,6 +193,14 @@
       background: rgba(59,130,246,.18);
       border-color: rgba(59,130,246,.68);
     }
+    .btn.file-danger{
+      border-color: rgba(245,158,11,.58);
+      background: rgba(245,158,11,.14);
+    }
+    .btn.file-danger:hover{
+      background: rgba(245,158,11,.20);
+      border-color: rgba(245,158,11,.75);
+    }
 
     .news-svc-modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,.55);z-index:80;display:none;}
     .news-svc-modal-backdrop.show{display:block;}
@@ -212,6 +220,7 @@
     .pager-pages{display:flex;gap:6px;flex-wrap:wrap;}
     .pager-btn{min-width:34px;padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-weight:800;cursor:pointer;}
     .pager-btn.active{background:var(--accent2);border-color:rgba(94,234,212,.42);}
+    .pager-news{margin-top:12px;}
 
     .news-add-modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,.55);z-index:95;display:none;}
     .news-add-modal-backdrop.show{display:block;}
@@ -591,10 +600,9 @@
           </div>
         </div>
         <div class="small" style="margin-top:10px;">공지 키워드를 관리하고, 기본 우선순위를 지정할 수 있습니다. (숫자가 작을수록 상단)</div>
-        <div id="noticeKeywordList" class="notice-keyword-list"></div>
-        <button class="btn success" id="btnAddNoticeKeyword" style="margin-top:10px;">+ 공지 키워드 추가</button>
+        <button class="btn" id="btnManageNoticeKeywords" type="button" style="margin-top:10px;">키워드 편집</button>
         <div class="notice-toolbar" style="margin-top:10px;">
-          <div class="small" id="noticeOrderInfo">정렬: 최신순(날짜 내림차순)</div>
+          <div class="small" id="noticeOrderInfo">정렬: 키워드 우선순위 오름차순 → 같은 키워드는 최신순</div>
         </div>
         <div class="notice-list-wrap">
           <div id="noticeList"></div>
@@ -620,6 +628,11 @@
         </div>
         <div class="news-list-wrap">
           <div id="newsList"></div>
+        </div>
+        <div class="pager pager-news">
+          <button type="button" class="btn" id="newsPrev">&lt;&lt;</button>
+          <div class="pager-pages" id="newsPages"></div>
+          <button type="button" class="btn" id="newsNext">&gt;&gt;</button>
         </div>
         <button class="btn success" id="btnAddNews" style="margin-top:10px;">+ 뉴스 추가</button>
 
@@ -781,9 +794,22 @@
     <div class="grid2"><div><label>date (YYYY-MM-DD)</label><input id="noticeAddDate" type="text" placeholder="예: 2026-03-19" /></div></div>
     <div class="grid2">
       <div><label>keyword</label><select id="noticeAddKeyword"></select></div>
-      <div><label>priority (작을수록 상단)</label><input id="noticeAddPriority" type="number" min="1" step="1" placeholder="예: 1" /></div>
     </div>
     <div class="row actions" style="margin-top:10px;justify-content:flex-end;gap:8px;"><button class="btn" id="btnCancelNoticeAdd" type="button">취소</button><button class="btn success" id="btnApplyNoticeAdd" type="button">추가</button></div>
+  </section>
+
+  <div id="noticeKeywordModalBackdrop" class="news-svc-modal-backdrop" aria-hidden="true"></div>
+  <section id="noticeKeywordModal" class="news-svc-modal" aria-hidden="true">
+    <div class="card-hd" style="margin-bottom:8px;">
+      <div class="card-title">공지 키워드 편집</div>
+      <button class="btn" id="btnCloseNoticeKeywordModal" type="button">닫기</button>
+    </div>
+    <div class="small">키워드 우선순위를 기준으로 정렬되며, 같은 키워드에서는 날짜 최신순으로 보여집니다.</div>
+    <div id="noticeKeywordList" class="notice-keyword-list"></div>
+    <div class="row actions">
+      <button class="btn success" id="btnAddNoticeKeyword" type="button">+ 공지 키워드 추가</button>
+      <button class="btn primary" id="btnApplyNoticeKeyword" type="button">적용</button>
+    </div>
   </section>
 
   <div id="newsSvcAddModalBackdrop" class="news-add-modal-backdrop" aria-hidden="true"></div>
