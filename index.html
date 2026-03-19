@@ -1148,13 +1148,15 @@
       const keywords = ensureNoticeKeywordCatalog(NOTICE_KEYWORD_CATALOG, NOTICE.items || []);
       const keyMap = new Map(keywords.map((it) => [String(it.name || "").toLowerCase(), it]));
       const items = [...(NOTICE.items || [])].sort((a, b) => {
-        const byDate = String(b?.date || "").localeCompare(String(a?.date || ""));
-        if(byDate !== 0) return byDate;
         const ak = String(a?.keyword || "").toLowerCase();
         const bk = String(b?.keyword || "").toLowerCase();
-        const ap = normalizeNoticePriority(a?.priority, keyMap.get(ak)?.priority ?? 999);
-        const bp = normalizeNoticePriority(b?.priority, keyMap.get(bk)?.priority ?? 999);
+        // 키워드 우선순위가 1순위, 같은 우선순위 내에서 최신 날짜가 상단
+        // 카탈로그 값을 우선 사용하고, 항목 priority는 하위 호환 fallback으로만 사용
+        const ap = normalizeNoticePriority(keyMap.get(ak)?.priority, a?.priority ?? 999);
+        const bp = normalizeNoticePriority(keyMap.get(bk)?.priority, b?.priority ?? 999);
         if(ap !== bp) return ap - bp;
+        const byDate = String(b?.date || "").localeCompare(String(a?.date || ""));
+        if(byDate !== 0) return byDate;
         return String(a?.title || "").localeCompare(String(b?.title || ""), "ko");
       });
       const totalPages = Math.max(1, Math.ceil(items.length / NOTICE_PAGE_SIZE));
