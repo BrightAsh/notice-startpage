@@ -894,19 +894,22 @@ function snapshotFromFormWithUids() {
   const items = sortNoticeLatestFirst(Array.from(noticeByUid.values()));
   syncNoticeKeywordCatalogFromForm();
 
-  const news = [];
+  const baseNews = ensureNewsItemUids(loadedData?.news || []);
+  const newsByUid = new Map(baseNews.map((it) => [String(it._uid), { ...it }]));
   const newsCards = requireEl("newsList").querySelectorAll(".card");
   newsCards.forEach((card) => {
     const get = (k) => card.querySelector(`[data-k="${k}"]`);
-    const uid = card.dataset.uid || makeUid();
-    news.push({
+    const uid = String(card.dataset.uid || makeUid());
+    const prev = newsByUid.get(uid) || {};
+    newsByUid.set(uid, {
       _uid: uid,
       service: get("service")?.value?.trim() || "",
       title: get("title")?.value?.trim() || "",
       date: get("date")?.value?.trim() || "",
-      file: normalizeNewsFileName("", get("date")?.value?.trim() || "", get("title")?.value?.trim() || "", true),
+      file: normalizeNewsFileName(prev.file, get("date")?.value?.trim() || "", get("title")?.value?.trim() || "", true),
     });
   });
+  const news = sortNewsLatestFirst(Array.from(newsByUid.values()));
 
   return {
     services,
@@ -915,6 +918,15 @@ function snapshotFromFormWithUids() {
     noticeKeywordCatalog: ensureNoticeKeywordCatalog(loadedData?.noticeKeywordCatalog, items),
     newsServiceCatalog: ensureNewsServiceCatalog(loadedData?.newsServiceCatalog, news),
   };
+}
+
+function syncLoadedDataFromForm() {
+  const snap = snapshotFromFormWithUids();
+  loadedData.services = ensureServiceUids(snap.services);
+  loadedData.notice = { ...snap.notice, items: ensureNoticeItemUids(snap.notice.items || []) };
+  loadedData.noticeKeywordCatalog = ensureNoticeKeywordCatalog(snap.noticeKeywordCatalog, snap.notice.items || []);
+  loadedData.news = ensureNewsItemUids(snap.news || []);
+  loadedData.newsServiceCatalog = ensureNewsServiceCatalog(snap.newsServiceCatalog, snap.news || []);
 }
 
 function stripInternalFields(dataWithUids) {
@@ -941,7 +953,7 @@ function stripInternalFields(dataWithUids) {
       service: it.service || "",
       title: it.title || "",
       date: it.date || "",
-      file: normalizeNewsFileName("", it.date, it.title, true),
+      file: normalizeNewsFileName(it.file, it.date, it.title, true),
     })),
     newsServiceCatalog: ensureNewsServiceCatalog(dataWithUids.newsServiceCatalog, dataWithUids.news || []),
   };
@@ -2711,11 +2723,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("noticeId").addEventListener("input", () => updatePendingSummary());
   $("noticePrev").addEventListener("click", () => {
+    syncLoadedDataFromForm();
     noticePageGroupStart = Math.max(1, noticePageGroupStart - NOTICE_PAGE_GROUP_SIZE);
     noticePage = noticePageGroupStart;
     renderAll();
   });
   $("noticeNext").addEventListener("click", () => {
+    syncLoadedDataFromForm();
     noticePageGroupStart += NOTICE_PAGE_GROUP_SIZE;
     noticePage = noticePageGroupStart;
     renderAll();
@@ -2723,15 +2737,18 @@ document.addEventListener("DOMContentLoaded", () => {
   $("noticePages").addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-notice-page]");
     if (!btn) return;
+    syncLoadedDataFromForm();
     noticePage = Number(btn.dataset.noticePage || "1");
     renderAll();
   });
   $("newsPrev").addEventListener("click", () => {
+    syncLoadedDataFromForm();
     newsPageGroupStart = Math.max(1, newsPageGroupStart - NEWS_PAGE_GROUP_SIZE);
     newsPage = newsPageGroupStart;
     renderAll();
   });
   $("newsNext").addEventListener("click", () => {
+    syncLoadedDataFromForm();
     newsPageGroupStart += NEWS_PAGE_GROUP_SIZE;
     newsPage = newsPageGroupStart;
     renderAll();
@@ -2739,6 +2756,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("newsPages").addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-news-page]");
     if (!btn) return;
+    syncLoadedDataFromForm();
     newsPage = Number(btn.dataset.newsPage || "1");
     renderAll();
   });
