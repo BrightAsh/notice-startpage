@@ -1,6 +1,6 @@
 // ===== 고정 설정 =====
-const OWNER = "KNOC-AIFieldZone";
-const REPO = "Notice-page";
+const OWNER = "BrightAsh";
+const REPO = "notice-startpage";
 const BRANCH = "main";
 const FILE_PATH = "content.json";
 const FILES_DIR = "files";
